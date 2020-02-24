@@ -9,7 +9,7 @@
         public const string PrefixName = @"m.";
 
         public const int MaxImages = 200000;
-        public const int MaxImport = 1000;
+        public const int MaxImport = 200000;
 
         public const string WebpExtension = ".webp";
         public const string JpgExtension = ".jpg";
