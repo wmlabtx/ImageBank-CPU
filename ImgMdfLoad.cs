@@ -18,8 +18,6 @@ namespace ImageBank
 
             lock (_imglock) {
                 _imgList.Clear();
-                _nameList.Clear();
-                _checksumList.Clear();
             }
 
             progress.Report("Loading images...");
@@ -28,38 +26,37 @@ namespace ImageBank
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttrId}, "); // 0
             sb.Append($"{AppConsts.AttrName}, "); // 1
-            sb.Append($"{AppConsts.AttrPath}, "); // 2
-            sb.Append($"{AppConsts.AttrChecksum}, "); // 3
-            sb.Append($"{AppConsts.AttrGeneration}, "); // 4
-            sb.Append($"{AppConsts.AttrLastView}, "); // 5
-            sb.Append($"{AppConsts.AttrNextId}, "); // 6
-            sb.Append($"{AppConsts.AttrDistance}, "); // 7
-            sb.Append($"{AppConsts.AttrLastId}, "); // 8
-            sb.Append($"{AppConsts.AttrLastChange}, "); // 9
+            sb.Append($"{AppConsts.AttrChecksum}, "); // 2
+            sb.Append($"{AppConsts.AttrGeneration}, "); // 3
+            sb.Append($"{AppConsts.AttrLastView}, "); // 4
+            sb.Append($"{AppConsts.AttrNextId}, "); // 5
+            sb.Append($"{AppConsts.AttrDistance}, "); // 6
+            sb.Append($"{AppConsts.AttrLastId}, "); // 7
+            sb.Append($"{AppConsts.AttrLastChange}, "); // 8
+            sb.Append($"{AppConsts.AttrLastFind}, "); // 9
             sb.Append($"{AppConsts.AttrVector} "); // 10
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
                 using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
                     using (var reader = sqlCommand.ExecuteReader()) {
-                        var dt = DateTime.Now;                        
+                        var dt = DateTime.Now;
                         while (reader.Read()) {
                             var id = reader.GetInt32(0);
                             var name = reader.GetString(1);
-                            var path = reader.GetString(2);
-                            var checksum = reader.GetString(3);
-                            var generation = reader.GetInt32(4);
-                            var lastview = reader.GetDateTime(5);
-                            var nextid = reader.GetInt32(6);
-                            var distance = reader.GetFloat(7);
-                            var lastid = reader.GetInt32(8);
-                            var lastchange = reader.GetDateTime(9);
+                            var checksum = reader.GetString(2);
+                            var generation = reader.GetInt32(3);
+                            var lastview = reader.GetDateTime(4);
+                            var nextid = reader.GetInt32(5);
+                            var distance = reader.GetFloat(6);
+                            var lastid = reader.GetInt32(7);
+                            var lastchange = reader.GetDateTime(8);
+                            var lastfind = reader.GetDateTime(9);
                             var orbvbuffer = (byte[])reader[10];
                             var vector = Helper.BufferToVector(orbvbuffer);
                             var img = new Img(
                                 id: id,
                                 name: name,
-                                path: path,
                                 checksum: checksum,
                                 generation: generation,
                                 lastview: lastview,
@@ -67,6 +64,7 @@ namespace ImageBank
                                 distance: distance,
                                 lastid: lastid,
                                 lastchange: lastchange,
+                                lastfind: lastfind,
                                 vector: vector);
 
                             AddToMemory(img);

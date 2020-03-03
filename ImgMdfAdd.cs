@@ -6,8 +6,6 @@
         {
             lock (_imglock) {
                 _imgList.Add(img.Id, img);
-                _nameList.Add(img.Name, img);
-                _checksumList.Add(img.Checksum, img);
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,6 +12,7 @@ namespace ImageBank
         public MainWindow()
         {
             InitializeComponent();
+            Trace.Listeners.Add(new ConsoleTraceListener());
         }
 
         private void WindowLoaded(object sender, RoutedEventArgs e)
@@ -68,6 +70,11 @@ namespace ImageBank
         private void ImportClick(object sender, EventArgs e)
         {
             ImportClick();
+        }
+
+        private void ConvertClick(object sender, EventArgs e)
+        {
+            ConvertClick();
         }
 
         private void ExitClick(object sender, EventArgs e)

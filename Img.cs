@@ -5,18 +5,21 @@ namespace ImageBank
     public class Img
     {
         public int Id { get; }
-        public string Name { get; }
 
-        private string _path;
-        public string Path
+        private string _name;
+        public string Name
         {
-            get => _path;
+            get => _name;
             set
             {
-                _path = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrPath, value);
+                _name = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrName, value);
+                _person = Helper.GetPerson(_name);
             }
         }
+
+        private string _person;
+        public string Person { get => _person; }
 
         public string Checksum { get; }
 
@@ -89,6 +92,17 @@ namespace ImageBank
             }
         }
 
+        private DateTime _lastfind;
+        public DateTime LastFind
+        {
+            get => _lastfind;
+            set
+            {
+                _lastfind = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastFind, value);
+            }
+        }
+
         private readonly float[] _vector;
 
         public float[] Vector()
@@ -96,20 +110,11 @@ namespace ImageBank
             return _vector;
         }
 
-        public string Directory
-        {
-            get
-            {
-                var directory = $"{AppConsts.PathCollection}{Path}\\";
-                return directory;
-            }
-        }
-
         public string File
         {
             get
             {
-                var filename = Helper.GetFileName(Name, Path);
+                var filename = Helper.GetFileName(Name);
                 return filename;
             }
         }
@@ -117,7 +122,6 @@ namespace ImageBank
         public Img(
             int id,
             string name,
-            string path,
             string checksum,
             int generation,
             DateTime lastview,
@@ -125,11 +129,12 @@ namespace ImageBank
             float distance,
             int lastid,
             DateTime lastchange,
+            DateTime lastfind,
             float[] vector)
         {
             Id = id;
-            Name = name;
-            _path = path;
+            _name = name;
+            _person = Helper.GetPerson(_name);
             Checksum = checksum;
             _generation = generation;
             _lastview = lastview;
@@ -137,6 +142,7 @@ namespace ImageBank
             _distance = distance;
             _lastid = lastid;
             _lastchange = lastchange;
+            _lastfind = lastfind;
             _vector = vector;
         }
     }

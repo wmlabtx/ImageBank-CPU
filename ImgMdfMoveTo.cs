@@ -6,12 +6,14 @@ namespace ImageBank
     {
         public void MoveTo(int id, string path)
         {
+            /*
             if (_imgList.TryGetValue(id, out var imgX)) {
-                var oldfile = imgX.File;
+                var oldfile = imgX.OldFile;
                 imgX.Path = path;
-                var newfile = imgX.File;
+                var newfile = imgX.OldFile;
                 File.Move(oldfile, newfile);
             }
+            */
         }
     }
 }

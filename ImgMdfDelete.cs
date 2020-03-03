@@ -7,9 +7,7 @@ namespace ImageBank
         public void Delete(int id)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(id, out var img)) {                    
-                    _nameList.Remove(img.Name);
-                    _checksumList.Remove(img.Checksum);
+                if (_imgList.TryGetValue(id, out var img)) {
                     Helper.DeleteToRecycleBin(img.File);
                     _imgList.Remove(id);
                 }
@@ -26,7 +24,7 @@ namespace ImageBank
                     .Values
                     .Where(e => e.NextId == id)
                     .ToList()
-                    .ForEach(e => e.LastId = -1);
+                    .ForEach(e => e.LastId = 0);
             }
         }
     }

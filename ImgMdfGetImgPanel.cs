@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.IO;
 
 namespace ImageBank
 {
@@ -11,33 +10,24 @@ namespace ImageBank
                 return null;
             }
 
-            Bitmap bitmap;
-            long length;
-            try {
-                var imgdata = Helper.ReadData(img.File);
-                using (var ms = new MemoryStream(imgdata)) {
-                    length = imgdata.Length;
-                    bitmap = (Bitmap)Image.FromStream(ms);
-                }
-            }
-            catch {
+            var imgdata = Helper.ReadData(img.File);
+            if (imgdata == null) {
                 return null;
             }
 
-            if (bitmap == null) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
                 return null;
             }
 
             var imgpanel = new ImgPanel(
                 id: id,
                 name: img.Name,
-                path: img.Path,
                 lastview: img.LastView,
                 generation: img.Generation,
                 distance: img.Distance,
                 lastchange: img.LastChange,
                 bitmap: bitmap, 
-                length: length);
+                length: imgdata.Length);
 
             return imgpanel;
         }

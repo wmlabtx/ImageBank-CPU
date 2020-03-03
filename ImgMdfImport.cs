@@ -14,30 +14,27 @@ namespace ImageBank
 
             var added = 0;
             var found = 0;
+            var moved = 0;
+            var bad = 0;
             var dt = DateTime.Now;
 
             var directoryInfo = new DirectoryInfo(AppConsts.PathCollection);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
             foreach (var fileInfo in fileInfos) {
                 var filename = fileInfo.FullName;
+                var shortfilename = filename.Substring(AppConsts.PathCollection.Length);
                 var name = Helper.GetName(filename);
-                var path = Helper.GetPath(filename);
-                Img imgfound;
-                lock (_imglock) {
-                    if (_nameList.TryGetValue(name, out imgfound)) {
-                        if (path.Equals(imgfound.Path, StringComparison.OrdinalIgnoreCase)) {
-                            continue;
-                        }
-                    }
+                var idfound = SqlGetIdByName(name);
+                if (idfound > 0) {
+                    continue;
                 }
 
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
-                    var file = filename.Substring(AppConsts.PathCollection.Length);
-                    progress?.Report($"{file} (a:{added}/f:{found})...");
+                    progress?.Report($"{shortfilename} (a:{added}/f:{found}/m:{moved}/b:{bad})...");
                 }
 
-                var extension = Helper.GetExtension(filename);
+                //var extension = Helper.GetExtension(filename);
                 if (!Helper.GetImageDataFromFile(
                     filename,
                     out var imgdata,
@@ -45,67 +42,97 @@ namespace ImageBank
                     out Bitmap bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
                     out var checksum,
-                    out var needwrite)) {
-                    progress?.Report($"Corrupted image: {path}\\{name}{extension}");
+                    out var message)) {
+                    progress?.Report($"Corrupted image: {shortfilename}: {message}");
+                    bad++;
+                    continue;
+                }
+
+                var prefixname = Helper.GetPrefixName(filename);
+                if (string.IsNullOrEmpty(prefixname)) {
+                    progress?.Report($"Wrong location: {shortfilename}");
                     return;
                 }
 
+                string suggestedname;
+                string suggestedfilename;
                 lock (_imglock) {
-                    if (_checksumList.TryGetValue(checksum, out imgfound)) {
-                        found++;
-                        Helper.DeleteToRecycleBin(filename);
-                        continue;
+                    var idchecksum = SqlGetIdByChecksum(checksum);
+                    if (idchecksum > 0) {
+                        if (_imgList.TryGetValue(idchecksum, out var imgfound)) {
+                            if (imgfound.File.Equals(filename, StringComparison.OrdinalIgnoreCase)) {
+                                continue;
+                            }
+
+                            if (imgfound.Name.StartsWith(AppConsts.PrefixLegacy, StringComparison.OrdinalIgnoreCase)) {
+                                var path = Path
+                                    .GetDirectoryName(filename)
+                                    .Substring(AppConsts.PathCollection.Length);
+
+                                if (path.StartsWith(AppConsts.PrefixLegacy, StringComparison.OrdinalIgnoreCase)) {
+                                    found++;
+                                }
+                                else {
+                                    moved++;
+                                    suggestedname = GetSuggestedName(prefixname, checksum);
+                                    suggestedfilename = Helper.GetFileName(suggestedname);
+                                    Helper.WriteData(suggestedfilename, imgdata);
+                                    Helper.DeleteToRecycleBin(imgfound.File);
+                                    imgfound.Name = suggestedname;
+                                }
+                            }
+                            else {
+                                found++;
+                            }
+
+                            Helper.DeleteToRecycleBin(filename);
+                            continue;
+
+                        }
                     }
                 }
 
                 if (!Helper.GetVector(bitmap, out var vector)) {
-                    progress?.Report($"Cannot get descriptors: {path}\\{name}{extension}");
-                    return;
+                    progress?.Report($"Cannot get descriptors: {shortfilename}");
+                    bad++;
+                    continue;
                 }
 
                 bitmap.Dispose();
 
-                var id = AllocateId();
-                string suggestedname;
-                var namelenght = 2;
-                lock (_imglock) {
-                    do {
-                        namelenght++;
-                        suggestedname = string.Concat(AppConsts.PrefixName, checksum.Substring(0, namelenght));
-                    } while (_nameList.ContainsKey(suggestedname));
-                }
+                suggestedname = GetSuggestedName(prefixname, checksum);
+                suggestedfilename = Helper.GetFileName(suggestedname);
+                var generation = suggestedname.StartsWith(AppConsts.PrefixLegacy, StringComparison.OrdinalIgnoreCase) ?
+                    1 : 0;
 
-                var suggestedfilename = Helper.GetFileName(suggestedname, path);
+                var id = AllocateId();
                 var lastview = GetMinLastView();
                 var img = new Img(
                     id: id,
                     name: suggestedname,
-                    path: path,
                     checksum: checksum,
-                    generation: 1,
+                    generation: generation,
                     lastview: lastview,
                     nextid: id,
                     distance: 1f,
-                    lastid: -1,
+                    lastid: 0,
                     lastchange: lastview,
+                    lastfind: lastview,
                     vector: vector);
 
                 Add(img);
-                if (needwrite) {
+                if (!filename.Equals(img.File, StringComparison.OrdinalIgnoreCase)) {
                     Helper.WriteData(suggestedfilename, imgdata);
                     Helper.DeleteToRecycleBin(filename);
                 }
-                else {
-                    if (!filename.Equals(img.File, StringComparison.OrdinalIgnoreCase)) {
-                        File.Move(filename, img.File);
-                    }
-                }
 
+                /*
                 FindNext(id, out var lastid, out var lastchange, out var nextid, out var distance);
                 img.LastId = lastid;
                 img.LastChange = lastchange;
                 img.NextId = nextid;
                 img.Distance = distance;
+                */
 
                 if (_imgList.Count >= AppConsts.MaxImages) {
                     break;
@@ -125,6 +152,56 @@ namespace ImageBank
             Contract.Requires(progress != null);
             //Helper.CleanupDirectories(AppConsts.PathCollection, progress);
             Import(AppConsts.MaxImport, progress);
+        }
+
+        public void Convert(IProgress<string> progress)
+        {
+            Contract.Requires(progress != null);
+
+            /*
+            AppVars.SuspendEvent.Reset();
+
+            var dt = DateTime.Now;
+            lock (_imglock) {
+                var images = _imgList.Values.ToArray();
+                foreach (var img in images) {
+                    if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
+                        dt = DateTime.Now;
+                        progress?.Report($"{img.Path}\\{img.Name}...");
+                    }
+
+                    var filename = img.OldFile;
+                    if (!File.Exists(filename)) {
+                        continue;
+                    }
+
+                    var imgdata = File.ReadAllBytes(filename);
+                    var dir = img.Id % 100;
+                    string suggestedpath = $"legacy\\{dir:D2}";
+                    string prefix = $"legacy.{dir:D2}.";
+                    string suggestedname;
+                    var namelenght = 2;
+                    do {
+                        namelenght++;
+                        suggestedname = string.Concat(prefix, img.Checksum.Substring(0, namelenght));
+                    } while (_nameList.ContainsKey(suggestedname));
+
+                    var suggestedfilename = $"{AppConsts.PathCollection}{suggestedpath}\\{suggestedname}{AppConsts.MzxExtension}";
+                    var encdata = Helper.Encrypt(imgdata, suggestedname);
+                    var directory = Path.GetDirectoryName(suggestedfilename);
+                    if (!Directory.Exists(directory)) {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    File.WriteAllBytes(suggestedfilename, encdata);
+                    Helper.DeleteToRecycleBin(filename);
+                    img.Name = suggestedname;
+                    img.Path = suggestedpath;
+                }
+            }
+
+            AppVars.SuspendEvent.Set();
+            */
         }
     }
 }

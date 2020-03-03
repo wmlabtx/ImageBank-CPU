@@ -7,7 +7,6 @@ namespace ImageBank
     {
         public int Id { get; }
         public string Name { get; }
-        public string Path { get; }
         public DateTime LastView { get; }
         public float Distance { get; }
         public int Generation { get; }
@@ -15,11 +14,10 @@ namespace ImageBank
         public Bitmap Bitmap { get; }
         public long Length { get; }
 
-        public ImgPanel(int id, string name, string path, DateTime lastview, int generation, float distance, DateTime lastchange, Bitmap bitmap, long length)
+        public ImgPanel(int id, string name, DateTime lastview, int generation, float distance, DateTime lastchange, Bitmap bitmap, long length)
         {
             Id = id;
             Name = name;
-            Path = path;
             LastView = lastview;
             Generation = generation;
             Distance = distance;
