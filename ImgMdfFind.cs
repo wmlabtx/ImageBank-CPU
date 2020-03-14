@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -9,111 +7,58 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Find(int idX, IProgress<string> progress)
+        public void Find(int idX, int idY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
-            var idY = 0;
-            Img imgX;
 
             var dt = DateTime.Now;
-            while (true) {
-                lock (_imglock) {
+            lock (_imglock) {
+                while (true) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
                         return;
                     }
-                }
 
-                if (idX <= 0) {
-                    lock (_imglock) {
-                        var sourcefolder = AppConsts.PathCollection;
-                        var currentfolder = sourcefolder;
-                        while (true) {
-                            var directoryinfo = new DirectoryInfo(currentfolder);
-                            var dirinfos = directoryinfo.GetDirectories("*.*", SearchOption.TopDirectoryOnly).ToArray();
-                            if (dirinfos.Length == 0) {
-                                break;
-                            }
+                    if (idX <= 0) {
+                        var scope = _imgList
+                            .Values
+                            .Where(e => e.NextId > 0 && e.LastId > 0 && e.NextId != e.Id)
+                            .ToArray();
 
-                            var lastwritetime = dirinfos.Min(e => e.LastWriteTime);
-                            currentfolder = dirinfos.Where(e => e.LastWriteTime == lastwritetime).Select(e => e.FullName).First();
-                            try {
-                                Directory.SetLastWriteTime(currentfolder, DateTime.Now);
-                            }
-                            catch (IOException) {
-                            }
+                        if (scope.Length == 0) {
+                            progress.Report("No images to view");
+                            return;
                         }
 
-                        var prefix = currentfolder.Substring(AppConsts.PathCollection.Length).Replace('\\', '.');
-                        var lv = new SortedDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
-                        foreach (var xp in _imgList) {
-                            if (xp.Value.NextId <= 0 || xp.Value.LastId <= 0 || xp.Value.NextId == xp.Value.Id) {
+                        var mingeneration = scope.Min(e => e.Generation);
+                        scope = scope
+                            .Where(e => e.Generation == mingeneration)
+                            .OrderBy(e => e.Distance)
+                            .ToArray();
+
+                        var mingen = int.MaxValue;
+                        var mindst = 256f;
+                        foreach (var imgx in scope) {
+                            if (!_imgList.TryGetValue(imgx.NextId, out var imgy)) {
                                 continue;
                             }
 
-                            if (!xp.Value.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
-                                continue;
-                            }
-
-                            if (lv.ContainsKey(xp.Value.Person)) {
-                                if (xp.Value.LastView > lv[xp.Value.Person]) {
-                                    lv[xp.Value.Person] = xp.Value.LastView;
-                                }
+                            if (imgy.Generation < mingen) {
+                                mingen = imgy.Generation;
+                                mindst = imgx.Distance;
+                                idX = imgx.Id;
                             }
                             else {
-                                lv.Add(xp.Value.Person, xp.Value.LastView);
-                            }
-                        }
-
-                        if (lv.Count == 0) {
-                            continue;
-                        }
-
-                        var person = lv.Aggregate((m, e) => e.Value < m.Value ? e : m).Key;
-                        var lvmin = long.MaxValue;
-                        foreach (var xp in _imgList) {
-                            if (!xp.Value.Person.Equals(person, StringComparison.OrdinalIgnoreCase)) {
-                                continue;
-                            }
-
-                            if (xp.Value.NextId <= 0 || xp.Value.LastId <= 0 || xp.Value.NextId == xp.Value.Id) {
-                                continue;
-                            }
-
-                            if (_imgList.TryGetValue(xp.Value.NextId, out var imgb)) {
-                                var lvmax = Math.Max(xp.Value.LastView.Ticks, imgb.LastView.Ticks);
-                                if (lvmax < lvmin) {
-                                    lvmin = lvmax;
-                                    idX = xp.Value.Id;
-                                    idY = imgb.Id;
+                                if (imgy.Generation == mingen && imgx.Distance < mindst) {
+                                    mindst = imgy.Distance;
+                                    idX = imgx.Id;
                                 }
                             }
                         }
-
-                        if (!_imgList.TryGetValue(idX, out imgX)) {
-                            Delete(idX);
-                            idX = 0;
-                            continue;
-                        }
-
-                        AppVars.ImgPanel[0] = GetImgPanel(idX);
-                        if (AppVars.ImgPanel[0] == null) {
-                            Delete(idX);
-                            idX = 0;
-                            continue;
-                        }
-                    }
-                }
-                else {
-                    lock (_imglock) {
-                        if (!_imgList.TryGetValue(idX, out imgX)) {
-                            Delete(idX);
-                            idX = 0;
-                            continue;
-                        }
                     }
 
-                    if (imgX.NextId <= 0) {
+                    if (!_imgList.TryGetValue(idX, out Img imgX)) {
+                        Delete(idX);
                         idX = 0;
                         continue;
                     }
@@ -125,10 +70,10 @@ namespace ImageBank
                         continue;
                     }
 
-                    idY = imgX.NextId;
-                }
+                    if (idY <= 0) {
+                        idY = imgX.NextId;
+                    }
 
-                lock (_imglock) {
                     if (!_imgList.TryGetValue(idY, out Img imgY)) {
                         Delete(idY);
                         imgX.NextId = 0;
@@ -136,18 +81,18 @@ namespace ImageBank
                         idX = 0;
                         continue;
                     }
-                }
 
-                AppVars.ImgPanel[1] = GetImgPanel(idY);
-                if (AppVars.ImgPanel[1] == null) {
-                    Delete(idY);
-                    imgX.NextId = 0;
-                    imgX.LastId = 0;
-                    idX = 0;
-                    continue;
-                }
+                    AppVars.ImgPanel[1] = GetImgPanel(idY);
+                    if (AppVars.ImgPanel[1] == null) {
+                        Delete(idY);
+                        imgX.NextId = 0;
+                        imgX.LastId = 0;
+                        idX = 0;
+                        continue;
+                    }
 
-                break;
+                    break;
+                }
             }
 
             var sb = new StringBuilder(GetPrompt());

@@ -72,14 +72,19 @@ namespace ImageBank
             ImportClick();
         }
 
-        private void ConvertClick(object sender, EventArgs e)
-        {
-            ConvertClick();
-        }
-
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void FamilyBreakClick(object sender, RoutedEventArgs e)
+        {
+            FamilyBreakClick();
+        }
+
+        private void FamilyCombineClick(object sender, RoutedEventArgs e)
+        {
+            FamilyCombineClick();
         }
     }
 }

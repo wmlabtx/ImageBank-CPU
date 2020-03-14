@@ -1,4 +1,8 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -6,31 +10,22 @@ namespace ImageBank
     {
         public int Id { get; }
 
-        private string _name;
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                _name = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrName, value);
-                _person = Helper.GetPerson(_name);
-            }
-        }
-
-        private string _person;
-        public string Person { get => _person; }
-
         public string Checksum { get; }
 
-        private int _generation;
-        public int Generation
+        public string Name => Helper.GetName(Id);
+
+        public string Folder => Helper.GetFolder(Id);
+
+        public string FileName => Helper.GetFileName(Name, Folder);
+
+        private int _family;
+        public int Family
         {
-            get => _generation;
+            get => _family;
             set
             {
-                _generation = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrGeneration, value);
+                _family = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFamily, value);
             }
         }
 
@@ -59,10 +54,7 @@ namespace ImageBank
         private int _lastid;
         public int LastId
         {
-            get
-            {
-                return _lastid;
-            }
+            get => _lastid;
             set
             {
                 _lastid = value;
@@ -81,69 +73,91 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastchange;
-        public DateTime LastChange
-        {
-            get => _lastchange;
-            set
-            {
-                _lastchange = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastChange, value);
-            }
-        }
+        private readonly Mat _vector;
 
-        private DateTime _lastfind;
-        public DateTime LastFind
-        {
-            get => _lastfind;
-            set
-            {
-                _lastfind = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastFind, value);
-            }
-        }
-
-        private readonly float[] _vector;
-
-        public float[] Vector()
+        public Mat Vector()
         {
             return _vector;
         }
 
-        public string File
+        private readonly SortedDictionary<int, object> _history = new SortedDictionary<int, object>();
+        
+        private byte[] _historyencoded;
+
+        public byte[] GetHistoryEncoded()
         {
-            get
-            {
-                var filename = Helper.GetFileName(Name);
-                return filename;
+            return _historyencoded;
+        }
+
+        public void SetHistoryEncoded(byte[] value)
+        {
+            Contract.Requires(value != null);
+            if (_historyencoded == null || !value.SequenceEqual(_historyencoded)) {
+                _history.Clear();
+                var offset = 0;
+                while (offset < value.Length) {
+                    var id = BitConverter.ToInt32(value, offset);
+                    offset += sizeof(int);
+                    _history.Add(id, null);
+                }
+
+                _historyencoded = value;
             }
         }
 
+        public int[] GetHistoryIds()
+        {
+            return _history.Select(e => e.Key).ToArray();
+        }
+
+        private void EncodeHistory()
+        {
+            var ids = GetHistoryIds();
+            var lenght = ids.Length * sizeof(int);
+            _historyencoded = new byte[lenght];
+            Buffer.BlockCopy(ids, 0, _historyencoded, 0, _historyencoded.Length);
+        }
+
+        public void AddToHistory(int id)
+        {
+            if (!_history.ContainsKey(id)) {
+                _history.Add(id, null);
+                EncodeHistory();
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrHistory, _historyencoded);
+            }
+        }
+
+        public void RemoveFromHistory(int id)
+        {
+            if (_history.ContainsKey(id)) {
+                _history.Remove(id);
+                EncodeHistory();
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrHistory, _historyencoded);
+            }
+        }
+
+        public int Generation => _history.Count;
+
         public Img(
             int id,
-            string name,
             string checksum,
-            int generation,
+            int family,
             DateTime lastview,
             int nextid,
             float distance,
             int lastid,
-            DateTime lastchange,
-            DateTime lastfind,
-            float[] vector)
+            Mat vector,
+            byte[] history)
         {
             Id = id;
-            _name = name;
-            _person = Helper.GetPerson(_name);
             Checksum = checksum;
-            _generation = generation;
+            _family = family;
             _lastview = lastview;
             _nextid = nextid;
             _distance = distance;
             _lastid = lastid;
-            _lastchange = lastchange;
-            _lastfind = lastfind;
             _vector = vector;
+            SetHistoryEncoded(history ?? Array.Empty<byte>());
         }
     }
 }

@@ -8,7 +8,7 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img)) {
-                    Helper.DeleteToRecycleBin(img.File);
+                    Helper.DeleteToRecycleBin(img.FileName);
                     _imgList.Remove(id);
                 }
             }

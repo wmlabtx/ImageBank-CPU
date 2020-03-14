@@ -49,69 +49,38 @@ namespace ImageBank
                     var sb = new StringBuilder();
                     sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                     sb.Append($"{AppConsts.AttrId}, ");
-                    sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrChecksum}, ");
-                    sb.Append($"{AppConsts.AttrLastView}, ");
+                    sb.Append($"{AppConsts.AttrFamily}, ");
                     sb.Append($"{AppConsts.AttrNextId}, ");
                     sb.Append($"{AppConsts.AttrDistance}, ");
-                    sb.Append($"{AppConsts.AttrLastChange}, ");
-                    sb.Append($"{AppConsts.AttrGeneration}, ");
                     sb.Append($"{AppConsts.AttrLastId}, ");
-                    sb.Append($"{AppConsts.AttrLastFind}, ");
-                    sb.Append($"{AppConsts.AttrVector}");
+                    sb.Append($"{AppConsts.AttrLastView}, ");
+                    sb.Append($"{AppConsts.AttrVector}, ");
+                    sb.Append($"{AppConsts.AttrHistory}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
-                    sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrChecksum}, ");
-                    sb.Append($"@{AppConsts.AttrLastView}, ");
+                    sb.Append($"@{AppConsts.AttrFamily}, ");
                     sb.Append($"@{AppConsts.AttrNextId}, ");
                     sb.Append($"@{AppConsts.AttrDistance}, ");
-                    sb.Append($"@{AppConsts.AttrLastChange}, ");
-                    sb.Append($"@{AppConsts.AttrGeneration}, ");
                     sb.Append($"@{AppConsts.AttrLastId}, ");
-                    sb.Append($"@{AppConsts.AttrLastFind}, ");
-                    sb.Append($"@{AppConsts.AttrVector}");
+                    sb.Append($"@{AppConsts.AttrLastView}, ");
+                    sb.Append($"@{AppConsts.AttrVector}, ");
+                    sb.Append($"@{AppConsts.AttrHistory}");
                     sb.Append(")");
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChecksum}", img.Checksum);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextId}", img.NextId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDistance}", img.Distance);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChange}", img.LastChange);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrGeneration}", img.Generation);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastId}", img.LastId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastFind}", img.LastFind);
-                    var buffer = Helper.VectorToBuffer(img.Vector());
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", buffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", Helper.ConvertMatToBuffer(img.Vector()));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", img.GetHistoryEncoded());
                     sqlCommand.ExecuteNonQuery();
                 }
             }
-        }
-
-        private static int SqlGetIdByName(string name)
-        {
-            Contract.Requires(name != null);
-            lock (_sqllock) {
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrId} ");
-                sb.Append($"FROM {AppConsts.TableImages} ");
-                sb.Append($"WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}");
-                var sqltext = sb.ToString();
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        while (reader.Read()) {
-                            var id = reader.GetInt32(0);
-                            return id;
-                        }
-                    }
-                }
-            }
-
-            return 0;
         }
 
         private static int SqlGetIdByChecksum(string checksum)

@@ -7,23 +7,27 @@ namespace ImageBank
     {
         public int Id { get; }
         public string Name { get; }
+        public int Family { get; }
+        public int FamilySize { get; }
         public DateTime LastView { get; }
         public float Distance { get; }
         public int Generation { get; }
-        public DateTime LastChange { get; }
         public Bitmap Bitmap { get; }
         public long Length { get; }
+        public float Done { get; }
 
-        public ImgPanel(int id, string name, DateTime lastview, int generation, float distance, DateTime lastchange, Bitmap bitmap, long length)
+        public ImgPanel(int id, string name, int family, int familysize, DateTime lastview, float distance, int generation, Bitmap bitmap, long length, float done)
         {
             Id = id;
             Name = name;
+            Family = family;
+            FamilySize = familysize;
             LastView = lastview;
-            Generation = generation;
             Distance = distance;
-            LastChange = lastchange;
+            Generation = generation;
             Bitmap = bitmap;
             Length = length;
+            Done = done;
         }
     }
 }

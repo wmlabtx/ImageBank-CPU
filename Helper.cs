@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.VisualBasic.FileIO;
+using OpenCvSharp;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -75,6 +76,50 @@ namespace ImageBank
 
         #endregion
 
+        #region Base36
+
+        public static string ComputeBase36(int value)
+        {
+            var digits = "0123456789abcdefghijklmnopqrstuvwxyz".ToCharArray();
+            if (digits.Length != 36) {
+                throw new IndexOutOfRangeException();
+            }
+
+            var sb = new StringBuilder();
+            do {
+                sb.Append(digits[value % digits.Length]);
+                value /= digits.Length;
+            }
+            while (value != 0);
+
+            return sb.ToString();
+        }
+
+        public static int DecodeBase36(string value)
+        {
+            Contract.Requires(value != null);
+            var digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+            int decoded = digits.IndexOf(value[0]);
+            if (decoded < 0) {
+                return 0;
+            }
+
+            var k = digits.Length;
+            for (var i = 1; i < value.Length; ++i) {
+                var digit = digits.IndexOf(value[i]);
+                if (digit < 0) {
+                    return 0;
+                }
+
+                decoded += digit * k;
+                k *= digits.Length;
+            }
+
+            return decoded;
+        }
+
+        #endregion
+
         #region TimeIntervalToString
         public static string TimeIntervalToString(TimeSpan ts)
         {
@@ -123,66 +168,68 @@ namespace ImageBank
 
         #region Strings
 
-        public static string GetFileName(string name)
+        public static string GetName(int id)
         {
-            Contract.Requires(!string.IsNullOrEmpty(name));
-            var pars = name.Split('.');
-            if (pars.Length < 2) {
-                throw new ArgumentException(name);
-            }
-
-            var path = $"{pars[0]}\\{pars[1]}";
-            var filename = $"{AppConsts.PathCollection}{path}\\{name}{AppConsts.MzxExtension}";
-            return filename;
+            return string.Concat(AppConsts.Prefix, ComputeBase36(id));
         }
 
-        public static string GetName(string filename)
+        public static string GetFolder(int id)
+        {
+            var ifolder = id % 100;
+            return $"{ifolder:D2}";
+        }
+
+        public static string GetFileName(string name, string folder)
+        {
+            return $"{AppConsts.PathCollection}{folder}\\{name}{AppConsts.MzxExtension}";
+        }
+
+        public static int GetId(string filename)
         {
             var name = Path.GetFileNameWithoutExtension(filename);
-            return name;
+            if (name.Length < AppConsts.Prefix.Length) {
+                return 0;
+            }
+
+            if (!name.StartsWith(AppConsts.Prefix, StringComparison.OrdinalIgnoreCase)) {
+                return 0;
+            }
+
+            name = name.Substring(AppConsts.Prefix.Length);
+            if (name.Length == 0) {
+                return 0;
+            }
+
+            return DecodeBase36(name);
         }
 
-        public static string GetNode(string name)
+        public static bool IsNativePath(string filename)
         {
-            Contract.Requires(name != null);
-            var par = name.Split('.');
-            var node = $"{par[0]}.{par[1]}";
-            return node;
-        }
+            var fullpath = Path.GetDirectoryName(filename);
+            if (fullpath.Length < AppConsts.PathCollection.Length) {
+                return false;
+            }
 
-        public static string GetPerson(string name)
-        {
-            Contract.Requires(name != null);
-            var par = name.Split('.');
-            if (par[0].Equals(AppConsts.PrefixLegacy, StringComparison.OrdinalIgnoreCase)) {
-                return AppConsts.PrefixLegacy;
+            var path = fullpath.Substring(AppConsts.PathCollection.Length);
+            if (path.Length == 0) {
+                return false;
             }
-            else {
-                return $"{par[0]}.{par[1]}";
+
+            if (!int.TryParse(path, out var id)) {
+                return false;
             }
+
+            if (id < 0 || id > 99) {
+                return false;
+            }
+
+            return true;
         }
 
         public static string GetExtension(string filename)
         {
             var name = Path.GetExtension(filename);
             return name;
-        }
-
-        public static string GetPrefixName(string filename)
-        {
-            var path = Path
-                .GetDirectoryName(filename)
-                .Substring(AppConsts.PathCollection.Length);
-
-            var par = path.Split('\\');
-            if (par.Length < 2) {
-                return null;
-            }
-
-#pragma warning disable CA1308 // Normalize strings to uppercase
-            var prefix = $"{par[0].ToLowerInvariant()}.{par[1].ToLowerInvariant()}.";
-#pragma warning restore CA1308 // Normalize strings to uppercase
-            return prefix;
         }
 
         #endregion
@@ -234,6 +281,34 @@ namespace ImageBank
             }
         }
 
+        public static string GetHashFromBitmap(Bitmap bitmap)
+        {
+            var imageconverter = new ImageConverter();
+            var array = (byte[])imageconverter.ConvertTo(bitmap, typeof(byte[]));
+            for (var i = 0; i < array.Length; i++) {
+                array[i] >>= 4;
+            }
+
+            return ComputeHash3250(array);
+        }
+
+        public static Bitmap GetThumpFromBitmap(Bitmap bitmap)
+        {
+            Contract.Requires(bitmap != null);
+            int width;
+            int heigth;
+            if (bitmap.Width > bitmap.Height) {
+                heigth = 256;
+                width = (int)(bitmap.Width * 256f / bitmap.Height);
+            }
+            else {
+                width = 256;
+                heigth = (int)(bitmap.Height * 256f / bitmap.Width);
+            }
+
+            return ResizeBitmap(bitmap, width, heigth);
+        }
+
         public static bool GetImgDataFromBitmap(Bitmap bitmap, out byte[] imgdata)
         {
             try {
@@ -251,6 +326,46 @@ namespace ImageBank
                 imgdata = null;
                 return false;
             }
+        }
+
+        public static bool GetFlifFromBitmap(Bitmap bitmap, out byte[] imgdata)
+        {
+            try {
+                using (var image = new MagickImage(bitmap)) {
+                    image.Format = MagickFormat.Flif;
+                    using (var ms = new MemoryStream()) {
+                        image.Write(ms);
+                        imgdata = ms.ToArray();
+                        return true;
+                    }
+                }
+            }
+            catch (MagickException) {
+                imgdata = null;
+                return false;
+            }
+        }
+
+        public static bool GetPerceptualHash(Bitmap bitmap, out string phash)
+        {
+            try {
+                using (var image = new MagickImage(bitmap)) {
+                    var perceptualhash = image.PerceptualHash();
+                    phash = perceptualhash.ToString();
+                    return true;
+                }
+            }
+            catch (MagickException) {
+                phash = null;
+                return false;
+            }
+        }
+
+        public static double GetPerceptualHashDistance(string x, string y)
+        {
+            var px = new PerceptualHash(x);
+            var py = new PerceptualHash(y);
+            return px.SumSquaredDistance(py);
         }
 
         public static bool GetImageDataFromFile(
@@ -295,7 +410,7 @@ namespace ImageBank
             }
 
             if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)) {
-                var password = GetName(filename);
+                var password = Path.GetFileNameWithoutExtension(filename);
                 imgdata = DecryptDat(imgdata, password);
                 if (imgdata == null) {
                     message = "cannot be decrypted";
@@ -304,7 +419,7 @@ namespace ImageBank
             }
 
             if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
-                var password = GetName(filename);
+                var password = Path.GetFileNameWithoutExtension(filename);
                 imgdata = Decrypt(imgdata, password);
                 if (imgdata == null) {
                     message = "cannot be decrypted";
@@ -382,7 +497,7 @@ namespace ImageBank
         {
             try {
                 var encdata = File.ReadAllBytes(filename);
-                var password = GetName(filename);
+                var password = Path.GetFileNameWithoutExtension(filename);
                 var imgdata = Decrypt(encdata, password);
                 return imgdata;
             }
@@ -407,52 +522,14 @@ namespace ImageBank
                 Directory.CreateDirectory(directory);
             }
 
-            var password = GetName(filename);
+            var password = Path.GetFileNameWithoutExtension(filename);
             var encdata = Encrypt(imgdata, password);
             File.WriteAllBytes(filename, encdata);
         }
 
         #endregion
 
-        #region Vectors
-
-        public static bool GetVector(Bitmap bitmap, out float[] vector)
-        {
-            Contract.Requires(bitmap != null);
-            vector = null;
-            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
-                return false;
-            }
-
-            vector = HelperMl.GetVector(bitmap);
-            if (vector == null || vector.Length != 4032) {
-                return false;
-            }
-
-            return true;
-        }
-
-        public static float VectorDistance(float[] x, float[] y)
-        {
-            Contract.Requires(x != null);
-            Contract.Requires(y != null);
-            Contract.Requires(x.Length > 0);
-            Contract.Requires(y.Length > 0);
-            Contract.Requires(x.Length == y.Length);
-            var m = 0f;
-            var a = 0f;
-            var b = 0f;
-            for (var i = 0; i < x.Length; i++) {
-                if (Math.Abs(x[i]) > 0.0001) {
-                    m += x[i] * y[i];
-                    a += x[i] * x[i];
-                    b += y[i] * y[i];
-                }
-            }
-
-            var distance = (float)(Math.Acos(m / (Math.Sqrt(a) * Math.Sqrt(b))) / Math.PI);
-            return distance;
-        }
+        #region Pack
 
         private static byte[] PackArray(byte[] writeData)
         {
@@ -483,24 +560,6 @@ namespace ImageBank
                     return stream2.ToArray();
                 }
             }
-        }
-
-        public static byte[] VectorToBuffer(float[] vector)
-        {
-            Contract.Requires(vector != null);
-            var buffer = new byte[vector.Length * sizeof(float)];
-            Buffer.BlockCopy(vector, 0, buffer, 0, buffer.Length);
-            var packbuffer = PackArray(buffer);
-            return packbuffer;
-        }
-
-        public static float[] BufferToVector(byte[] buffer)
-        {
-            Contract.Requires(buffer != null);
-            var unpackbuffer = UnpackArray(buffer);
-            var vector = new float[unpackbuffer.Length / sizeof(float)];
-            Buffer.BlockCopy(unpackbuffer, 0, vector, 0, unpackbuffer.Length);
-            return vector;
         }
 
         #endregion
@@ -583,6 +642,7 @@ namespace ImageBank
 
         public static byte[] DecryptDat(byte[] bytesToBeDecrypted, string password)
         {
+            Contract.Requires(bytesToBeDecrypted != null);
             byte[] decryptedBytes = null;
 
             try {
@@ -591,22 +651,48 @@ namespace ImageBank
                     aes.KeySize = 256;
                     aes.BlockSize = 128;
                     var passwordBytes = Encoding.ASCII.GetBytes(password);
-                    var key = new Rfc2898DeriveBytes(passwordBytes, SaltBytes, Interations);
-                    aes.Key = key.GetBytes(aes.KeySize / 8);
-                    aes.IV = key.GetBytes(aes.BlockSize / 8);
-                    aes.Mode = CipherMode.CBC;
-                    using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write)) {
-                        cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
-                        cs.Flush();
-                    }
+#pragma warning disable CA5379 // Do Not Use Weak Key Derivation Function Algorithm
+                    using (var key = new Rfc2898DeriveBytes(passwordBytes, SaltBytes, Interations)) {
+#pragma warning restore CA5379 // Do Not Use Weak Key Derivation Function Algorithm
+                        aes.Key = key.GetBytes(aes.KeySize / 8);
+                        aes.IV = key.GetBytes(aes.BlockSize / 8);
+                        aes.Mode = CipherMode.CBC;
+                        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write)) {
+                            cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
+                            cs.Flush();
+                        }
 
-                    decryptedBytes = ms.ToArray();
+                        decryptedBytes = ms.ToArray();
+                    }
                 }
             }
             catch (CryptographicException) {
             }
 
             return decryptedBytes;
+        }
+
+        #endregion
+
+        #region Mat
+
+        public static byte[] ConvertMatToBuffer(Mat mat)
+        {
+            Contract.Requires(mat != null);
+            mat.GetArray<byte>(out var buffer);
+            return buffer;
+        }
+
+        public static Mat ConvertBufferToMat(byte[] buffer)
+        {
+            Contract.Requires(buffer != null);
+            if (buffer.Length < 32) {
+                return new Mat();
+            }
+
+            var mat = new Mat(buffer.Length / 32, 32, MatType.CV_8U);
+            mat.SetArray(buffer);
+            return mat;
         }
 
         #endregion

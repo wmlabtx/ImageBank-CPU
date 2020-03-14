@@ -10,7 +10,7 @@ namespace ImageBank
                 return null;
             }
 
-            var imgdata = Helper.ReadData(img.File);
+            var imgdata = Helper.ReadData(img.FileName);
             if (imgdata == null) {
                 return null;
             }
@@ -19,15 +19,21 @@ namespace ImageBank
                 return null;
             }
 
+            var familysize = GetFamilySize(img.Family);
+            var name = $"{img.Folder}\\{img.Name}";
+            var done = img.LastId * 100f / _id;
+
             var imgpanel = new ImgPanel(
                 id: id,
-                name: img.Name,
+                name: name,
+                family: img.Family,
+                familysize: familysize,
                 lastview: img.LastView,
-                generation: img.Generation,
                 distance: img.Distance,
-                lastchange: img.LastChange,
+                generation: img.Generation,
                 bitmap: bitmap, 
-                length: imgdata.Length);
+                length: imgdata.Length,
+                done: done);
 
             return imgpanel;
         }

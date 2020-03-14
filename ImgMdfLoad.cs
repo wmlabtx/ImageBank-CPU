@@ -12,9 +12,11 @@ namespace ImageBank
             Contract.Requires(progress != null);
 
             progress.Report("Loading model...");
+            /*
             if (!HelperMl.Init()) {
                 throw new Exception();
             }
+            */
 
             lock (_imglock) {
                 _imgList.Clear();
@@ -25,16 +27,14 @@ namespace ImageBank
             var sb = new StringBuilder();
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttrId}, "); // 0
-            sb.Append($"{AppConsts.AttrName}, "); // 1
-            sb.Append($"{AppConsts.AttrChecksum}, "); // 2
-            sb.Append($"{AppConsts.AttrGeneration}, "); // 3
-            sb.Append($"{AppConsts.AttrLastView}, "); // 4
-            sb.Append($"{AppConsts.AttrNextId}, "); // 5
-            sb.Append($"{AppConsts.AttrDistance}, "); // 6
-            sb.Append($"{AppConsts.AttrLastId}, "); // 7
-            sb.Append($"{AppConsts.AttrLastChange}, "); // 8
-            sb.Append($"{AppConsts.AttrLastFind}, "); // 9
-            sb.Append($"{AppConsts.AttrVector} "); // 10
+            sb.Append($"{AppConsts.AttrChecksum}, "); // 1
+            sb.Append($"{AppConsts.AttrFamily}, "); // 2
+            sb.Append($"{AppConsts.AttrLastView}, "); // 3
+            sb.Append($"{AppConsts.AttrNextId}, "); // 4
+            sb.Append($"{AppConsts.AttrDistance}, "); // 5
+            sb.Append($"{AppConsts.AttrLastId}, "); // 6
+            sb.Append($"{AppConsts.AttrVector}, "); // 7
+            sb.Append($"{AppConsts.AttrHistory} "); // 8
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -43,29 +43,25 @@ namespace ImageBank
                         var dt = DateTime.Now;
                         while (reader.Read()) {
                             var id = reader.GetInt32(0);
-                            var name = reader.GetString(1);
-                            var checksum = reader.GetString(2);
-                            var generation = reader.GetInt32(3);
-                            var lastview = reader.GetDateTime(4);
-                            var nextid = reader.GetInt32(5);
-                            var distance = reader.GetFloat(6);
-                            var lastid = reader.GetInt32(7);
-                            var lastchange = reader.GetDateTime(8);
-                            var lastfind = reader.GetDateTime(9);
-                            var orbvbuffer = (byte[])reader[10];
-                            var vector = Helper.BufferToVector(orbvbuffer);
+                            var checksum = reader.GetString(1);
+                            var family = reader.GetInt32(2);
+                            var lastview = reader.GetDateTime(3);
+                            var nextid = reader.GetInt32(4);
+                            var distance = reader.GetFloat(5);
+                            var lastid = reader.GetInt32(6);
+                            var vbuffer = (byte[])reader[7];
+                            var vector = Helper.ConvertBufferToMat(vbuffer);
+                            var history = (byte[])reader[8];
                             var img = new Img(
                                 id: id,
-                                name: name,
                                 checksum: checksum,
-                                generation: generation,
+                                family: family,
                                 lastview: lastview,
                                 nextid: nextid,
                                 distance: distance,
                                 lastid: lastid,
-                                lastchange: lastchange,
-                                lastfind: lastfind,
-                                vector: vector);
+                                vector: vector,
+                                history : history);
 
                             AddToMemory(img);
 
@@ -81,10 +77,12 @@ namespace ImageBank
             progress.Report("Loading vars...");
 
             _id = 0;
+            _family = 0;
 
             sb.Length = 0;
             sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrId} "); // 0
+            sb.Append($"{AppConsts.AttrId}, "); // 0
+            sb.Append($"{AppConsts.AttrFamily} "); // 1
             sb.Append($"FROM {AppConsts.TableVars}");
             sqltext = sb.ToString();
             lock (_sqllock) {
@@ -92,6 +90,7 @@ namespace ImageBank
                     using (var reader = sqlCommand.ExecuteReader()) {
                         while (reader.Read()) {
                             _id = reader.GetInt32(0);
+                            _family = reader.GetInt32(1);
                             break;
                         }
                     }

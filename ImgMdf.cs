@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -16,6 +15,7 @@ namespace ImageBank
         private readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
 
         private int _id;
+        private int _family;
 
         public ImgMdf()
         {
@@ -24,12 +24,16 @@ namespace ImageBank
             _sqlConnection.Open();
         }
 
-
-        public void UpdateGeneration(int id)
+        public void UpdateHistory(int idx, int idy)
         {
+            if (idx == idy) {
+                return;
+            }
+
             lock (_imglock) {
-                if (_imgList.TryGetValue(id, out var img)) {
-                    img.Generation++;
+                if (_imgList.TryGetValue(idx, out var imgX)) {
+                    imgX.AddToHistory(idy);
+                    imgX.LastId = 0;
                 }
             }
         }
@@ -59,16 +63,9 @@ namespace ImageBank
         {
             lock (_imglock) {
                 var sb = new StringBuilder();
-                var count = _imgList.Count(e => e.Value.Generation == 0);
-                if (count > 0) {
-                    sb.Append($"g{count}/");
-                }
-                
-                count = _imgList.Count(e => e.Value.LastView < e.Value.LastChange);
-                if (count > 0) {
-                    sb.Append($"c{count}/");
-                }
-
+                var mingeneration = _imgList.Min(e => e.Value.Generation);
+                var count = _imgList.Count(e => e.Value.Generation == mingeneration);
+                sb.Append($"{mingeneration}:{count}/");
                 count = _imgList.Count;
                 sb.Append($"{count}: ");
                 return sb.ToString();
@@ -82,23 +79,27 @@ namespace ImageBank
                     return 0;
                 }
 
-                int id;
                 var scope = _imgList
                         .Values
                         .Where(e => e.LastId < _id)
                         .ToArray();
 
                 if (scope.Length == 0) {
-                    scope = _imgList
-                            .Values
-                            .ToArray();
-
-                    id = scope.Aggregate((m, e) => e.LastFind < m.LastFind ? e : m).Id;
-                    return id;
+                    return 0;
                 }
 
-                id = scope.Aggregate((m, e) => e.LastId < m.LastId ? e : m).Id;
-                return id;
+                return scope.Aggregate((m, e) => e.LastId < m.LastId ? e : m).Id;
+            }
+        }
+
+        private int GetFamilySize(int family)
+        {
+            if (family == 0) {
+                return 0;
+            }
+
+            lock (_imglock) {
+                return _imgList.Count(e => e.Value.Family == family);
             }
         }
 
@@ -109,20 +110,11 @@ namespace ImageBank
             return _id;
         }
 
-        private string GetSuggestedName(string prefixname, string checksum)
+        private int AllocateFamily()
         {
-            string suggestedname;
-            string suggestedfilename;
-            var namelenght = 2;
-            lock (_imglock) {
-                do {
-                    namelenght++;
-                    suggestedname = string.Concat(prefixname, checksum.Substring(0, namelenght));
-                    suggestedfilename = Helper.GetFileName(suggestedname);
-                } while (File.Exists(suggestedfilename));
-            }
-
-            return suggestedname;
+            _family++;
+            SqlUpdateVar(AppConsts.AttrFamily, _family);
+            return _family;
         }
     }
 }
