@@ -28,8 +28,8 @@ namespace ImageBank
 
             var idX = GetNextToCheck();
             if (idX <= 0) {
-                //Import(_imgList.Count / 10, AppVars.BackgroundProgress);
-                backgroundworker.ReportProgress(0, "idle");
+                Import(50f, AppVars.BackgroundProgress);
+                //backgroundworker.ReportProgress(0, "idle");
                 return;
             }
 

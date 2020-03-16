@@ -9,7 +9,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private void Import(int maxadd, IProgress<string> progress)
+        private void Import(float level, IProgress<string> progress)
         { 
             AppVars.SuspendEvent.Reset();
 
@@ -32,6 +32,9 @@ namespace ImageBank
                     float fill;
                     lock (_imglock) {
                         fill = _imgList.Sum(e => e.Value.LastId) * 100f / (_imgList.Count * (float)_id);
+                        if (fill < level) {
+                            break;
+                        }
                     }
 
                     progress?.Report($"f={fill:F2} {shortfilename} (a:{added}/f:{found}/b:{bad})...");
@@ -44,12 +47,16 @@ namespace ImageBank
                     }
                 }
 
+                Mat vector;
+                ulong[] scalar;
+
                 if (!Helper.GetImageDataFromFile(
                     filename,
                     out var imgdata,
 #pragma warning disable CA2000 // Dispose objects before losing scope
                     out Bitmap bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
+                    out int format,
                     out var checksum,
                     out var message)) {
                     progress?.Report($"Corrupted image: {shortfilename}: {message}");
@@ -57,10 +64,22 @@ namespace ImageBank
                     continue;
                 }
 
+                var person = 0;
+                var sp = Path.GetFileNameWithoutExtension(filename).Split('@');
+                if (sp.Length == 2) {
+                    if (!int.TryParse(sp[1], out person)) {
+                        person = 0;
+                    }
+                }
+
                 lock (_imglock) {
                     var idchecksum = SqlGetIdByChecksum(checksum);
                     if (idchecksum > 0) {
-                        if (_imgList.ContainsKey(idchecksum)) {
+                        if (_imgList.TryGetValue(idchecksum, out Img imgchecksum)) {
+                            if (imgchecksum.Person != person) {
+                                imgchecksum.Person = person;
+                            }
+
                             found++;
                             Helper.DeleteToRecycleBin(filename);
                             continue;
@@ -68,7 +87,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.ComputeOrbs(bitmap, out Mat vector)) {
+                if (!OrbHelper.ComputeOrbs(bitmap, out vector, out scalar)) {
                     progress?.Report($"Cannot get descriptors: {shortfilename}");
                     bad++;
                     continue;
@@ -81,13 +100,15 @@ namespace ImageBank
                 var img = new Img(
                     id: id,
                     checksum: checksum,
-                    family: 0,
+                    person: person,
                     lastview: lastview,
                     nextid: id,
                     distance: 256f,
                     lastid: 0,
                     vector: vector,
-                    history: Array.Empty<byte>());
+                    format: format,
+                    scalar: scalar,
+                    counter: 0);
 
                 Add(img);
                 if (!filename.Equals(img.FileName, StringComparison.OrdinalIgnoreCase)) {
@@ -105,10 +126,9 @@ namespace ImageBank
                 }
 
                 added++;
-                if (added >= maxadd) {
-                    break;
-                }
             }
+
+            Helper.CleanupDirectories(AppConsts.PathCollection, progress);
 
             AppVars.SuspendEvent.Set();
         }
@@ -116,7 +136,7 @@ namespace ImageBank
         public void Import(IProgress<string> progress)
         {
             Contract.Requires(progress != null);
-            Import(AppConsts.MaxImport, progress);
+            Import(1f, progress);
         }
     }
 }

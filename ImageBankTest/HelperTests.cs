@@ -35,37 +35,37 @@ namespace ImageBank.Tests
         public void GetBitmapFromImgDataTest()
         {
             var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out _)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out _, out _)) {
                 Assert.Fail();
             }
 
             imgdata = File.ReadAllBytes("cor.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out _)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out _, out _)) {
                 Assert.Fail();
             }
 
             imgdata = File.ReadAllBytes("noimg.jpg");
-            if (Helper.GetBitmapFromImgData(imgdata, out _)) {
+            if (Helper.GetBitmapFromImgData(imgdata, out _, out _)) {
                 Assert.Fail();
             }
 
             imgdata = File.ReadAllBytes("orgpng.png");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
                 Assert.Fail();
             }
 
-            if (!Helper.GetImgDataFromBitmap(bitmap, out var jpgdata)) {
+            if (!Helper.GetImgDataFromBitmap(bitmap, out var flifdata)) {
                 Assert.Fail();
             }
 
-            File.WriteAllBytes("orgpng.jpg", jpgdata);
+            File.WriteAllBytes("org.flif", flifdata);
         }
 
         [TestMethod()]
         public void GetThumpFromBitmapTest()
         {
             var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
                 Assert.Fail();
             }
 
@@ -78,35 +78,32 @@ namespace ImageBank.Tests
         public void FlifTest()
         {
             var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap_org)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap_org, out _)) {
                 Assert.Fail();
             }
-
-            var h1 = Helper.GetHashFromBitmap(bitmap_org);
 
             //Helper.GetPerceptualHash(bitmap_org, out var x);
 
             imgdata = File.ReadAllBytes("orgpng.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap_png)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap_png, out _)) {
                 Assert.Fail();
             }
 
-            var h2 = Helper.GetHashFromBitmap(bitmap_png);
-
             //Helper.GetPerceptualHash(bitmap_png, out var y);
+            //var ylen = y.Length;
             //var d = Helper.GetPerceptualHashDistance(x, y);
 
 
-            /*
-            if (!Helper.GetFlifFromBitmap(bitmap, out byte[] flifdata)) {
+            
+            if (!Helper.GetWebPFromBitmap(bitmap_org, out byte[] webpdata)) {
                 Assert.Fail();
             }
 
-            File.WriteAllBytes("org.flif", flifdata);
-            if (!Helper.GetBitmapFromImgData(flifdata, out Bitmap flifbitmap)) {
+            File.WriteAllBytes("org.webp", webpdata);
+            if (!Helper.GetBitmapFromImgData(webpdata, out Bitmap webpbitmap, out _)) {
                 Assert.Fail();
             }
-            */
+            
         }
     }
 }

@@ -15,25 +15,30 @@ namespace ImageBank
                 return null;
             }
 
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out int format)) {
                 return null;
             }
 
-            var familysize = GetFamilySize(img.Family);
+            if (img.Format != format) {
+                img.Format = format;
+            }
+
             var name = $"{img.Folder}\\{img.Name}";
             var done = img.LastId * 100f / _id;
 
+            var personsize = GetPersonSize(img.Person);
             var imgpanel = new ImgPanel(
                 id: id,
                 name: name,
-                family: img.Family,
-                familysize: familysize,
+                person: img.Person,
+                personsize: personsize,
                 lastview: img.LastView,
                 distance: img.Distance,
-                generation: img.Generation,
                 bitmap: bitmap, 
                 length: imgdata.Length,
-                done: done);
+                done: done,
+                format: img.Format,
+                counter: img.Counter);
 
             return imgpanel;
         }

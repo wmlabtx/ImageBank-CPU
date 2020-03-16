@@ -12,16 +12,17 @@ namespace ImageBank.Tests
         public void ComputeOrbsTest()
         {
             var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
                 Assert.Fail();
             }
 
             using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out Mat orbs)) {
+                if (!OrbHelper.ComputeOrbs(thump, out Mat vector, out ulong[] scalar)) {
                     Assert.Fail();
                 }
 
-                Assert.IsTrue(orbs.Rows == 32 && orbs.Cols == 32);
+                Assert.IsTrue(vector.Rows == 32 && vector.Cols == 32);
+                Assert.IsTrue(scalar.Length == 4);
             }
         }
 
@@ -29,18 +30,21 @@ namespace ImageBank.Tests
         public void GetDistanceTest()
         {
             var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap)) {
+            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
                 Assert.Fail();
             }
 
             using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out Mat orbs)) {
+                if (!OrbHelper.ComputeOrbs(thump, out Mat orbs, out ulong[] scalar)) {
                     Assert.Fail();
                 }
 
-                Assert.IsTrue(orbs.Rows == 32 && orbs.Cols == 32);
                 var zero = OrbHelper.GetDistance(orbs, orbs);
                 Assert.IsTrue(zero == 0f);
+
+                var hamming = OrbHelper.GetDistance(scalar, scalar);
+                Assert.IsTrue(hamming == 0);
+
             }
         }
     }

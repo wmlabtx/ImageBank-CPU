@@ -77,14 +77,15 @@ namespace ImageBank
             Close();
         }
 
-        private void FamilyBreakClick(object sender, RoutedEventArgs e)
+        private void MoveToTheRightClick(object sender, RoutedEventArgs e)
         {
-            FamilyBreakClick();
+            MoveToTheRight();
         }
 
-        private void FamilyCombineClick(object sender, RoutedEventArgs e)
+        private void MoveToClick(object sender, RoutedEventArgs e)
         {
-            FamilyCombineClick();
+            var tag = (string)((MenuItem)sender).Tag;
+            MoveTo(tag);
         }
     }
 }

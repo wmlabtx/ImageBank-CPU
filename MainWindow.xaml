@@ -12,10 +12,20 @@
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>
-            <MenuItem Header="Family">
-                <MenuItem Header="Combine" Click="FamilyCombineClick" />
+            <MenuItem Header="Move">
+                <MenuItem Header="MoveToTheRight" Click="MoveToTheRightClick" />
                 <Separator />
-                <MenuItem Header="Break" Click="FamilyBreakClick" />
+                <MenuItem Header="None" Tag="0" Click="MoveToClick" />
+                <MenuItem Header="Kandid">
+                    <MenuItem Header="Aygun-n-Co" Tag="1" Click="MoveToClick" />
+                    <MenuItem Header="Gulya" Tag="3" Click="MoveToClick" />
+                    <MenuItem Header="Narmina" Tag="5" Click="MoveToClick" />
+                    <MenuItem Header="Polina" Tag="4" Click="MoveToClick" />
+                    <MenuItem Header="Kary Afromage" Tag="2" Click="MoveToClick" />
+                </MenuItem>
+                <MenuItem Header="Ls">
+                    <MenuItem Header="008 Ana" Tag="1008" Click="MoveToClick" />
+                </MenuItem>                
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

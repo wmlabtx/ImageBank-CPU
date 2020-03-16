@@ -111,12 +111,12 @@
     <Compile Include="ImgMdfAdd.cs" />
     <Compile Include="ImgMdfComputeNext.cs" />
     <Compile Include="ImgMdfDelete.cs" />
-    <Compile Include="ImgMdfFamily.cs" />
     <Compile Include="ImgMdfFind.cs" />
     <Compile Include="ImgMdfFindNext.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />
+    <Compile Include="ImgMdfPerson.cs" />
     <Compile Include="ImgMdfSql.cs" />
     <Compile Include="ImgPanel.cs" />
     <Compile Include="MainWindow.xaml.cs">
@@ -144,6 +144,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include=".editorconfig" />
     <None Include="ImageBank.snk" />

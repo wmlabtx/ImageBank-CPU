@@ -15,7 +15,6 @@ namespace ImageBank
         private readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
 
         private int _id;
-        private int _family;
 
         public ImgMdf()
         {
@@ -24,25 +23,20 @@ namespace ImageBank
             _sqlConnection.Open();
         }
 
-        public void UpdateHistory(int idx, int idy)
-        {
-            if (idx == idy) {
-                return;
-            }
-
-            lock (_imglock) {
-                if (_imgList.TryGetValue(idx, out var imgX)) {
-                    imgX.AddToHistory(idy);
-                    imgX.LastId = 0;
-                }
-            }
-        }
-
         public void UpdateLastView(int id)
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img)) {
                     img.LastView = DateTime.Now;
+                }
+            }
+        }
+
+        public void UpdateCounter(int id)
+        {
+            lock (_imglock) {
+                if (_imgList.TryGetValue(id, out var img)) {
+                    img.Counter += 1;
                 }
             }
         }
@@ -63,9 +57,9 @@ namespace ImageBank
         {
             lock (_imglock) {
                 var sb = new StringBuilder();
-                var mingeneration = _imgList.Min(e => e.Value.Generation);
-                var count = _imgList.Count(e => e.Value.Generation == mingeneration);
-                sb.Append($"{mingeneration}:{count}/");
+                var mincounter = _imgList.Min(e => e.Value.Counter);
+                var count = _imgList.Count(e => e.Value.Counter == mincounter);
+                sb.Append($"{mincounter}:{count}/");
                 count = _imgList.Count;
                 sb.Append($"{count}: ");
                 return sb.ToString();
@@ -92,29 +86,11 @@ namespace ImageBank
             }
         }
 
-        private int GetFamilySize(int family)
-        {
-            if (family == 0) {
-                return 0;
-            }
-
-            lock (_imglock) {
-                return _imgList.Count(e => e.Value.Family == family);
-            }
-        }
-
         private int AllocateId()
         {
             _id++;
             SqlUpdateVar(AppConsts.AttrId, _id);
             return _id;
-        }
-
-        private int AllocateFamily()
-        {
-            _family++;
-            SqlUpdateVar(AppConsts.AttrFamily, _family);
-            return _family;
         }
     }
 }

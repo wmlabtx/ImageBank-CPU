@@ -1,8 +1,6 @@
-﻿using OpenCvSharp;
+﻿using ImageMagick;
+using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -18,14 +16,14 @@ namespace ImageBank
 
         public string FileName => Helper.GetFileName(Name, Folder);
 
-        private int _family;
-        public int Family
+        private int _person;
+        public int Person
         {
-            get => _family;
+            get => _person;
             set
             {
-                _family = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFamily, value);
+                _person = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrPerson, value);
             }
         }
 
@@ -80,84 +78,59 @@ namespace ImageBank
             return _vector;
         }
 
-        private readonly SortedDictionary<int, object> _history = new SortedDictionary<int, object>();
-        
-        private byte[] _historyencoded;
-
-        public byte[] GetHistoryEncoded()
+        private int _format;
+        public int Format
         {
-            return _historyencoded;
-        }
-
-        public void SetHistoryEncoded(byte[] value)
-        {
-            Contract.Requires(value != null);
-            if (_historyencoded == null || !value.SequenceEqual(_historyencoded)) {
-                _history.Clear();
-                var offset = 0;
-                while (offset < value.Length) {
-                    var id = BitConverter.ToInt32(value, offset);
-                    offset += sizeof(int);
-                    _history.Add(id, null);
-                }
-
-                _historyencoded = value;
+            get => _format;
+            set
+            {
+                _format = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFormat, value);
             }
         }
 
-        public int[] GetHistoryIds()
+        private readonly ulong[] _scalar;
+
+        public ulong[] Scalar()
         {
-            return _history.Select(e => e.Key).ToArray();
+            return _scalar;
         }
 
-        private void EncodeHistory()
+        private int _counter;
+        public int Counter
         {
-            var ids = GetHistoryIds();
-            var lenght = ids.Length * sizeof(int);
-            _historyencoded = new byte[lenght];
-            Buffer.BlockCopy(ids, 0, _historyencoded, 0, _historyencoded.Length);
-        }
-
-        public void AddToHistory(int id)
-        {
-            if (!_history.ContainsKey(id)) {
-                _history.Add(id, null);
-                EncodeHistory();
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrHistory, _historyencoded);
+            get => _counter;
+            set
+            {
+                _counter = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrCounter, value);
             }
         }
-
-        public void RemoveFromHistory(int id)
-        {
-            if (_history.ContainsKey(id)) {
-                _history.Remove(id);
-                EncodeHistory();
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrHistory, _historyencoded);
-            }
-        }
-
-        public int Generation => _history.Count;
 
         public Img(
             int id,
             string checksum,
-            int family,
+            int person,
             DateTime lastview,
             int nextid,
             float distance,
             int lastid,
             Mat vector,
-            byte[] history)
+            int format,
+            ulong[] scalar,
+            int counter)
         {
             Id = id;
             Checksum = checksum;
-            _family = family;
+            _person = person;
             _lastview = lastview;
             _nextid = nextid;
             _distance = distance;
             _lastid = lastid;
             _vector = vector;
-            SetHistoryEncoded(history ?? Array.Empty<byte>());
+            _format = format;
+            _scalar = scalar;
+            _counter = counter;
         }
     }
 }

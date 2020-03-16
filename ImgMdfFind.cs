@@ -30,27 +30,27 @@ namespace ImageBank
                             return;
                         }
 
-                        var mingeneration = scope.Min(e => e.Generation);
+                        var mincounter = scope.Min(e => e.Counter);
                         scope = scope
-                            .Where(e => e.Generation == mingeneration)
-                            .OrderBy(e => e.Distance)
+                            .Where(e => e.Counter == mincounter)
+                            .OrderBy(e => e.LastView)
                             .ToArray();
 
-                        var mingen = int.MaxValue;
-                        var mindst = 256f;
+                        var minc = int.MaxValue;
+                        var minlv = DateTime.MaxValue;
                         foreach (var imgx in scope) {
                             if (!_imgList.TryGetValue(imgx.NextId, out var imgy)) {
                                 continue;
                             }
 
-                            if (imgy.Generation < mingen) {
-                                mingen = imgy.Generation;
-                                mindst = imgx.Distance;
+                            if (imgy.Counter < minc) {
+                                minc = imgy.Counter;
+                                minlv = imgy.LastView;
                                 idX = imgx.Id;
                             }
                             else {
-                                if (imgy.Generation == mingen && imgx.Distance < mindst) {
-                                    mindst = imgy.Distance;
+                                if (imgy.Counter == minc && imgy.LastView < minlv) {
+                                    minlv = imgy.LastView;
                                     idX = imgx.Id;
                                 }
                             }

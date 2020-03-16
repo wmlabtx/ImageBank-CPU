@@ -267,29 +267,20 @@ namespace ImageBank
             return bitmap24bppRgb;
         }
 
-        public static bool GetBitmapFromImgData(byte[] imgdata, out Bitmap bitmap)
+        public static bool GetBitmapFromImgData(byte[] imgdata, out Bitmap bitmap, out int format)
         {
             try {
                 using (var image = new MagickImage(imgdata)) {
+                    format = (int)image.Format;
                     bitmap = image.ToBitmap();
                     return true;
                 }
             }
             catch (MagickException) {
                 bitmap = null;
+                format = 0;
                 return false;
             }
-        }
-
-        public static string GetHashFromBitmap(Bitmap bitmap)
-        {
-            var imageconverter = new ImageConverter();
-            var array = (byte[])imageconverter.ConvertTo(bitmap, typeof(byte[]));
-            for (var i = 0; i < array.Length; i++) {
-                array[i] >>= 4;
-            }
-
-            return ComputeHash3250(array);
         }
 
         public static Bitmap GetThumpFromBitmap(Bitmap bitmap)
@@ -313,8 +304,9 @@ namespace ImageBank
         {
             try {
                 using (var image = new MagickImage(bitmap)) {
-                    image.Format = MagickFormat.Jpeg;
-                    image.Quality = 95;
+                    image.Format = MagickFormat.WebP;
+                    image.Quality = 90;
+                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
                     using (var ms = new MemoryStream()) {
                         image.Write(ms);
                         imgdata = ms.ToArray();
@@ -328,11 +320,12 @@ namespace ImageBank
             }
         }
 
-        public static bool GetFlifFromBitmap(Bitmap bitmap, out byte[] imgdata)
+        public static bool GetWebPFromBitmap(Bitmap bitmap, out byte[] imgdata)
         {
             try {
                 using (var image = new MagickImage(bitmap)) {
-                    image.Format = MagickFormat.Flif;
+                    image.Format = MagickFormat.WebP;
+                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
                     using (var ms = new MemoryStream()) {
                         image.Write(ms);
                         imgdata = ms.ToArray();
@@ -344,39 +337,19 @@ namespace ImageBank
                 imgdata = null;
                 return false;
             }
-        }
-
-        public static bool GetPerceptualHash(Bitmap bitmap, out string phash)
-        {
-            try {
-                using (var image = new MagickImage(bitmap)) {
-                    var perceptualhash = image.PerceptualHash();
-                    phash = perceptualhash.ToString();
-                    return true;
-                }
-            }
-            catch (MagickException) {
-                phash = null;
-                return false;
-            }
-        }
-
-        public static double GetPerceptualHashDistance(string x, string y)
-        {
-            var px = new PerceptualHash(x);
-            var py = new PerceptualHash(y);
-            return px.SumSquaredDistance(py);
         }
 
         public static bool GetImageDataFromFile(
             string filename,
             out byte[] imgdata,
             out Bitmap bitmap,
+            out int format,
             out string checksum,
             out string message)
         {
             imgdata = null;
             bitmap = null;
+            format = 0;
             checksum = null;
             message = null;
             if (!File.Exists(filename)) {
@@ -427,13 +400,13 @@ namespace ImageBank
                 }
             }
 
-            if (!GetBitmapFromImgData(imgdata, out bitmap)) {
+            if (!GetBitmapFromImgData(imgdata, out bitmap, out format)) {
                 message = "bad image";
                 return false;
             }
 
             var bitmapchanged = false;
-            const float fmax = 6000f * 4000f;
+            const float fmax = 24f * 1024 * 1024;
             var fx = (float)Math.Sqrt(fmax / (bitmap.Width * bitmap.Height));
             if (fx < 1f) {
                 bitmap = ResizeBitmap(bitmap, (int)(bitmap.Width * fx), (int)(bitmap.Height * fx));
@@ -445,7 +418,10 @@ namespace ImageBank
                 bitmapchanged = true;
             }
 
-            if (bitmapchanged) {
+            if (bitmapchanged || 
+                (!extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
+                 !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase))
+                ) {
                 if (!GetImgDataFromBitmap(bitmap, out imgdata)) {
                     message = "encode error";
                     return false;

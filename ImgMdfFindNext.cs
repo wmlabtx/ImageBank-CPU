@@ -1,6 +1,6 @@
 ﻿using OpenCvSharp;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace ImageBank
 {
@@ -8,11 +8,13 @@ namespace ImageBank
     {
         private void FindNext(int idX, out int lastid, out int nextid, out float distance)
         {
-            Mat vectorX;
-            SortedDictionary<int, Img> clone = new SortedDictionary<int, Img>();
+            Img imgX;
+            ulong[] scalarX;
+            var scalars = new List<Tuple<int, ulong[]>>();
+            var distances = new List<Tuple<int, int>>();
             lock (_imglock) {
-                var imgX = _imgList[idX];
-                vectorX = imgX.Vector();
+                imgX = _imgList[idX];
+                scalarX = imgX.Scalar();
                 lastid = imgX.LastId;
                 distance = imgX.Distance;
                 nextid = imgX.NextId;
@@ -23,36 +25,54 @@ namespace ImageBank
                 }
 
                 foreach (var e in _imgList) {
-                    if (e.Key > lastid) {
-                        clone.Add(e.Key, e.Value);
-                    }
-                }
-
-                clone.Remove(idX);
-                var history = imgX.GetHistoryIds();
-                foreach (var other in history) {
-                    if (!clone.Remove(other)) {
-                        imgX.RemoveFromHistory(other);
+                    if (e.Value.Id > lastid && e.Value.Id != imgX.Id) {
+                        if (imgX.Person == 0 || imgX.Person == e.Value.Person) {
+                            scalars.Add(new Tuple<int, ulong[]>(e.Value.Id, e.Value.Scalar()));
+                        }
                     }
                 }
             }
 
-            var sw = Stopwatch.StartNew();
-            foreach (var other in clone) {
-                lastid = other.Value.Id;
-                var otherdistance = OrbHelper.GetDistance(vectorX, other.Value.Vector());
-                if (otherdistance < distance) {
-                    distance = otherdistance;
-                    nextid = other.Value.Id;
+            foreach (var e in scalars) {
+                var hamming = OrbHelper.GetDistance(scalarX, e.Item2);
+                if (distances.Count == 0) {
+                    distances.Add(new Tuple<int, int>(e.Item1, hamming));
                 }
+                else {
+                    if (hamming < distances[distances.Count - 1].Item2) {
+                        for (var i = 0; i < distances.Count; i++) {
+                            if (hamming < distances[i].Item2) {
+                                distances.Insert(i, new Tuple<int, int>(e.Item1, hamming));
+                                break;
+                            }
+                        }
 
-                if (sw.ElapsedMilliseconds > 800) {
-                    sw.Stop();
-                    return;
+                        if (distances.Count > AppConsts.FindHorizon) {
+                            distances.RemoveRange(AppConsts.FindHorizon, distances.Count - AppConsts.FindHorizon);
+                        }
+                    }
                 }
             }
 
-            sw.Stop();
+            var vectors = new List<Tuple<int, Mat>>();
+            Mat vectorX;
+            lock (_imglock) {
+                vectorX = imgX.Vector();
+                foreach (var e in distances) {
+                    if (_imgList.TryGetValue(e.Item1, out Img imgY)) {
+                        vectors.Add(new Tuple<int, Mat>(e.Item1, imgY.Vector()));
+                    }
+                }
+            }
+
+            foreach (var e in vectors) {
+                var edistance = OrbHelper.GetDistance(vectorX, e.Item2);
+                if (edistance < distance) {
+                    distance = edistance;
+                    nextid = e.Item1;
+                }
+            }
+
             lastid = _id;
         }
     }

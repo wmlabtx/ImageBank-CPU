@@ -1,4 +1,6 @@
-﻿namespace ImageBank
+﻿using ImageMagick;
+
+namespace ImageBank
 {
     public static class AppConsts
     {
@@ -8,7 +10,7 @@
         public const string Prefix = "mzx.";
 
         public const int MaxImages = 200000;
-        public const int MaxImport = 200000;
+        public const int FindHorizon = 1000;
         public const int MaxDescriptorsInImage = 32;
 
         public const string MzxExtension = ".mzx";
@@ -24,14 +26,16 @@
 
         public const string TableImages = "Images";
         public const string AttrId = "Id"; // 1 or 567 or 128092
+        public const string AttrPerson = "Person";
         public const string AttrChecksum = "Checksum"; // f0s...44j (50 lenght)
-        public const string AttrFamily = "Family"; // 2 or 14 or 509
         public const string AttrLastView = "LastView";
         public const string AttrNextId = "NextId"; // 1 or 567 or 128092
         public const string AttrDistance = "Distance"; // 0.0123 or 0.3439 or 
         public const string AttrLastId = "LastId"; // 1 or 567 or 128092
         public const string AttrVector = "Vector";
-        public const string AttrHistory = "History";
+        public const string AttrFormat = "Format";
+        public const string AttrScalar = "Scalar";
+        public const string AttrCounter = "Counter";
         public const string TableVars = "Vars";
     }
 }
