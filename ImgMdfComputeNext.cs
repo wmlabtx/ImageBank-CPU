@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -10,30 +9,31 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        private int _importcounter = 0;
+
         public void Compute(BackgroundWorker backgroundworker)
         {
             Contract.Requires(backgroundworker != null);
 
             AppVars.SuspendEvent.WaitOne(Timeout.Infinite);
 
-            float fill;
             lock (_imglock) {
                 if (_imgList.Count == 0) {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
-
-                fill = _imgList.Sum(e => e.Value.LastId) * 100f / (_imgList.Count * (float)_id);
             }
 
-            var idX = GetNextToCheck();
-            if (idX <= 0) {
-                Import(50f, AppVars.BackgroundProgress);
-                //backgroundworker.ReportProgress(0, "idle");
+            if (_importcounter >= 100) {
+                _importcounter = 0;
+                Import(1000, AppVars.BackgroundProgress);
                 return;
             }
 
-            FindNext(idX, out var lastid, out var nextid, out var distance);
+            _importcounter++;
+
+            var idX = GetNextToCheck();
+            FindNext(idX, out var nextid, out var sim);
            
             Img imgX;
             lock (_imglock) {
@@ -43,40 +43,33 @@ namespace ImageBank
                 }
             }
 
-            var done = imgX.LastId * 100f / _id;
-            var donedelta = (lastid * 100f / _id) - done;
-
             if (!File.Exists(imgX.FileName)) {
                 Delete(idX);
                 backgroundworker.ReportProgress(0, $"{idX} deleted");
                 return;
             }
 
+            imgX.LastCheck = DateTime.Now;
+
             var sb = new StringBuilder();
-            if (Math.Abs(distance - imgX.Distance) > 0.0001) {
-                sb.Append($"f={fill:F2} i{imgX.Id}: ");
-                sb.Append($"[{done:F1}%+{donedelta:F1}%] ");
-                sb.Append($"{imgX.Distance:F2} ");
-                sb.Append($"{char.ConvertFromUtf32(distance < imgX.Distance ? 0x2192 : 0x2193)} ");
-                sb.Append($"{distance:F2}");
-                imgX.Distance = distance;
+            if (Math.Abs(sim - imgX.Sim) > 0.0001) {
+                sb.Append($"i{imgX.Id}: ");
+                sb.Append($"{imgX.Sim:F2} ");
+                sb.Append($"{char.ConvertFromUtf32(sim > imgX.Sim ? 0x2192 : 0x2193)} ");
+                sb.Append($"{sim:F2}");
+                imgX.Sim = sim;
                 if (nextid != imgX.NextId) {
                     imgX.NextId = nextid;
                 }
             }
             else {
                 if (nextid != imgX.NextId) {
-                    sb.Append($"f={fill:F2} i{imgX.Id}: ");
-                    sb.Append($"[{done:F1}%+{donedelta:F1}%] ");
+                    sb.Append($"i{imgX.Id}: ");
                     sb.Append($"i{imgX.NextId} ");
                     sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
                     sb.Append($"i{nextid}");
                     imgX.NextId = nextid;
                 }
-            }
-
-            if (lastid != imgX.LastId) {
-                imgX.LastId = lastid;
             }
 
             if (sb.Length > 0) {

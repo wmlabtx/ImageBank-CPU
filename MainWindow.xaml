@@ -15,17 +15,35 @@
             <MenuItem Header="Move">
                 <MenuItem Header="MoveToTheRight" Click="MoveToTheRightClick" />
                 <Separator />
-                <MenuItem Header="None" Tag="0" Click="MoveToClick" />
+                <MenuItem Header="None" Tag="" Click="MoveToClick" />
                 <MenuItem Header="Kandid">
-                    <MenuItem Header="Aygun-n-Co" Tag="1" Click="MoveToClick" />
-                    <MenuItem Header="Gulya" Tag="3" Click="MoveToClick" />
-                    <MenuItem Header="Narmina" Tag="5" Click="MoveToClick" />
-                    <MenuItem Header="Polina" Tag="4" Click="MoveToClick" />
-                    <MenuItem Header="Kary Afromage" Tag="2" Click="MoveToClick" />
+                    <MenuItem Header="Baku">
+                        <MenuItem Header="Alena" Tag="K.Baku.Alena" Click="MoveToClick" />
+                        <MenuItem Header="AygunCo" Tag="K.Baku.AygunCo" Click="MoveToClick" />
+                        <MenuItem Header="Gulya" Tag="K.Baku.Gulya" Click="MoveToClick" />
+                        <MenuItem Header="Narmina" Tag="K.Baku.Narmina" Click="MoveToClick" />
+                        <MenuItem Header="Polina" Tag="K.Baku.Polina" Click="MoveToClick" />
+                    </MenuItem>
+                    <MenuItem Header="Katy">
+                        <MenuItem Header="Adana" Tag="K.Katy.Adana" Click="MoveToClick" />
+                        <MenuItem Header="Greeny" Tag="K.Katy.Greeny" Click="MoveToClick" />
+                    </MenuItem>
+                    <MenuItem Header="Houston">
+                        <MenuItem Header="Elina" Tag="K.Houston.Elina" Click="MoveToClick" />
+                    </MenuItem>
+                    <MenuItem Header="Nyc">
+                        <MenuItem Header="Cry" Tag="K.Nyc.Cry" Click="MoveToClick" />
+                    </MenuItem>
+                    <MenuItem Header="Wdc">
+                        <MenuItem Header="Arlina" Tag="K.Wdc.Arlina" Click="MoveToClick" />
+                        <MenuItem Header="Nika" Tag="K.Wdc.Nika" Click="MoveToClick" />
+                        <MenuItem Header="Redy" Tag="K.Wdc.Redy" Click="MoveToClick" />
+                    </MenuItem>
                 </MenuItem>
-                <MenuItem Header="Ls">
-                    <MenuItem Header="008 Ana" Tag="1008" Click="MoveToClick" />
-                </MenuItem>                
+                <MenuItem Header="Tpi">
+                    <MenuItem Header="Gabi" Tag="Tpi.Gabi" Click="MoveToClick" />
+                    <MenuItem Header="Pamela" Tag="Tpi.Pamela" Click="MoveToClick" />
+                </MenuItem>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

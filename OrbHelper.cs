@@ -2,6 +2,7 @@
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
@@ -11,13 +12,10 @@ namespace ImageBank
 {
     public static class OrbHelper
     {
-        private static readonly BFMatcher _bfMatcher = new BFMatcher(NormTypes.Hamming, true);
-
-        public static bool ComputeOrbs(Bitmap thumb, out Mat vector, out ulong[] scalar)
+        public static bool ComputeOrbs(Bitmap thumb, out ulong[] vector)
         {
             Contract.Requires(thumb != null);
             vector = null;
-            scalar = null;
             using (var orb = ORB.Create(AppConsts.MaxDescriptorsInImage)) {
                 try {
                     using (var matcolor = BitmapConverter.ToMat(thumb)) {
@@ -27,61 +25,16 @@ namespace ImageBank
 
                         using (var mat = new Mat()) {
                             Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                            vector = new Mat();
-                            orb.DetectAndCompute(mat, null, out _, vector);
-                            if (vector.Rows == 0 || vector.Cols != 32) {
-                                throw new Exception();
-                            }
-
-                            while (vector.Rows > AppConsts.MaxDescriptorsInImage) {
-                                vector = vector.RowRange(0, AppConsts.MaxDescriptorsInImage);
-                            }
-
-                            using (var orb1000 = ORB.Create(1000))
-                            using (var mat1000 = new Mat()) {
-                                orb1000.DetectAndCompute(mat, null, out _, mat1000);
-                                if (mat1000.Rows == 0 || mat1000.Cols != 32) {
+                            using (var descriptors = new Mat()) {
+                                orb.DetectAndCompute(mat, null, out _, descriptors);
+                                if (descriptors.Rows == 0 || descriptors.Cols != 32) {
                                     throw new Exception();
                                 }
 
-                                var counter = 0;
-                                var bstat = new int[256];
-                                mat1000.GetArray(out byte[] buffer);
-                                var offset = 0;
-                                var descriptor = new byte[32];
-                                while (offset < buffer.Length) {
-                                    Buffer.BlockCopy(buffer, offset, descriptor, 0, 32);
-                                    var ba = new BitArray(descriptor);
-                                    for (var i = 0; i < 256; i++) {
-                                        if (ba[i]) {
-                                            bstat[i]++;
-                                        }
-                                    }
-
-                                    counter++;
-                                    offset += 32;
-                                }
-
-                                var mid = counter / 2;
-                                var result = new byte[32];
-                                var ib = 0;
-                                byte mask = 0x01;
-                                for (var i = 0; i < 256; i++) {
-                                    if (bstat[i] > mid) {
-                                        result[ib] |= mask;
-                                    }
-
-                                    if (mask == 0x80) {
-                                        ib++;
-                                        mask = 0x01;
-                                    }
-                                    else {
-                                        mask <<= 1;
-                                    }
-                                }
-
-                                scalar = new ulong[4];
-                                Buffer.BlockCopy(result, 0, scalar, 0, 32);
+                                descriptors.GetArray(out byte[] buffer);
+                                var length = Math.Min(buffer.Length, AppConsts.MaxDescriptorsInImage * 32);
+                                vector = new ulong[length / sizeof(ulong)];
+                                Buffer.BlockCopy(buffer, 0, vector, 0, length);
                             }
                         }
                     }
@@ -89,7 +42,6 @@ namespace ImageBank
                 catch (Exception ex) {
                     Debug.WriteLine(ex);
                     vector = null;
-                    scalar = null;
                     throw;
                 }
             }
@@ -97,31 +49,53 @@ namespace ImageBank
             return true;
         }
 
-        public static float GetDistance(Mat x, Mat y)
-        {
-            var bfMatches = _bfMatcher.Match(x, y);
-            var distances = bfMatches
-                .OrderBy(e => e.Distance)
-                .Select(e => e.Distance)
-                .ToArray();
-
-            return distances.Sum() / distances.Length;
-        }
-
-        public static int GetDistance(ulong[] x, ulong[] y)
+        private static int GetDistance(ulong[] x, int xoffset, ulong[] y, int yoffset)
         {
             Contract.Requires(x != null);
             Contract.Requires(y != null);
-            if (x.Length != 4 || y.Length != 4) {
-                return 256;
-            }
 
             var distance = 0;
             for (var i = 0; i < 4; i++) {
-                distance += Intrinsic.PopCnt(x[i] ^ y[i]);
+                distance += Intrinsic.PopCnt(x[xoffset + i] ^ y[yoffset + i]);
             }
 
             return distance;
+        }
+
+        public static float GetSim(ulong[] x, ulong[] y)
+        {
+            Contract.Requires(x != null);
+            Contract.Requires(y != null);
+
+            var list = new List<Tuple<int, int, int>>();
+            var xoffset = 0;
+            while (xoffset < x.Length) {
+                var yoffset = 0;
+                while (yoffset < y.Length) {
+                    var distance = GetDistance(x, xoffset, y, yoffset);
+                    if (distance < 64) {
+                        list.Add(new Tuple<int, int, int>(xoffset, yoffset, distance));
+                    }
+
+                    yoffset += 4;
+                }
+
+                xoffset += 4;
+            }
+
+            list = list.OrderBy(e => e.Item3).ToList();
+
+            var sum = 0;
+            while (list.Count > 0) {
+                var minx = list[0].Item1;
+                var miny = list[0].Item2;
+                var mind = list[0].Item3;
+                sum += 64 - mind;
+                list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
+            }
+
+            var sim = sum * 4f / x.Length;
+            return sim;
         }
     }
 }

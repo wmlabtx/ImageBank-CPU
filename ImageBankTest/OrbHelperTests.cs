@@ -17,12 +17,11 @@ namespace ImageBank.Tests
             }
 
             using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out Mat vector, out ulong[] scalar)) {
+                if (!OrbHelper.ComputeOrbs(thump, out ulong[] vector)) {
                     Assert.Fail();
                 }
 
-                Assert.IsTrue(vector.Rows == 32 && vector.Cols == 32);
-                Assert.IsTrue(scalar.Length == 4);
+                Assert.IsTrue(vector.Length >= 4 && vector.Length <= 128);
             }
         }
 
@@ -35,17 +34,28 @@ namespace ImageBank.Tests
             }
 
             using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out Mat orbs, out ulong[] scalar)) {
+                if (!OrbHelper.ComputeOrbs(thump, out ulong[] orbs)) {
                     Assert.Fail();
                 }
 
-                var zero = OrbHelper.GetDistance(orbs, orbs);
-                Assert.IsTrue(zero == 0f);
+                var zero = OrbHelper.GetSim(orbs, orbs);
+                Assert.IsTrue(zero == 64f);
 
-                var hamming = OrbHelper.GetDistance(scalar, scalar);
-                Assert.IsTrue(hamming == 0);
+                var imgdata2 = File.ReadAllBytes("org.webp");
+                if (!Helper.GetBitmapFromImgData(imgdata2, out Bitmap bitmap2, out _)) {
+                    Assert.Fail();
+                }
 
+                using (var thump2 = Helper.GetThumpFromBitmap(bitmap2)) {
+                    if (!OrbHelper.ComputeOrbs(thump2, out ulong[] orbs2)) {
+                        Assert.Fail();
+                    }
+
+                    var sim = OrbHelper.GetSim(orbs, orbs2);
+                }
             }
+
+
         }
     }
 }

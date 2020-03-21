@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.IO;
@@ -8,8 +7,8 @@ using System.Linq;
 namespace ImageBank
 {
     public partial class ImgMdf
-    {
-        private void Import(float level, IProgress<string> progress)
+    {        
+        private void Import(int maxadd, IProgress<string> progress)
         { 
             AppVars.SuspendEvent.Reset();
 
@@ -24,20 +23,16 @@ namespace ImageBank
             var directoryInfo = new DirectoryInfo(AppConsts.PathCollection);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
             foreach (var fileInfo in fileInfos) {
+                if (added >= maxadd) {
+                    break;
+                }
+
                 var filename = fileInfo.FullName;
                 var shortfilename = filename.Substring(AppConsts.PathCollection.Length);
 
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
-                    float fill;
-                    lock (_imglock) {
-                        fill = _imgList.Sum(e => e.Value.LastId) * 100f / (_imgList.Count * (float)_id);
-                        if (fill < level) {
-                            break;
-                        }
-                    }
-
-                    progress?.Report($"f={fill:F2} {shortfilename} (a:{added}/f:{found}/b:{bad})...");
+                    progress?.Report($"{shortfilename} (a:{added}/f:{found}/b:{bad})...");
                 }
 
                 var fid = Helper.GetId(filename);
@@ -47,8 +42,7 @@ namespace ImageBank
                     }
                 }
 
-                Mat vector;
-                ulong[] scalar;
+                ulong[] vector;
 
                 if (!Helper.GetImageDataFromFile(
                     filename,
@@ -64,19 +58,17 @@ namespace ImageBank
                     continue;
                 }
 
-                var person = 0;
+                var person = string.Empty;
                 var sp = Path.GetFileNameWithoutExtension(filename).Split('@');
                 if (sp.Length == 2) {
-                    if (!int.TryParse(sp[1], out person)) {
-                        person = 0;
-                    }
+                    person = sp[1];
                 }
 
                 lock (_imglock) {
                     var idchecksum = SqlGetIdByChecksum(checksum);
                     if (idchecksum > 0) {
                         if (_imgList.TryGetValue(idchecksum, out Img imgchecksum)) {
-                            if (imgchecksum.Person != person) {
+                            if (!imgchecksum.Person.Equals(person, StringComparison.OrdinalIgnoreCase)) {
                                 imgchecksum.Person = person;
                             }
 
@@ -87,7 +79,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.ComputeOrbs(bitmap, out vector, out scalar)) {
+                if (!OrbHelper.ComputeOrbs(bitmap, out vector)) {
                     progress?.Report($"Cannot get descriptors: {shortfilename}");
                     bad++;
                     continue;
@@ -103,11 +95,10 @@ namespace ImageBank
                     person: person,
                     lastview: lastview,
                     nextid: id,
-                    distance: 256f,
-                    lastid: 0,
+                    sim: 0f,
+                    lastcheck: new DateTime(1997, 1, 1, 8, 0, 0),
                     vector: vector,
                     format: format,
-                    scalar: scalar,
                     counter: 0);
 
                 Add(img);
@@ -116,10 +107,9 @@ namespace ImageBank
                     Helper.DeleteToRecycleBin(filename);
                 }
 
-                FindNext(id, out var lastid, out var nextid, out var distance);
-                img.LastId = lastid;
-                img.NextId = nextid;
-                img.Distance = distance;
+                //FindNext(id, out var nextid, out var sim);
+                //img.NextId = nextid;
+                //img.Sim = sim;
 
                 if (_imgList.Count >= AppConsts.MaxImages) {
                     break;
@@ -136,7 +126,7 @@ namespace ImageBank
         public void Import(IProgress<string> progress)
         {
             Contract.Requires(progress != null);
-            Import(1f, progress);
+            Import(100000, progress);
         }
     }
 }

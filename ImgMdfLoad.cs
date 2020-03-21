@@ -33,12 +33,11 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrPerson}, "); // 2
             sb.Append($"{AppConsts.AttrLastView}, "); // 3
             sb.Append($"{AppConsts.AttrNextId}, "); // 4
-            sb.Append($"{AppConsts.AttrDistance}, "); // 5
-            sb.Append($"{AppConsts.AttrLastId}, "); // 6
+            sb.Append($"{AppConsts.AttrSim}, "); // 5
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 6
             sb.Append($"{AppConsts.AttrVector}, "); // 7
             sb.Append($"{AppConsts.AttrCounter}, "); // 8
-            sb.Append($"{AppConsts.AttrFormat}, "); // 9
-            sb.Append($"{AppConsts.AttrScalar} "); // 10
+            sb.Append($"{AppConsts.AttrFormat} "); // 9
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -48,29 +47,26 @@ namespace ImageBank
                         while (reader.Read()) {
                             var id = reader.GetInt32(0);
                             var checksum = reader.GetString(1);
-                            var person = reader.GetInt32(2);
+                            var person = reader.GetString(2);
                             var lastview = reader.GetDateTime(3);
                             var nextid = reader.GetInt32(4);
-                            var distance = reader.GetFloat(5);
-                            var lastid = reader.GetInt32(6);
-                            var vbuffer = (byte[])reader[7];
-                            var vector = Helper.ConvertBufferToMat(vbuffer);
+                            var sim = reader.GetFloat(5);
+                            var lastcheck = reader.GetDateTime(6);
+                            var buffer = (byte[])reader[7];
+                            var vector = new ulong[buffer.Length / sizeof(ulong)];
+                            Buffer.BlockCopy(buffer, 0, vector, 0, buffer.Length);
                             var counter = reader.GetInt32(8);
                             var format = reader.GetInt32(9);
-                            var buffer = (byte[])reader[10];
-                            var scalar = new ulong[4];
-                            Buffer.BlockCopy(buffer, 0, scalar, 0, 32);
                             var img = new Img(
                                 id: id,
                                 checksum: checksum,
                                 person: person,
                                 lastview: lastview,
                                 nextid: nextid,
-                                distance: distance,
-                                lastid: lastid,
+                                sim: sim,
+                                lastcheck: lastcheck,
                                 vector: vector,
                                 format: format,
-                                scalar: scalar,
                                 counter: counter);
 
                             AddToMemory(img);

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Text;
 
 namespace ImageBank
@@ -13,6 +12,8 @@ namespace ImageBank
 
             var dt = DateTime.Now;
             lock (_imglock) {
+
+
                 while (true) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
@@ -20,40 +21,46 @@ namespace ImageBank
                     }
 
                     if (idX <= 0) {
-                        var scope = _imgList
-                            .Values
-                            .Where(e => e.NextId > 0 && e.LastId > 0 && e.NextId != e.Id)
-                            .ToArray();
-
-                        if (scope.Length == 0) {
-                            progress.Report("No images to view");
-                            return;
-                        }
-
-                        var mincounter = scope.Min(e => e.Counter);
-                        scope = scope
-                            .Where(e => e.Counter == mincounter)
-                            .OrderBy(e => e.LastView)
-                            .ToArray();
-
-                        var minc = int.MaxValue;
-                        var minlv = DateTime.MaxValue;
-                        foreach (var imgx in scope) {
-                            if (!_imgList.TryGetValue(imgx.NextId, out var imgy)) {
+                        var xcounter = int.MaxValue;
+                        var isim = 0;
+                        var ylv = DateTime.MaxValue;
+                        foreach (var e in _imgList) {
+                            if (e.Value.NextId <= 0) {
                                 continue;
                             }
 
-                            if (imgy.Counter < minc) {
-                                minc = imgy.Counter;
-                                minlv = imgy.LastView;
-                                idX = imgx.Id;
+                            if (!_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
+                                continue;
+                            }
+
+                            if (e.Value.Counter < xcounter) {
+                                idX = e.Value.Id;
+                                xcounter = e.Value.Counter;
+                                isim = (int)e.Value.Sim;
+                                ylv = imgy.LastView;
                             }
                             else {
-                                if (imgy.Counter == minc && imgy.LastView < minlv) {
-                                    minlv = imgy.LastView;
-                                    idX = imgx.Id;
+                                if (e.Value.Counter == xcounter) {
+                                    if ((int)e.Value.Sim > isim) {
+                                        idX = e.Value.Id;
+                                        isim = (int)e.Value.Sim;
+                                        ylv = imgy.LastView;
+                                    }
+                                    else {
+                                        if ((int)e.Value.Sim == isim) {
+                                            if (imgy.LastView < ylv) {
+                                                idX = e.Value.Id;
+                                                ylv = imgy.LastView;
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                        }
+
+                        if (idX <= 0) {
+                            progress.Report("No images to view");
+                            return;
                         }
                     }
 
@@ -77,7 +84,6 @@ namespace ImageBank
                     if (!_imgList.TryGetValue(idY, out Img imgY)) {
                         Delete(idY);
                         imgX.NextId = 0;
-                        imgX.LastId = 0;
                         idX = 0;
                         continue;
                     }
@@ -86,7 +92,6 @@ namespace ImageBank
                     if (AppVars.ImgPanel[1] == null) {
                         Delete(idY);
                         imgX.NextId = 0;
-                        imgX.LastId = 0;
                         idX = 0;
                         continue;
                     }

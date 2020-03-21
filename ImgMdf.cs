@@ -69,20 +69,26 @@ namespace ImageBank
         private int GetNextToCheck()
         {
             lock (_imgList) {
-                if (_imgList.Count == 0) {
-                    return 0;
+                var idX = 0;
+                var xcounter = int.MaxValue;
+                var lc = DateTime.MaxValue;
+                foreach (var e in _imgList) {
+                    if (e.Value.Counter < xcounter) {
+                        idX = e.Value.Id;
+                        xcounter = e.Value.Counter;
+                        lc = e.Value.LastCheck;
+                    }
+                    else {
+                        if (e.Value.Counter == xcounter) {
+                            if (e.Value.LastCheck < lc) {
+                                idX = e.Value.Id;
+                                lc = e.Value.LastCheck;
+                            }
+                        }
+                    }
                 }
 
-                var scope = _imgList
-                        .Values
-                        .Where(e => e.LastId < _id)
-                        .ToArray();
-
-                if (scope.Length == 0) {
-                    return 0;
-                }
-
-                return scope.Aggregate((m, e) => e.LastId < m.LastId ? e : m).Id;
+                return idX;
             }
         }
 

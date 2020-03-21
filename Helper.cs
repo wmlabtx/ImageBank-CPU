@@ -320,25 +320,6 @@ namespace ImageBank
             }
         }
 
-        public static bool GetWebPFromBitmap(Bitmap bitmap, out byte[] imgdata)
-        {
-            try {
-                using (var image = new MagickImage(bitmap)) {
-                    image.Format = MagickFormat.WebP;
-                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
-                    using (var ms = new MemoryStream()) {
-                        image.Write(ms);
-                        imgdata = ms.ToArray();
-                        return true;
-                    }
-                }
-            }
-            catch (MagickException) {
-                imgdata = null;
-                return false;
-            }
-        }
-
         public static bool GetImageDataFromFile(
             string filename,
             out byte[] imgdata,
@@ -646,29 +627,6 @@ namespace ImageBank
             }
 
             return decryptedBytes;
-        }
-
-        #endregion
-
-        #region Mat
-
-        public static byte[] ConvertMatToBuffer(Mat mat)
-        {
-            Contract.Requires(mat != null);
-            mat.GetArray<byte>(out var buffer);
-            return buffer;
-        }
-
-        public static Mat ConvertBufferToMat(byte[] buffer)
-        {
-            Contract.Requires(buffer != null);
-            if (buffer.Length < 32) {
-                return new Mat();
-            }
-
-            var mat = new Mat(buffer.Length / 32, 32, MatType.CV_8U);
-            mat.SetArray(buffer);
-            return mat;
         }
 
         #endregion

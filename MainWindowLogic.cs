@@ -203,7 +203,7 @@ namespace ImageBank
                 var extension = GetExtensionName(AppVars.ImgPanel[index].Format);
                 sb.Append($"{AppVars.ImgPanel[index].Name}.{extension}");
 
-                if (AppVars.ImgPanel[index].Person > 0) {
+                if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Person)) {
                     sb.Append($" [{AppVars.ImgPanel[index].Person}:{AppVars.ImgPanel[index].PersonSize}]");
                 }
 
@@ -218,8 +218,7 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].LastView))} ago");
-                sb.Append($" ({AppVars.ImgPanel[index].Distance:F2})");
-                sb.Append($" {AppVars.ImgPanel[index].Done:F1}%");
+                sb.Append($" ({AppVars.ImgPanel[index].Sim:F2})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.Bisque;
@@ -235,7 +234,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Person > 0 && AppVars.ImgPanel[0].Person == AppVars.ImgPanel[1].Person) {
+            if (!string.IsNullOrEmpty(AppVars.ImgPanel[0].Person) && AppVars.ImgPanel[0].Person.Equals(AppVars.ImgPanel[1].Person, StringComparison.OrdinalIgnoreCase)) {
                 pLabels[0].Background = AppVars.ImgPanel[0].Format == (int)MagickFormat.WebP ? System.Windows.Media.Brushes.YellowGreen : System.Windows.Media.Brushes.LightGreen;
                 pLabels[1].Background = AppVars.ImgPanel[1].Format == (int)MagickFormat.WebP ? System.Windows.Media.Brushes.YellowGreen : System.Windows.Media.Brushes.LightGreen;
             }
@@ -291,7 +290,7 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void MoveTo(int person)
+        private async void MoveTo(string person)
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.AssingPerson(AppVars.ImgPanel[0].Id, person); }).ConfigureAwait(true);
@@ -299,16 +298,9 @@ namespace ImageBank
             EnableElements();
         }
 
-        private void MoveTo(string tag)
-        {
-            if (int.TryParse(tag, out int person)) {
-                MoveTo(person);
-            }
-        }
-
         private void MoveToTheRight()
         {
-            if (AppVars.ImgPanel[1].Person > 0) {
+            if (!string.IsNullOrEmpty(AppVars.ImgPanel[1].Person)) {
                 MoveTo(AppVars.ImgPanel[1].Person);
             }
         }

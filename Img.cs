@@ -1,6 +1,4 @@
-﻿using ImageMagick;
-using OpenCvSharp;
-using System;
+﻿using System;
 
 namespace ImageBank
 {
@@ -16,8 +14,8 @@ namespace ImageBank
 
         public string FileName => Helper.GetFileName(Name, Folder);
 
-        private int _person;
-        public int Person
+        private string _person;
+        public string Person
         {
             get => _person;
             set
@@ -38,25 +36,25 @@ namespace ImageBank
             }
         }
 
-        private float _distance;
-        public float Distance
+        private float _sim;
+        public float Sim
         {
-            get => _distance;
+            get => _sim;
             set
             {
-                _distance = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrDistance, value);
+                _sim = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrSim, value);
             }
         }
 
-        private int _lastid;
-        public int LastId
+        private DateTime _lastcheck;
+        public DateTime LastCheck
         {
-            get => _lastid;
+            get => _lastcheck;
             set
             {
-                _lastid = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastId, value);
+                _lastcheck = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
             }
         }
 
@@ -71,9 +69,9 @@ namespace ImageBank
             }
         }
 
-        private readonly Mat _vector;
+        private readonly ulong[] _vector;
 
-        public Mat Vector()
+        public ulong[] Vector()
         {
             return _vector;
         }
@@ -87,13 +85,6 @@ namespace ImageBank
                 _format = value;
                 ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFormat, value);
             }
-        }
-
-        private readonly ulong[] _scalar;
-
-        public ulong[] Scalar()
-        {
-            return _scalar;
         }
 
         private int _counter;
@@ -110,14 +101,13 @@ namespace ImageBank
         public Img(
             int id,
             string checksum,
-            int person,
+            string person,
             DateTime lastview,
             int nextid,
-            float distance,
-            int lastid,
-            Mat vector,
+            float sim,
+            DateTime lastcheck,
+            ulong[] vector,
             int format,
-            ulong[] scalar,
             int counter)
         {
             Id = id;
@@ -125,11 +115,10 @@ namespace ImageBank
             _person = person;
             _lastview = lastview;
             _nextid = nextid;
-            _distance = distance;
-            _lastid = lastid;
+            _sim = sim;
+            _lastcheck = lastcheck;
             _vector = vector;
             _format = format;
-            _scalar = scalar;
             _counter = counter;
         }
     }
