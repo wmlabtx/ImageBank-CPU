@@ -6,53 +6,51 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private void FindNext(int idX, out int nextid, out float sim)
-        {
-            Img imgX;
-            ulong[] vectorX;
+        private bool FindNext(int idX, out int nextid, out float sim, out int lastid)
+        {            
             var candidates = new List<Tuple<int, ulong[]>>();
+            ulong[] vectorX;
             lock (_imglock) {
-                sim = 0f;
-                nextid = idX;
-                if (!_imgList.TryGetValue(idX, out imgX)) {
-                    return;
+                if (!_imgList.TryGetValue(idX, out Img imgX)) {
+                    nextid = 0;
+                    sim = 0f;
+                    lastid = 0;
+                    return false;
                 }
 
                 vectorX = imgX.Vector();
                 sim = imgX.Sim;
                 nextid = imgX.NextId;
-                if (!_imgList.TryGetValue(nextid, out var imgY)) {
-                    sim = 0;
+                lastid = imgX.LastId;
+                if (lastid == 0 || nextid <= 0 || !_imgList.TryGetValue(nextid, out var imgY)) {
+                    sim = 0f;
                     nextid = idX;
-                }
-                else {
-                    if (!string.IsNullOrEmpty(imgX.Person) && !imgX.Person.Equals(imgY.Person, StringComparison.OrdinalIgnoreCase)) {
-                        sim = 0;
-                        nextid = idX;
-                    }
+                    lastid = 0;
                 }
 
                 foreach (var e in _imgList) {
-                    if (e.Value.Id != imgX.Id) {
-                        if (string.IsNullOrEmpty(imgX.Person) || imgX.Person.Equals(e.Value.Person, StringComparison.OrdinalIgnoreCase)) {
-                            candidates.Add(new Tuple<int, ulong[]>(e.Value.Id, e.Value.Vector()));
-                        }
+                    if (e.Value.Id != imgX.Id && e.Value.Id > lastid) {
+                        candidates.Add(new Tuple<int, ulong[]>(e.Value.Id, e.Value.Vector()));
                     }
                 }
+
+                //candidates.Sort((x, y) => x.Item1.CompareTo(y.Item1));
             }
 
-            var random = new Random();
             var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < AppConsts.TimeHorizon && candidates.Count > 0) {
-                var index = random.Next(candidates.Count);
+            var index = 0;
+            while (sw.ElapsedMilliseconds < AppConsts.TimeHorizon && index < candidates.Count) {
                 var esim = OrbHelper.GetSim(vectorX, candidates[index].Item2);
                 if (esim > sim) {
                     sim = esim;
                     nextid = candidates[index].Item1;
                 }
 
-                candidates.RemoveAt(index);
+                index++;
             }
+
+            lastid = index < candidates.Count ? candidates[index].Item1 : _id;
+            return true;
         }
     }
 }

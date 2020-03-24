@@ -1,6 +1,7 @@
 ﻿using ImageMagick;
 using Microsoft.VisualBasic.FileIO;
 using OpenCvSharp;
+using OpenCvSharp.Extensions;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -305,7 +306,7 @@ namespace ImageBank
             try {
                 using (var image = new MagickImage(bitmap)) {
                     image.Format = MagickFormat.WebP;
-                    image.Quality = 90;
+                    image.Quality = 100;
                     image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
                     using (var ms = new MemoryStream()) {
                         image.Write(ms);
@@ -316,6 +317,105 @@ namespace ImageBank
             }
             catch (MagickException) {
                 imgdata = null;
+                return false;
+            }
+        }
+
+        public enum ImageFormat
+        {
+            Unknown = 0,
+            //
+            // Summary:
+            //     Microsoft Windows bitmap image
+            Bmp = 15,
+            //
+            // Summary:
+            //     Microsoft Windows bitmap image (V2)
+            Bmp2 = 16,
+            //
+            // Summary:
+            //     Microsoft Windows bitmap image (V3)
+            Bmp3 = 17,
+            //
+            // Summary:
+            //     Free Lossless Image Format
+            Flif = 64,
+            //
+            // Summary:
+            //     CompuServe graphics interchange format
+            Gif = 72,
+            //
+            // Summary:
+            //     CompuServe graphics interchange format
+            Gif87 = 73,
+            //
+            // Summary:
+            //     JPEG-2000 File Format Syntax
+            Jp2 = 100,
+            //
+            // Summary:
+            //     Joint Photographic Experts Group JFIF format
+            Jpe = 102,
+            //
+            // Summary:
+            //     Joint Photographic Experts Group JFIF format
+            Jpeg = 103,
+            //
+            // Summary:
+            //     Joint Photographic Experts Group JFIF format
+            Jpg = 104,
+            //
+            // Summary:
+            //     JPEG-2000 File Format Syntax
+            Jpm = 105,
+            //
+            // Summary:
+            //     Joint Photographic Experts Group JFIF format
+            Jps = 106,
+            //
+            // Summary:
+            //     JPEG-2000 File Format Syntax
+            Jpt = 107,
+            //
+            // Summary:
+            //     Portable Network Graphics
+            Png = 169,
+            //
+            // Summary:
+            //     WebP Image Format
+            WebP = 237
+        }
+
+        public static bool GetWebPDataFromBitmap(Bitmap bitmap, out byte[] webpdata)
+        {
+            try {
+                using (var mat = BitmapConverter.ToMat(bitmap)) {
+                    var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 101);
+                    Cv2.ImEncode(AppConsts.WebpExtension, mat, out webpdata, iep);
+                    return true;
+                }
+            }
+            catch (ArgumentException) {
+                webpdata = null;
+                return false;
+            }
+        }
+
+        public static bool GetBitmapFromData(byte[] data, out Bitmap bitmap)
+        {
+            try {
+                using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor)) {
+                    if (mat == null) {
+                        bitmap = null;
+                        return false;
+                    }
+
+                    bitmap = BitmapConverter.ToBitmap(mat);
+                    return true;
+                }
+            }
+            catch (ArgumentException) {
+                bitmap = null;
                 return false;
             }
         }
@@ -399,9 +499,10 @@ namespace ImageBank
                 bitmapchanged = true;
             }
 
-            if (bitmapchanged || 
-                (!extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
-                 !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase))
+            if (bitmapchanged ||
+                (format != (int)MagickFormat.Jpg &&
+                 format != (int)MagickFormat.Jpeg &&
+                 format != (int)MagickFormat.WebP)
                 ) {
                 if (!GetImgDataFromBitmap(bitmap, out imgdata)) {
                     message = "encode error";

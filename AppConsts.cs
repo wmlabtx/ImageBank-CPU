@@ -26,12 +26,11 @@ namespace ImageBank
 
         public const string TableImages = "Images";
         public const string AttrId = "Id"; // 1 or 567 or 128092
-        public const string AttrPerson = "Person";
         public const string AttrChecksum = "Checksum"; // f0s...44j (50 lenght)
         public const string AttrLastView = "LastView";
         public const string AttrNextId = "NextId"; // 1 or 567 or 128092
         public const string AttrSim = "Sim"; // 0.0123 or 45.3439 or 63.99
-        public const string AttrLastCheck = "LastCheck";
+        public const string AttrLastId = "LastId";
         public const string AttrVector = "Vector";
         public const string AttrFormat = "Format";
         public const string AttrCounter = "Counter";

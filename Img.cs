@@ -14,17 +14,6 @@ namespace ImageBank
 
         public string FileName => Helper.GetFileName(Name, Folder);
 
-        private string _person;
-        public string Person
-        {
-            get => _person;
-            set
-            {
-                _person = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrPerson, value);
-            }
-        }
-
         private int _nextid;
         public int NextId
         {
@@ -47,14 +36,14 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastcheck;
-        public DateTime LastCheck
+        private int _lastid;
+        public int LastId
         {
-            get => _lastcheck;
+            get => _lastid;
             set
             {
-                _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
+                _lastid = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastId, value);
             }
         }
 
@@ -101,22 +90,20 @@ namespace ImageBank
         public Img(
             int id,
             string checksum,
-            string person,
             DateTime lastview,
             int nextid,
             float sim,
-            DateTime lastcheck,
+            int lastid,
             ulong[] vector,
             int format,
             int counter)
         {
             Id = id;
             Checksum = checksum;
-            _person = person;
             _lastview = lastview;
             _nextid = nextid;
             _sim = sim;
-            _lastcheck = lastcheck;
+            _lastid = lastid;
             _vector = vector;
             _format = format;
             _counter = counter;

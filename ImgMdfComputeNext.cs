@@ -9,8 +9,6 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private int _importcounter = 0;
-
         public void Compute(BackgroundWorker backgroundworker)
         {
             Contract.Requires(backgroundworker != null);
@@ -24,16 +22,11 @@ namespace ImageBank
                 }
             }
 
-            if (_importcounter >= 100) {
-                _importcounter = 0;
-                Import(1000, AppVars.BackgroundProgress);
+            var idX = GetNextToCheck();
+            if (!FindNext(idX, out var nextid, out var sim, out var lastid)) {
+                backgroundworker.ReportProgress(0, $"error getting {idX}");
                 return;
             }
-
-            _importcounter++;
-
-            var idX = GetNextToCheck();
-            FindNext(idX, out var nextid, out var sim);
            
             Img imgX;
             lock (_imglock) {
@@ -49,14 +42,13 @@ namespace ImageBank
                 return;
             }
 
-            imgX.LastCheck = DateTime.Now;
-
             var sb = new StringBuilder();
             if (Math.Abs(sim - imgX.Sim) > 0.0001) {
+                sb.Append($"[{imgX.LastId}+{lastid - imgX.LastId}] ");
                 sb.Append($"i{imgX.Id}: ");
                 sb.Append($"{imgX.Sim:F2} ");
                 sb.Append($"{char.ConvertFromUtf32(sim > imgX.Sim ? 0x2192 : 0x2193)} ");
-                sb.Append($"{sim:F2}");
+                sb.Append($"{sim:F2} ");
                 imgX.Sim = sim;
                 if (nextid != imgX.NextId) {
                     imgX.NextId = nextid;
@@ -64,12 +56,17 @@ namespace ImageBank
             }
             else {
                 if (nextid != imgX.NextId) {
+                    sb.Append($"[{imgX.LastId}+{lastid - imgX.LastId}] ");
                     sb.Append($"i{imgX.Id}: ");
                     sb.Append($"i{imgX.NextId} ");
                     sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
                     sb.Append($"i{nextid}");
                     imgX.NextId = nextid;
                 }
+            }
+
+            if (lastid != imgX.LastId) {
+                imgX.LastId = lastid;
             }
 
             if (sb.Length > 0) {

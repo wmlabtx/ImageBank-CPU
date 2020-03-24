@@ -3,6 +3,7 @@ using System.IO;
 using System.Drawing;
 using System;
 using System.Linq;
+using System.Drawing.Imaging;
 
 namespace ImageBank.Tests
 {
@@ -95,7 +96,7 @@ namespace ImageBank.Tests
 
 
             
-            if (!Helper.GetWebPFromBitmap(bitmap_org, out byte[] webpdata)) {
+            if (!Helper.GetImgDataFromBitmap(bitmap_org, out byte[] webpdata)) {
                 Assert.Fail();
             }
 
@@ -103,7 +104,29 @@ namespace ImageBank.Tests
             if (!Helper.GetBitmapFromImgData(webpdata, out Bitmap webpbitmap, out _)) {
                 Assert.Fail();
             }
-            
+        }
+
+        [TestMethod()]
+        public void WebPTest()
+        {
+            var data = File.ReadAllBytes("org.jpg");
+            if (!Helper.GetBitmapFromData(data, out var bitmap)) {
+                Assert.Fail();
+            }
+
+            if (bitmap.RawFormat != ImageFormat.Jpeg) {
+                Assert.Fail();
+            }
+
+            if (!Helper.GetWebPDataFromBitmap(bitmap, out byte[] webpdata)) {
+                Assert.Fail();
+            }
+
+            if (!Helper.GetBitmapFromData(webpdata, out var bitmap_out)) {
+                Assert.Fail();
+            }
+
+            File.WriteAllBytes("org.webp", webpdata); ;
         }
     }
 }

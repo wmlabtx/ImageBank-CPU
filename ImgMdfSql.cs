@@ -51,10 +51,9 @@ namespace ImageBank
                     sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                     sb.Append($"{AppConsts.AttrId}, ");
                     sb.Append($"{AppConsts.AttrChecksum}, ");
-                    sb.Append($"{AppConsts.AttrPerson}, ");
                     sb.Append($"{AppConsts.AttrNextId}, ");
                     sb.Append($"{AppConsts.AttrSim}, ");
-                    sb.Append($"{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"{AppConsts.AttrLastId}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrVector}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
@@ -62,10 +61,9 @@ namespace ImageBank
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
                     sb.Append($"@{AppConsts.AttrChecksum}, ");
-                    sb.Append($"@{AppConsts.AttrPerson}, ");
                     sb.Append($"@{AppConsts.AttrNextId}, ");
                     sb.Append($"@{AppConsts.AttrSim}, ");
-                    sb.Append($"@{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"@{AppConsts.AttrLastId}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrVector}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
@@ -74,10 +72,9 @@ namespace ImageBank
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChecksum}", img.Checksum);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerson}", img.Person);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextId}", img.NextId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSim}", img.Sim);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastId}", img.LastId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     var buffer = new byte[img.Vector().Length * sizeof(ulong)];
                     Buffer.BlockCopy(img.Vector(), 0, buffer, 0, buffer.Length);

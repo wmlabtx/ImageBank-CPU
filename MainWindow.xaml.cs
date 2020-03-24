@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -75,17 +74,6 @@ namespace ImageBank
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
-        }
-
-        private void MoveToTheRightClick(object sender, RoutedEventArgs e)
-        {
-            MoveToTheRight();
-        }
-
-        private void MoveToClick(object sender, RoutedEventArgs e)
-        {
-            var tag = (string)((MenuItem)sender).Tag;
-            MoveTo(tag);
         }
     }
 }

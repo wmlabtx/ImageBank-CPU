@@ -58,20 +58,10 @@ namespace ImageBank
                     continue;
                 }
 
-                var person = string.Empty;
-                var sp = Path.GetFileNameWithoutExtension(filename).Split('@');
-                if (sp.Length == 2) {
-                    person = sp[1];
-                }
-
                 lock (_imglock) {
                     var idchecksum = SqlGetIdByChecksum(checksum);
                     if (idchecksum > 0) {
                         if (_imgList.TryGetValue(idchecksum, out Img imgchecksum)) {
-                            if (!imgchecksum.Person.Equals(person, StringComparison.OrdinalIgnoreCase)) {
-                                imgchecksum.Person = person;
-                            }
-
                             found++;
                             Helper.DeleteToRecycleBin(filename);
                             continue;
@@ -92,11 +82,10 @@ namespace ImageBank
                 var img = new Img(
                     id: id,
                     checksum: checksum,
-                    person: person,
                     lastview: lastview,
                     nextid: id,
                     sim: 0f,
-                    lastcheck: new DateTime(1997, 1, 1, 8, 0, 0),
+                    lastid: 0,
                     vector: vector,
                     format: format,
                     counter: 0);
@@ -107,9 +96,11 @@ namespace ImageBank
                     Helper.DeleteToRecycleBin(filename);
                 }
 
-                //FindNext(id, out var nextid, out var sim);
-                //img.NextId = nextid;
-                //img.Sim = sim;
+                if (FindNext(id, out var nextid, out var sim, out var lastid)) {
+                    img.NextId = nextid;
+                    img.Sim = sim;
+                    img.LastId = lastid;
+                }
 
                 if (_imgList.Count >= AppConsts.MaxImages) {
                     break;
@@ -126,7 +117,7 @@ namespace ImageBank
         public void Import(IProgress<string> progress)
         {
             Contract.Requires(progress != null);
-            Import(100000, progress);
+            Import(100, progress);
         }
     }
 }

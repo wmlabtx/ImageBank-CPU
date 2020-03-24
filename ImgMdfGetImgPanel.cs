@@ -24,12 +24,9 @@ namespace ImageBank
             }
 
             var name = $"{img.Folder}\\{img.Name}";
-            var personsize = GetPersonSize(img.Person);
             var imgpanel = new ImgPanel(
                 id: id,
                 name: name,
-                person: img.Person,
-                personsize: personsize,
                 lastview: img.LastView,
                 sim: img.Sim,
                 bitmap: bitmap, 

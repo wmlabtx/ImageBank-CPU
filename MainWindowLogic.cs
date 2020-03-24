@@ -203,10 +203,6 @@ namespace ImageBank
                 var extension = GetExtensionName(AppVars.ImgPanel[index].Format);
                 sb.Append($"{AppVars.ImgPanel[index].Name}.{extension}");
 
-                if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Person)) {
-                    sb.Append($" [{AppVars.ImgPanel[index].Person}:{AppVars.ImgPanel[index].PersonSize}]");
-                }
-
                 if (AppVars.ImgPanel[index].Counter > 0) {
                     sb.Append($" {AppVars.ImgPanel[index].Counter}");
                 }
@@ -221,22 +217,12 @@ namespace ImageBank
                 sb.Append($" ({AppVars.ImgPanel[index].Sim:F2})");
 
                 pLabels[index].Text = sb.ToString();
-                var scb = System.Windows.Media.Brushes.Bisque;
+                var scb = System.Windows.Media.Brushes.White;
                 if (AppVars.ImgPanel[index].Format == (int)MagickFormat.WebP) {
                     scb = System.Windows.Media.Brushes.Gold;
                 }
-                else {
-                    if (AppVars.ImgPanel[index].Counter == 0) {
-                        scb = System.Windows.Media.Brushes.White;
-                    }
-                }
 
                 pLabels[index].Background = scb;
-            }
-
-            if (!string.IsNullOrEmpty(AppVars.ImgPanel[0].Person) && AppVars.ImgPanel[0].Person.Equals(AppVars.ImgPanel[1].Person, StringComparison.OrdinalIgnoreCase)) {
-                pLabels[0].Background = AppVars.ImgPanel[0].Format == (int)MagickFormat.WebP ? System.Windows.Media.Brushes.YellowGreen : System.Windows.Media.Brushes.LightGreen;
-                pLabels[1].Background = AppVars.ImgPanel[1].Format == (int)MagickFormat.WebP ? System.Windows.Media.Brushes.YellowGreen : System.Windows.Media.Brushes.LightGreen;
             }
 
             if (AppVars.ImgPanel[0].Id == AppVars.ImgPanel[1].Id) {
@@ -288,21 +274,6 @@ namespace ImageBank
             await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
-        }
-
-        private async void MoveTo(string person)
-        {
-            DisableElements();
-            await Task.Run(() => { AppVars.Collection.AssingPerson(AppVars.ImgPanel[0].Id, person); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private void MoveToTheRight()
-        {
-            if (!string.IsNullOrEmpty(AppVars.ImgPanel[1].Person)) {
-                MoveTo(AppVars.ImgPanel[1].Person);
-            }
         }
     }
 }

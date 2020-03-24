@@ -22,7 +22,7 @@ namespace ImageBank
 
                     if (idX <= 0) {
                         var xcounter = int.MaxValue;
-                        var isim = 0;
+                        var maxss = 0;
                         var ylv = DateTime.MaxValue;
                         foreach (var e in _imgList) {
                             if (e.Value.NextId <= 0) {
@@ -36,18 +36,18 @@ namespace ImageBank
                             if (e.Value.Counter < xcounter) {
                                 idX = e.Value.Id;
                                 xcounter = e.Value.Counter;
-                                isim = (int)e.Value.Sim;
+                                maxss = GetScaleSim(e.Value.Sim);
                                 ylv = imgy.LastView;
                             }
                             else {
                                 if (e.Value.Counter == xcounter) {
-                                    if ((int)e.Value.Sim > isim) {
+                                    if (GetScaleSim(e.Value.Sim) > maxss) {
                                         idX = e.Value.Id;
-                                        isim = (int)e.Value.Sim;
+                                        maxss = GetScaleSim(e.Value.Sim);
                                         ylv = imgy.LastView;
                                     }
                                     else {
-                                        if ((int)e.Value.Sim == isim) {
+                                        if (GetScaleSim(e.Value.Sim) == maxss) {
                                             if (imgy.LastView < ylv) {
                                                 idX = e.Value.Id;
                                                 ylv = imgy.LastView;
@@ -104,6 +104,19 @@ namespace ImageBank
             var secs = DateTime.Now.Subtract(dt).TotalSeconds;
             sb.Append($"{secs:F2}s");
             progress.Report(sb.ToString());
+        }
+
+        private static int GetScaleSim(float sim)
+        {
+            if (sim < 0.01f) {
+                return 0;
+            }
+
+            if (sim > 32f) {
+                return 2;
+            }
+
+            return 1;
         }
     }
 }

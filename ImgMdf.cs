@@ -70,20 +70,13 @@ namespace ImageBank
         {
             lock (_imgList) {
                 var idX = 0;
-                var xcounter = int.MaxValue;
-                var lc = DateTime.MaxValue;
+                var minid = int.MaxValue;
                 foreach (var e in _imgList) {
-                    if (e.Value.Counter < xcounter) {
+                    if (e.Value.LastId < minid) {
                         idX = e.Value.Id;
-                        xcounter = e.Value.Counter;
-                        lc = e.Value.LastCheck;
-                    }
-                    else {
-                        if (e.Value.Counter == xcounter) {
-                            if (e.Value.LastCheck < lc) {
-                                idX = e.Value.Id;
-                                lc = e.Value.LastCheck;
-                            }
+                        minid = e.Value.LastId;
+                        if (minid == 0) {
+                            break;
                         }
                     }
                 }
