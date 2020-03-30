@@ -12,8 +12,6 @@ namespace ImageBank
 
             var dt = DateTime.Now;
             lock (_imglock) {
-
-
                 while (true) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
@@ -21,36 +19,32 @@ namespace ImageBank
                     }
 
                     if (idX <= 0) {
-                        var xcounter = int.MaxValue;
-                        var maxss = 0;
-                        var ylv = DateTime.MaxValue;
+                        var mincounter = int.MaxValue;
+                        var minlv = DateTime.MaxValue;
+                        var maxlastid = 0;
                         foreach (var e in _imgList) {
-                            if (e.Value.NextId <= 0) {
+                            if (e.Value.NextId <= 0 || !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
                                 continue;
                             }
 
-                            if (!_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
-                                continue;
-                            }
-
-                            if (e.Value.Counter < xcounter) {
+                            if (e.Value.Counter < mincounter) {
                                 idX = e.Value.Id;
-                                xcounter = e.Value.Counter;
-                                maxss = GetScaleSim(e.Value.Sim);
-                                ylv = imgy.LastView;
+                                mincounter = e.Value.Counter;
+                                maxlastid = e.Value.LastId;
+                                minlv = e.Value.LastView;
                             }
                             else {
-                                if (e.Value.Counter == xcounter) {
-                                    if (GetScaleSim(e.Value.Sim) > maxss) {
+                                if (e.Value.Counter == mincounter) {
+                                    if (e.Value.LastId > maxlastid) {
                                         idX = e.Value.Id;
-                                        maxss = GetScaleSim(e.Value.Sim);
-                                        ylv = imgy.LastView;
+                                        maxlastid = e.Value.LastId;
+                                        minlv = e.Value.LastView;
                                     }
                                     else {
-                                        if (GetScaleSim(e.Value.Sim) == maxss) {
-                                            if (imgy.LastView < ylv) {
+                                        if (e.Value.LastId == maxlastid) {
+                                            if (e.Value.LastView < minlv) {
                                                 idX = e.Value.Id;
-                                                ylv = imgy.LastView;
+                                                minlv = e.Value.LastView;
                                             }
                                         }
                                     }
@@ -104,19 +98,6 @@ namespace ImageBank
             var secs = DateTime.Now.Subtract(dt).TotalSeconds;
             sb.Append($"{secs:F2}s");
             progress.Report(sb.ToString());
-        }
-
-        private static int GetScaleSim(float sim)
-        {
-            if (sim < 0.01f) {
-                return 0;
-            }
-
-            if (sim > 32f) {
-                return 2;
-            }
-
-            return 1;
         }
     }
 }

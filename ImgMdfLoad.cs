@@ -1,8 +1,6 @@
-﻿using ImageMagick;
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Text;
 
 namespace ImageBank
@@ -14,11 +12,6 @@ namespace ImageBank
             Contract.Requires(progress != null);
 
             progress.Report("Loading model...");
-            /*
-            if (!HelperMl.Init()) {
-                throw new Exception();
-            }
-            */
 
             lock (_imglock) {
                 _imgList.Clear();
@@ -63,7 +56,7 @@ namespace ImageBank
                                 sim: sim,
                                 lastid: lastid,
                                 vector: vector,
-                                format: format,
+                                format: (MagicFormat)format,
                                 counter: counter);
 
                             AddToMemory(img);

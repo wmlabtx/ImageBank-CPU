@@ -12,9 +12,9 @@ namespace ImageBank
         public int Counter { get; }
         public Bitmap Bitmap { get; }
         public long Length { get; }
-        public int Format { get; }
+        public MagicFormat Format { get; }
 
-        public ImgPanel(int id, string name, DateTime lastview, float sim, int counter, Bitmap bitmap, long length, int format)
+        public ImgPanel(int id, string name, DateTime lastview, float sim, int counter, Bitmap bitmap, long length, MagicFormat format)
         {
             Id = id;
             Name = name;

@@ -69,17 +69,14 @@ namespace ImageBank
         private int GetNextToCheck()
         {
             lock (_imgList) {
-                var idX = 0;
-                var minid = int.MaxValue;
-                foreach (var e in _imgList) {
-                    if (e.Value.LastId < minid) {
-                        idX = e.Value.Id;
-                        minid = e.Value.LastId;
-                        if (minid == 0) {
-                            break;
-                        }
-                    }
-                }
+                var idX = _imgList
+                    .OrderBy(e => e.Value.Counter)
+                    .ThenBy(e => e.Value.LastView)
+                    .Take(10000)
+                    .OrderBy(e => e.Value.LastId)
+                    .FirstOrDefault()
+                    .Value
+                    .Id;
 
                 return idX;
             }

@@ -65,14 +65,14 @@ namespace ImageBank
             return _vector;
         }
 
-        private int _format;
-        public int Format
+        private MagicFormat _format;
+        public MagicFormat Format
         {
             get => _format;
             set
             {
                 _format = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFormat, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFormat, (int)value);
             }
         }
 
@@ -95,7 +95,7 @@ namespace ImageBank
             float sim,
             int lastid,
             ulong[] vector,
-            int format,
+            MagicFormat format,
             int counter)
         {
             Id = id;

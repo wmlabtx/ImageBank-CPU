@@ -1,5 +1,4 @@
-﻿using ImageMagick;
-using Microsoft.VisualBasic.FileIO;
+﻿using Microsoft.VisualBasic.FileIO;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
@@ -268,22 +267,6 @@ namespace ImageBank
             return bitmap24bppRgb;
         }
 
-        public static bool GetBitmapFromImgData(byte[] imgdata, out Bitmap bitmap, out int format)
-        {
-            try {
-                using (var image = new MagickImage(imgdata)) {
-                    format = (int)image.Format;
-                    bitmap = image.ToBitmap();
-                    return true;
-                }
-            }
-            catch (MagickException) {
-                bitmap = null;
-                format = 0;
-                return false;
-            }
-        }
-
         public static Bitmap GetThumpFromBitmap(Bitmap bitmap)
         {
             Contract.Requires(bitmap != null);
@@ -301,107 +284,55 @@ namespace ImageBank
             return ResizeBitmap(bitmap, width, heigth);
         }
 
-        public static bool GetImgDataFromBitmap(Bitmap bitmap, out byte[] imgdata)
-        {
-            try {
-                using (var image = new MagickImage(bitmap)) {
-                    image.Format = MagickFormat.WebP;
-                    image.Quality = 100;
-                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
-                    using (var ms = new MemoryStream()) {
-                        image.Write(ms);
-                        imgdata = ms.ToArray();
-                        return true;
-                    }
-                }
-            }
-            catch (MagickException) {
-                imgdata = null;
-                return false;
-            }
-        }
-
-        public enum ImageFormat
-        {
-            Unknown = 0,
-            //
-            // Summary:
-            //     Microsoft Windows bitmap image
-            Bmp = 15,
-            //
-            // Summary:
-            //     Microsoft Windows bitmap image (V2)
-            Bmp2 = 16,
-            //
-            // Summary:
-            //     Microsoft Windows bitmap image (V3)
-            Bmp3 = 17,
-            //
-            // Summary:
-            //     Free Lossless Image Format
-            Flif = 64,
-            //
-            // Summary:
-            //     CompuServe graphics interchange format
-            Gif = 72,
-            //
-            // Summary:
-            //     CompuServe graphics interchange format
-            Gif87 = 73,
-            //
-            // Summary:
-            //     JPEG-2000 File Format Syntax
-            Jp2 = 100,
-            //
-            // Summary:
-            //     Joint Photographic Experts Group JFIF format
-            Jpe = 102,
-            //
-            // Summary:
-            //     Joint Photographic Experts Group JFIF format
-            Jpeg = 103,
-            //
-            // Summary:
-            //     Joint Photographic Experts Group JFIF format
-            Jpg = 104,
-            //
-            // Summary:
-            //     JPEG-2000 File Format Syntax
-            Jpm = 105,
-            //
-            // Summary:
-            //     Joint Photographic Experts Group JFIF format
-            Jps = 106,
-            //
-            // Summary:
-            //     JPEG-2000 File Format Syntax
-            Jpt = 107,
-            //
-            // Summary:
-            //     Portable Network Graphics
-            Png = 169,
-            //
-            // Summary:
-            //     WebP Image Format
-            WebP = 237
-        }
-
-        public static bool GetWebPDataFromBitmap(Bitmap bitmap, out byte[] webpdata)
+        public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
         {
             try {
                 using (var mat = BitmapConverter.ToMat(bitmap)) {
                     var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 101);
-                    Cv2.ImEncode(AppConsts.WebpExtension, mat, out webpdata, iep);
+                    Cv2.ImEncode(AppConsts.WebpExtension, mat, out imagedata, iep);
                     return true;
                 }
             }
             catch (ArgumentException) {
-                webpdata = null;
+                imagedata = null;
                 return false;
             }
         }
 
-        public static bool GetBitmapFromData(byte[] data, out Bitmap bitmap)
+        public static MagicFormat GetMagicFormat(byte[] imagedata)
+        {
+            // https://en.wikipedia.org/wiki/List_of_file_signatures
+            Contract.Requires(imagedata != null);
+
+            if (imagedata[0] == 0xFF && imagedata[1] == 0xD8 && imagedata[2] == 0xFF) { 
+                return MagicFormat.Jpeg;
+            }
+
+            if (imagedata[0] == 0x52 && imagedata[1] == 0x49 && imagedata[2] == 0x46 && imagedata[3] == 0x46 &&
+                imagedata[8] == 0x57 && imagedata[9] == 0x45 && imagedata[10] == 0x42 && imagedata[11] == 0x50) {
+                if (imagedata[15] == ' ') {
+                    return MagicFormat.WebP;
+                }
+
+                if (imagedata[15] == 'L') {
+                    return MagicFormat.WebPLossLess;
+                }
+
+                return MagicFormat.Unknown;
+            }
+
+            if (imagedata[0] == 0x89 && imagedata[1] == 0x50 && imagedata[2] == 0x4E && imagedata[3] == 0x47) {
+                return MagicFormat.Png;
+            }
+
+            if (imagedata[0] == 0x42 && imagedata[1] == 0x4D) {
+                return MagicFormat.Bmp;
+            }
+
+            return MagicFormat.Unknown;
+        }
+
+        public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
             try {
                 using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor)) {
@@ -422,15 +353,15 @@ namespace ImageBank
 
         public static bool GetImageDataFromFile(
             string filename,
-            out byte[] imgdata,
+            out byte[] imagedata,
+            out MagicFormat magicformat,
             out Bitmap bitmap,
-            out int format,
             out string checksum,
             out string message)
         {
-            imgdata = null;
+            imagedata = null;
+            magicformat = MagicFormat.Unknown;
             bitmap = null;
-            format = 0;
             checksum = null;
             message = null;
             if (!File.Exists(filename)) {
@@ -457,16 +388,16 @@ namespace ImageBank
                 return false;
             }
 
-            imgdata = File.ReadAllBytes(filename);
-            if (imgdata == null || imgdata.Length == 0) {
+            imagedata = File.ReadAllBytes(filename);
+            if (imagedata == null || imagedata.Length == 0) {
                 message = "imgdata == null || imgdata.Length == 0";
                 return false;
             }
 
             if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
-                imgdata = DecryptDat(imgdata, password);
-                if (imgdata == null) {
+                imagedata = DecryptDat(imagedata, password);
+                if (imagedata == null) {
                     message = "cannot be decrypted";
                     return false;
                 }
@@ -474,14 +405,14 @@ namespace ImageBank
 
             if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
-                imgdata = Decrypt(imgdata, password);
-                if (imgdata == null) {
+                imagedata = Decrypt(imagedata, password);
+                if (imagedata == null) {
                     message = "cannot be decrypted";
                     return false;
                 }
             }
 
-            if (!GetBitmapFromImgData(imgdata, out bitmap, out format)) {
+            if (!GetBitmapFromImageData(imagedata, out bitmap)) {
                 message = "bad image";
                 return false;
             }
@@ -499,18 +430,23 @@ namespace ImageBank
                 bitmapchanged = true;
             }
 
-            if (bitmapchanged ||
-                (format != (int)MagickFormat.Jpg &&
-                 format != (int)MagickFormat.Jpeg &&
-                 format != (int)MagickFormat.WebP)
-                ) {
-                if (!GetImgDataFromBitmap(bitmap, out imgdata)) {
+            magicformat = GetMagicFormat(imagedata);
+            if (
+                magicformat != MagicFormat.WebPLossLess && 
+                magicformat != MagicFormat.Jpeg) {
+                bitmapchanged = true;
+            }
+
+            if (bitmapchanged) {
+                if (!GetImageDataFromBitmap(bitmap, out imagedata)) {
                     message = "encode error";
                     return false;
                 }
+
+                magicformat = MagicFormat.WebPLossLess;
             }
 
-            checksum = ComputeHash3250(imgdata);
+            checksum = ComputeHash3250(imagedata);
             return true;
         }
 

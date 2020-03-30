@@ -8,6 +8,10 @@
 --UPDATE Images SET Ratio = 0;
 --UPDATE Images SET Id = 0;
 UPDATE Images SET LastId = 0;
+UPDATE Images SET NextId = 0;
+UPDATE Images SET Counter = 0;
+UPDATE Images SET Sim = 0;
+
 --UPDATE Images SET Distance = 1;
 --UPDATE Images SET LastCheck = '20200208';
 --UPDATE Images SET NextHash = '12345678';
@@ -16,4 +20,4 @@ UPDATE Images SET LastId = 0;
 --UPDATE Images SET Person = 'Pt';
 --UPDATE Images SET MagickHash = '';
 --UPDATE Images SET History = 0x0;
---UPDATE Images SET Counter = 0;
+

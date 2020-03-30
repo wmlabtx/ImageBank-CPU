@@ -1,6 +1,4 @@
-﻿using ImageMagick;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public static class AppConsts
     {
@@ -9,9 +7,9 @@ namespace ImageBank
         public const string FileDatabase = PathRoot + @"db\images.mdf";
         public const string Prefix = "mzx.";
 
-        public const int MaxImages = 200000;
+        public const int MaxImages = 150000;
         public const int MaxDescriptorsInImage = 32;
-        public const float TimeHorizon = 1000;
+        public const int Horizon = 1000;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";

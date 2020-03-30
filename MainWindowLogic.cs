@@ -1,5 +1,4 @@
-﻿using ImageMagick;
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
@@ -165,18 +164,18 @@ namespace ImageBank
             LabelRight.IsEnabled = enabled;
         }
 
-        private static string GetExtensionName(int format)
+        private static string GetExtensionName(MagicFormat format)
         {
-            switch ((MagickFormat)format) {
+            switch (format) {
                 case 0:
                     return "none";
-                case MagickFormat.Jpeg:
+                case MagicFormat.Jpeg:
                     return "jpeg";
-                case MagickFormat.Jpg:
-                    return "jpg";
-                case MagickFormat.Flif:
+                case MagicFormat.Flif:
                     return "flif";
-                case MagickFormat.WebP:
+                case MagicFormat.WebP:
+                    return "webp";
+                case MagicFormat.WebPLossLess:
                     return "webp";
                 default:
                     return $"{format}";
@@ -218,7 +217,11 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
-                if (AppVars.ImgPanel[index].Format == (int)MagickFormat.WebP) {
+                if (AppVars.ImgPanel[index].Format == MagicFormat.WebP) {
+                    scb = System.Windows.Media.Brushes.LightYellow;
+                }
+
+                if (AppVars.ImgPanel[index].Format == MagicFormat.WebPLossLess) {
                     scb = System.Windows.Media.Brushes.Gold;
                 }
 

@@ -11,6 +11,7 @@ namespace ImageBank.Tests
         [TestMethod()]
         public void ComputeOrbsTest()
         {
+            /*
             var imgdata = File.ReadAllBytes("org.jpg");
             if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
                 Assert.Fail();
@@ -23,39 +24,32 @@ namespace ImageBank.Tests
 
                 Assert.IsTrue(vector.Length >= 4 && vector.Length <= 128);
             }
+            */
         }
 
         [TestMethod()]
         public void GetDistanceTest()
         {
-            var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
+            var imagedata = File.ReadAllBytes("org.jpg");
+            if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out ulong[] orbs)) {
-                    Assert.Fail();
-                }
-
-                var zero = OrbHelper.GetSim(orbs, orbs);
-                Assert.IsTrue(zero == 64f);
-
-                var imgdata2 = File.ReadAllBytes("org.webp");
-                if (!Helper.GetBitmapFromImgData(imgdata2, out Bitmap bitmap2, out _)) {
-                    Assert.Fail();
-                }
-
-                using (var thump2 = Helper.GetThumpFromBitmap(bitmap2)) {
-                    if (!OrbHelper.ComputeOrbs(thump2, out ulong[] orbs2)) {
-                        Assert.Fail();
-                    }
-
-                    var sim = OrbHelper.GetSim(orbs, orbs2);
-                }
+            if (!OrbHelper.ComputeOrbs(bitmap, out ulong[] orbs)) {
+                Assert.Fail();
             }
 
+            var imagedatapng = File.ReadAllBytes("orgpng.png");
+            if (!Helper.GetBitmapFromImageData(imagedatapng, out Bitmap bitmappng)) {
+                Assert.Fail();
+            }
 
+            if (!OrbHelper.ComputeOrbs(bitmappng, out ulong[] orbspng)) {
+                Assert.Fail();
+            }
+
+            var zero = OrbHelper.GetSim(orbs, orbspng, 32);
+            var zeroone = 64 - OrbHelper.GetDistance(orbs, 0, orbspng, 0);
         }
     }
 }

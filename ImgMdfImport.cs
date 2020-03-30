@@ -42,15 +42,13 @@ namespace ImageBank
                     }
                 }
 
-                ulong[] vector;
-
                 if (!Helper.GetImageDataFromFile(
                     filename,
                     out var imgdata,
+                    out var magicformat,
 #pragma warning disable CA2000 // Dispose objects before losing scope
                     out Bitmap bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
-                    out int format,
                     out var checksum,
                     out var message)) {
                     progress?.Report($"Corrupted image: {shortfilename}: {message}");
@@ -69,7 +67,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.ComputeOrbs(bitmap, out vector)) {
+                if (!OrbHelper.ComputeOrbs(bitmap, out ulong[] vector)) {
                     progress?.Report($"Cannot get descriptors: {shortfilename}");
                     bad++;
                     continue;
@@ -87,7 +85,7 @@ namespace ImageBank
                     sim: 0f,
                     lastid: 0,
                     vector: vector,
-                    format: format,
+                    format: magicformat,
                     counter: 0);
 
                 Add(img);
