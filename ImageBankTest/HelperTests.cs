@@ -115,6 +115,7 @@ namespace ImageBank.Tests
         [TestMethod()]
         public void WebPTest()
         {
+            /*
             var data = File.ReadAllBytes("org.jpg");
             if (!Helper.GetBitmapFromImageData(data, out var bitmap)) {
                 Assert.Fail();
@@ -133,6 +134,58 @@ namespace ImageBank.Tests
             }
 
             File.WriteAllBytes("org.webp", webpdata); ;
+            */
+        }
+
+        [TestMethod()]
+        public void ScdTest()
+        {
+            var data = File.ReadAllBytes("org.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_org)) {
+                Assert.Fail();
+            }
+
+            var h_org = ScdHelper.Compute(b_org);
+
+            data = File.ReadAllBytes("org_r90.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_org_r90)) {
+                Assert.Fail();
+            }
+
+            var h_org_r90 = ScdHelper.Compute(b_org_r90);
+            var d = h_org.GetDistance(h_org_r90);
+
+            data = File.ReadAllBytes("org_r10.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_org_r10)) {
+                Assert.Fail();
+            }
+
+            var h_org_r10 = ScdHelper.Compute(b_org_r10);
+            d = h_org.GetDistance(h_org_r10);
+
+            data = File.ReadAllBytes("cor.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_cor)) {
+                Assert.Fail();
+            }
+
+            var h_cor = ScdHelper.Compute(b_cor);
+            d = h_org.GetDistance(h_cor);
+
+            data = File.ReadAllBytes("org_resized.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_org_resized)) {
+                Assert.Fail();
+            }
+
+            var h_org_resized = ScdHelper.Compute(b_org_resized);
+            d = h_org.GetDistance(h_org_resized);
+
+            data = File.ReadAllBytes("org_sim1.jpg");
+            if (!Helper.GetBitmapFromImageData(data, out var b_org_sim1)) {
+                Assert.Fail();
+            }
+
+            var h_org_sim1 = ScdHelper.Compute(b_org_sim1);
+            d = h_org.GetDistance(h_org_sim1);
         }
     }
 }

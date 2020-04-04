@@ -34,7 +34,7 @@ namespace ImageBank
                 }
             }
 
-            lastid = lastid == 0 ? 1 : lastid * 2;
+            lastid = lastid < 4 ? 4 : lastid * 2;
             var index = 0;
             while (index < candidates.Count) {
                 var esim = OrbHelper.GetSim(vectorX, candidates[index].Item2, lastid);

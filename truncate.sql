@@ -7,10 +7,10 @@
 --UPDATE Images SET Stars = 0;
 --UPDATE Images SET Ratio = 0;
 --UPDATE Images SET Id = 0;
-UPDATE Images SET LastId = 0;
+UPDATE Images SET LastCheck = '20200101';
 UPDATE Images SET NextId = 0;
 UPDATE Images SET Counter = 0;
-UPDATE Images SET Sim = 0;
+UPDATE Images SET Distance = 0;
 
 --UPDATE Images SET Distance = 1;
 --UPDATE Images SET LastCheck = '20200208';

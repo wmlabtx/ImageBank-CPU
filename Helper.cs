@@ -431,9 +431,7 @@ namespace ImageBank
             }
 
             magicformat = GetMagicFormat(imagedata);
-            if (
-                magicformat != MagicFormat.WebPLossLess && 
-                magicformat != MagicFormat.Jpeg) {
+            if (magicformat != MagicFormat.WebPLossLess) {
                 bitmapchanged = true;
             }
 
