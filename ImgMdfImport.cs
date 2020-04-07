@@ -50,7 +50,8 @@ namespace ImageBank
                     out Bitmap bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
                     out var checksum,
-                    out var message)) {
+                    out var message,
+                    out var bitmapchanged)) {
                     progress?.Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
                     continue;
@@ -61,30 +62,28 @@ namespace ImageBank
                     if (idchecksum > 0) {
                         if (_imgList.TryGetValue(idchecksum, out Img imgchecksum)) {
                             found++;
+                            imgchecksum.LastAdded = DateTime.Now;
                             Helper.DeleteToRecycleBin(filename);
                             continue;
                         }
                     }
                 }
 
-                if (!OrbHelper.ComputeOrbs(bitmap, out ulong[] vector)) {
-                    progress?.Report($"Cannot get descriptors: {shortfilename}");
-                    bad++;
-                    continue;
-                }
-
+                var scd = ScdHelper.Compute(bitmap);
                 bitmap.Dispose();
 
                 var id = AllocateId();
                 var lastview = GetMinLastView();
+                var lastcheck = GetMinLastCheck();
                 var img = new Img(
                     id: id,
                     checksum: checksum,
                     lastview: lastview,
-                    nextid: id,
-                    sim: 0f,
-                    lastid: 0,
-                    vector: vector,
+                    nextid: 0,
+                    distance: 0f,
+                    lastcheck: lastcheck,
+                    lastadded: DateTime.Now,
+                    vector: scd,
                     format: magicformat,
                     counter: 0);
 
@@ -94,10 +93,10 @@ namespace ImageBank
                     Helper.DeleteToRecycleBin(filename);
                 }
 
-                if (FindNext(id, out var nextid, out var sim, out var lastid)) {
+                if (FindNext(id, out var nextid, out var distance)) {
                     img.NextId = nextid;
-                    img.Sim = sim;
-                    img.LastId = lastid;
+                    img.Distance = distance;
+                    img.LastCheck = DateTime.Now;
                 }
 
                 if (_imgList.Count >= AppConsts.MaxImages) {

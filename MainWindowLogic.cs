@@ -177,6 +177,8 @@ namespace ImageBank
                     return "webp";
                 case MagicFormat.WebPLossLess:
                     return "webp";
+                case MagicFormat.Png:
+                    return "png";
                 default:
                     return $"{format}";
             }
@@ -213,7 +215,8 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].LastView))} ago");
-                sb.Append($" ({AppVars.ImgPanel[index].Sim:F2})");
+                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].LastAdded))} ago]");
+                sb.Append($" ({AppVars.ImgPanel[index].Distance:F2})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
@@ -223,6 +226,10 @@ namespace ImageBank
 
                 if (AppVars.ImgPanel[index].Format == MagicFormat.WebPLossLess) {
                     scb = System.Windows.Media.Brushes.Gold;
+                }
+
+                if (AppVars.ImgPanel[index].Format == MagicFormat.Png) {
+                    scb = System.Windows.Media.Brushes.LightSteelBlue;
                 }
 
                 pLabels[index].Background = scb;

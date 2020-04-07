@@ -20,11 +20,12 @@ namespace ImageBank
         private void ResetRefers(int id)
         {
             lock (_imglock) {
+                var minlc = GetMinLastCheck();
                 _imgList
                     .Values
                     .Where(e => e.NextId == id)
                     .ToList()
-                    .ForEach(e => e.LastId = 0);
+                    .ForEach(e => e.LastCheck = minlc);
             }
         }
     }

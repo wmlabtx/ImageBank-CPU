@@ -53,6 +53,18 @@ namespace ImageBank
             }
         }
 
+        private DateTime GetMinLastCheck()
+        {
+            lock (_imglock) {
+                var min = (_imgList.Count == 0 ?
+                    DateTime.Now :
+                    _imgList.Min(e => e.Value.LastCheck))
+                    .AddSeconds(-1);
+
+                return min;
+            }
+        }
+
         private string GetPrompt()
         {
             lock (_imglock) {
@@ -71,9 +83,7 @@ namespace ImageBank
             lock (_imgList) {
                 var idX = _imgList
                     .OrderBy(e => e.Value.Counter)
-                    .ThenBy(e => e.Value.LastView)
-                    .Take(10000)
-                    .OrderBy(e => e.Value.LastId)
+                    .ThenBy(e => e.Value.LastCheck)
                     .FirstOrDefault()
                     .Value
                     .Id;

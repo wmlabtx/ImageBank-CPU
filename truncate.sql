@@ -7,10 +7,10 @@
 --UPDATE Images SET Stars = 0;
 --UPDATE Images SET Ratio = 0;
 --UPDATE Images SET Id = 0;
-UPDATE Images SET LastCheck = '20200101';
-UPDATE Images SET NextId = 0;
-UPDATE Images SET Counter = 0;
-UPDATE Images SET Distance = 0;
+--UPDATE Images SET LastCheck = '20200101';
+--UPDATE Images SET NextId = 0;
+--UPDATE Images SET Counter = 0;
+--UPDATE Images SET Distance = 0;
 
 --UPDATE Images SET Distance = 1;
 --UPDATE Images SET LastCheck = '20200208';
@@ -19,5 +19,5 @@ UPDATE Images SET Distance = 0;
 --UPDATE Images SET Format = 103;
 --UPDATE Images SET Person = 'Pt';
 --UPDATE Images SET MagickHash = '';
---UPDATE Images SET History = 0x0;
-
+--UPDATE Images SET Vector = 0x;
+UPDATE Images SET LastAdded = '20160101';

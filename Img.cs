@@ -6,7 +6,16 @@ namespace ImageBank
     {
         public int Id { get; }
 
-        public string Checksum { get; }
+        private string _checksum;
+        public string Checksum
+        {
+            get => _checksum;
+            set
+            {
+                _checksum = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrChecksum, value);
+            }
+        }
 
         public string Name => Helper.GetName(Id);
 
@@ -25,25 +34,25 @@ namespace ImageBank
             }
         }
 
-        private float _sim;
-        public float Sim
+        private float _distance;
+        public float Distance
         {
-            get => _sim;
+            get => _distance;
             set
             {
-                _sim = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrSim, value);
+                _distance = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrDistance, value);
             }
         }
 
-        private int _lastid;
-        public int LastId
+        private DateTime _lastcheck;
+        public DateTime LastCheck
         {
-            get => _lastid;
+            get => _lastcheck;
             set
             {
-                _lastid = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastId, value);
+                _lastcheck = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
             }
         }
 
@@ -58,11 +67,30 @@ namespace ImageBank
             }
         }
 
-        private readonly ulong[] _vector;
-
-        public ulong[] Vector()
+        private DateTime _lastadded;
+        public DateTime LastAdded
         {
-            return _vector;
+            get => _lastadded;
+            set
+            {
+                _lastadded = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastAdded, value);
+            }
+        }
+
+        private Scd _vector;
+
+        public Scd Vector
+        {
+            get => _vector;
+            set
+            {
+                if (value != null) {
+                    _vector = value;
+                    var buffer = value.GetBuffer();
+                    ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrVector, buffer);
+                }
+            }
         }
 
         private MagicFormat _format;
@@ -92,18 +120,20 @@ namespace ImageBank
             string checksum,
             DateTime lastview,
             int nextid,
-            float sim,
-            int lastid,
-            ulong[] vector,
+            float distance,
+            DateTime lastcheck,
+            DateTime lastadded,
+            Scd vector,
             MagicFormat format,
             int counter)
         {
             Id = id;
-            Checksum = checksum;
+            _checksum = checksum;
             _lastview = lastview;
             _nextid = nextid;
-            _sim = sim;
-            _lastid = lastid;
+            _distance = distance;
+            _lastcheck = lastcheck;
+            _lastadded = lastadded;
             _vector = vector;
             _format = format;
             _counter = counter;

@@ -14,6 +14,7 @@ namespace ImageBank
 
         public Scd(byte[] buffer)
         {
+            Contract.Requires(buffer != null);
             H = new int[256];
             Buffer.BlockCopy(buffer, 0, H, 0, 256 * sizeof(int));
         }
@@ -21,7 +22,6 @@ namespace ImageBank
         public Scd(double[] descriptor)
         {
             Contract.Requires(descriptor != null);
-
             H = new int[256];
             for (var i = 0; i < 256; i++) {
                 H[i] = (int)descriptor[i];
@@ -33,6 +33,17 @@ namespace ImageBank
             var buffer = new byte[256 * sizeof(int)];
             Buffer.BlockCopy(H, 0, buffer, 0, 256 * sizeof(int));
             return buffer;
+        }
+
+        public bool IsEmpty()
+        {
+            for (var i = 0; i < 256; i++) {
+                if (H[i] != 0) {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public float GetDistance(Scd other)

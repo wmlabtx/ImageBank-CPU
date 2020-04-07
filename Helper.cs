@@ -288,7 +288,7 @@ namespace ImageBank
         {
             try {
                 using (var mat = BitmapConverter.ToMat(bitmap)) {
-                    var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 101);
+                    var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 100);
                     Cv2.ImEncode(AppConsts.WebpExtension, mat, out imagedata, iep);
                     return true;
                 }
@@ -357,13 +357,15 @@ namespace ImageBank
             out MagicFormat magicformat,
             out Bitmap bitmap,
             out string checksum,
-            out string message)
+            out string message,
+            out bool bitmapchanged)
         {
             imagedata = null;
             magicformat = MagicFormat.Unknown;
             bitmap = null;
             checksum = null;
             message = null;
+            bitmapchanged = false;
             if (!File.Exists(filename)) {
                 message = "missing file";
                 return false;
@@ -417,21 +419,35 @@ namespace ImageBank
                 return false;
             }
 
-            var bitmapchanged = false;
-            const float fmax = 24f * 1024 * 1024;
-            var fx = (float)Math.Sqrt(fmax / (bitmap.Width * bitmap.Height));
-            if (fx < 1f) {
-                bitmap = ResizeBitmap(bitmap, (int)(bitmap.Width * fx), (int)(bitmap.Height * fx));
-                bitmapchanged = true;
-            }
-
             if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
                 bitmap = RepixelBitmap(bitmap);
                 bitmapchanged = true;
             }
 
             magicformat = GetMagicFormat(imagedata);
-            if (magicformat != MagicFormat.WebPLossLess) {
+            if (magicformat != MagicFormat.WebPLossLess && 
+                magicformat != MagicFormat.WebP && 
+                magicformat != MagicFormat.Jpeg &&
+                magicformat != MagicFormat.Png) {
+                bitmapchanged = true;
+            }
+
+            const int wmax = 3840;
+            const int hmax = 2160;
+            var w = bitmap.Width;
+            var h = bitmap.Height;
+            if (w > wmax || h > hmax) {
+                if (w > wmax) {
+                    h = (int)(h / ((float)w / wmax));
+                    w = wmax;
+                }
+
+                if (h > hmax) {
+                    w = (int)(w / ((float)h / hmax));
+                    h = hmax;
+                }
+
+                bitmap = ResizeBitmap(bitmap, w, h);
                 bitmapchanged = true;
             }
 
@@ -441,7 +457,7 @@ namespace ImageBank
                     return false;
                 }
 
-                magicformat = MagicFormat.WebPLossLess;
+                magicformat = MagicFormat.WebP;
             }
 
             checksum = ComputeHash3250(imagedata);

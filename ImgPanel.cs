@@ -8,22 +8,24 @@ namespace ImageBank
         public int Id { get; }
         public string Name { get; }
         public DateTime LastView { get; }
-        public float Sim { get; }
+        public float Distance { get; }
         public int Counter { get; }
         public Bitmap Bitmap { get; }
         public long Length { get; }
         public MagicFormat Format { get; }
+        public DateTime LastAdded { get; }
 
-        public ImgPanel(int id, string name, DateTime lastview, float sim, int counter, Bitmap bitmap, long length, MagicFormat format)
+        public ImgPanel(int id, string name, DateTime lastview, float distance, int counter, Bitmap bitmap, long length, MagicFormat format, DateTime lastadded)
         {
             Id = id;
             Name = name;
             LastView = lastview;
-            Sim = sim;
+            Distance = distance;
             Counter = counter;
             Bitmap = bitmap;
             Length = length;
             Format = format;
+            LastAdded = lastadded;
         }
     }
 }

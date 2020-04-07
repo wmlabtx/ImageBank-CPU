@@ -6,34 +6,46 @@ namespace ImageBank
     {
         private ImgPanel GetImgPanel(int id)
         {
-            if (!_imgList.TryGetValue(id, out var img)) {
+            if (!_imgList.TryGetValue(id, out var imgX)) {
                 return null;
             }
 
-            var imagedata = Helper.ReadData(img.FileName);
-            if (imagedata == null) {
+            if (!Helper.GetImageDataFromFile(
+                imgX.FileName,
+                out var imgdata,
+                out var magicformat,
+#pragma warning disable CA2000 // Dispose objects before losing scope
+                        out Bitmap bitmap,
+#pragma warning restore CA2000 // Dispose objects before losing scope
+                        out var checksum,
+                out var message,
+                out var bitmapchanged)) {
                 return null;
             }
 
-            if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
-                return null;
+            if (bitmapchanged) {
+                Helper.WriteData(imgX.FileName, imgdata);
+                imgX.Format = magicformat;
+                imgX.Checksum = checksum;
+                var scd = ScdHelper.Compute(bitmap);
+                imgX.Vector = scd;
             }
 
-            var magicformat = Helper.GetMagicFormat(imagedata);
-            if (magicformat != img.Format) {
-                img.Format = magicformat;
+            if (magicformat != imgX.Format) {
+                imgX.Format = magicformat;
             }
 
-            var name = $"{img.Folder}\\{img.Name}";
+            var name = $"{imgX.Folder}\\{imgX.Name}";
             var imgpanel = new ImgPanel(
                 id: id,
                 name: name,
-                lastview: img.LastView,
-                sim: img.Sim,
+                lastview: imgX.LastView,
+                distance: imgX.Distance,
                 bitmap: bitmap, 
-                length: imagedata.Length,
-                format: img.Format,
-                counter: img.Counter);
+                length: imgdata.Length,
+                format: imgX.Format,
+                counter: imgX.Counter,
+                lastadded: imgX.LastAdded);
 
             return imgpanel;
         }

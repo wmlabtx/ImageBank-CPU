@@ -21,7 +21,6 @@ namespace ImageBank
                     if (idX <= 0) {
                         var mincounter = int.MaxValue;
                         var minlv = DateTime.MaxValue;
-                        var maxlastid = 0;
                         foreach (var e in _imgList) {
                             if (e.Value.NextId <= 0 || !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
                                 continue;
@@ -30,23 +29,13 @@ namespace ImageBank
                             if (e.Value.Counter < mincounter) {
                                 idX = e.Value.Id;
                                 mincounter = e.Value.Counter;
-                                maxlastid = e.Value.LastId;
                                 minlv = e.Value.LastView;
                             }
                             else {
                                 if (e.Value.Counter == mincounter) {
-                                    if (e.Value.LastId > maxlastid) {
+                                    if (e.Value.LastView < minlv) {
                                         idX = e.Value.Id;
-                                        maxlastid = e.Value.LastId;
                                         minlv = e.Value.LastView;
-                                    }
-                                    else {
-                                        if (e.Value.LastId == maxlastid) {
-                                            if (e.Value.LastView < minlv) {
-                                                idX = e.Value.Id;
-                                                minlv = e.Value.LastView;
-                                            }
-                                        }
                                     }
                                 }
                             }
