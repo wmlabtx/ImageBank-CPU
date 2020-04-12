@@ -267,29 +267,14 @@ namespace ImageBank
             return bitmap24bppRgb;
         }
 
-        public static Bitmap GetThumpFromBitmap(Bitmap bitmap)
-        {
-            Contract.Requires(bitmap != null);
-            int width;
-            int heigth;
-            if (bitmap.Width > bitmap.Height) {
-                heigth = 256;
-                width = (int)(bitmap.Width * 256f / bitmap.Height);
-            }
-            else {
-                width = 256;
-                heigth = (int)(bitmap.Height * 256f / bitmap.Width);
-            }
-
-            return ResizeBitmap(bitmap, width, heigth);
-        }
-
         public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
         {
             try {
                 using (var mat = BitmapConverter.ToMat(bitmap)) {
-                    var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 100);
-                    Cv2.ImEncode(AppConsts.WebpExtension, mat, out imagedata, iep);
+                    //var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 101);
+                    //Cv2.ImEncode(AppConsts.WebpExtension, mat, out imagedata, iep);
+                    var iep = new ImageEncodingParam(ImwriteFlags.PngCompression, 9);
+                    Cv2.ImEncode(AppConsts.PngExtension, mat, out imagedata, iep);
                     return true;
                 }
             }
@@ -419,35 +404,21 @@ namespace ImageBank
                 return false;
             }
 
+            const float fmax = 6000f * 4000f;
+            var fx = (float)Math.Sqrt(fmax / (bitmap.Width * bitmap.Height));
+            if (fx < 1f) {
+                message = "too big image";
+                return false;
+            }
+
             if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
                 bitmap = RepixelBitmap(bitmap);
                 bitmapchanged = true;
             }
 
             magicformat = GetMagicFormat(imagedata);
-            if (magicformat != MagicFormat.WebPLossLess && 
-                magicformat != MagicFormat.WebP && 
-                magicformat != MagicFormat.Jpeg &&
-                magicformat != MagicFormat.Png) {
-                bitmapchanged = true;
-            }
-
-            const int wmax = 3840;
-            const int hmax = 2160;
-            var w = bitmap.Width;
-            var h = bitmap.Height;
-            if (w > wmax || h > hmax) {
-                if (w > wmax) {
-                    h = (int)(h / ((float)w / wmax));
-                    w = wmax;
-                }
-
-                if (h > hmax) {
-                    w = (int)(w / ((float)h / hmax));
-                    h = hmax;
-                }
-
-                bitmap = ResizeBitmap(bitmap, w, h);
+            if (magicformat != MagicFormat.Png && 
+                magicformat != MagicFormat.Jpeg) {
                 bitmapchanged = true;
             }
 
@@ -457,7 +428,7 @@ namespace ImageBank
                     return false;
                 }
 
-                magicformat = MagicFormat.WebP;
+                magicformat = MagicFormat.Png;
             }
 
             checksum = ComputeHash3250(imagedata);
@@ -533,41 +504,6 @@ namespace ImageBank
             var password = Path.GetFileNameWithoutExtension(filename);
             var encdata = Encrypt(imgdata, password);
             File.WriteAllBytes(filename, encdata);
-        }
-
-        #endregion
-
-        #region Pack
-
-        private static byte[] PackArray(byte[] writeData)
-        {
-            byte[] buffer;
-            using (var inner = new MemoryStream()) {
-                using (var stream2 = new GZipStream(inner, CompressionMode.Compress)) {
-                    stream2.Write(writeData, 0, writeData.Length);
-                }
-
-                buffer = inner.ToArray();
-            }
-
-            return buffer;
-        }
-
-        private static byte[] UnpackArray(byte[] compressedData)
-        {
-            using (var inner = new MemoryStream(compressedData)) {
-                using (var stream2 = new MemoryStream()) {
-                    using (var stream3 = new GZipStream(inner, CompressionMode.Decompress)) {
-                        var buffer = new byte[1024 * 16];
-                        int count;
-                        while ((count = stream3.Read(buffer, 0, buffer.Length)) > 0) {
-                            stream2.Write(buffer, 0, count);
-                        }
-                    }
-
-                    return stream2.ToArray();
-                }
-            }
         }
 
         #endregion

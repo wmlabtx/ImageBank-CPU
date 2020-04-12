@@ -15,7 +15,7 @@ namespace ImageBank
                     nextid = 0;
                     distance = 0f;
                     nextid = 0;
-                    return false;
+                    return false; 
                 }
 
                 distance = imgX.Distance;

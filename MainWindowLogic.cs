@@ -235,6 +235,22 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
+            if (
+                AppVars.ImgPanel[0].Format == MagicFormat.Jpeg &&
+                AppVars.ImgPanel[1].Format == MagicFormat.Jpeg &&
+                AppVars.ImgPanel[0].Bitmap.Width == AppVars.ImgPanel[1].Bitmap.Width &&
+                AppVars.ImgPanel[0].Bitmap.Height == AppVars.ImgPanel[1].Bitmap.Height &&
+                AppVars.ImgPanel[0].Distance < 2f
+                ) {
+                if (AppVars.ImgPanel[0].Length < AppVars.ImgPanel[1].Length) {
+                    pLabels[0].Background = System.Windows.Media.Brushes.Pink;
+                }
+
+                if (AppVars.ImgPanel[0].Length > AppVars.ImgPanel[1].Length) {
+                    pLabels[1].Background = System.Windows.Media.Brushes.Pink;
+                }
+            }
+
             if (AppVars.ImgPanel[0].Id == AppVars.ImgPanel[1].Id) {
                 pLabels[0].Background = System.Windows.Media.Brushes.LightGray;
                 pLabels[1].Background = System.Windows.Media.Brushes.LightGray;

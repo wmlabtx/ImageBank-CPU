@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.IO;
 
 namespace ImageBank
 {
@@ -10,6 +11,7 @@ namespace ImageBank
                 return null;
             }
 
+            /*
             if (!Helper.GetImageDataFromFile(
                 imgX.FileName,
                 out var imgdata,
@@ -34,6 +36,20 @@ namespace ImageBank
             if (magicformat != imgX.Format) {
                 imgX.Format = magicformat;
             }
+            */
+
+            if (!File.Exists(imgX.FileName)) {
+                return null;
+            }
+
+            var imagedata = Helper.ReadData(imgX.FileName);
+            if (imagedata == null || imagedata.Length == 0) {
+                return null;
+            }
+
+            if (!Helper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                return null;
+            }
 
             var name = $"{imgX.Folder}\\{imgX.Name}";
             var imgpanel = new ImgPanel(
@@ -42,7 +58,7 @@ namespace ImageBank
                 lastview: imgX.LastView,
                 distance: imgX.Distance,
                 bitmap: bitmap, 
-                length: imgdata.Length,
+                length: imagedata.Length,
                 format: imgX.Format,
                 counter: imgX.Counter,
                 lastadded: imgX.LastAdded);

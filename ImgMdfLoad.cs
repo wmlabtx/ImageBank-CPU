@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Text;
 
 namespace ImageBank
@@ -98,7 +99,7 @@ namespace ImageBank
             lock (_imglock) {
                 var list = _imgList.Select(e => e.Value).ToArray();
                 foreach (var img in list) { 
-                if (img.Format == 237) {
+                if (img.Format != MagicFormat.Jpeg && img.Format != MagicFormat.Png) {
                         Delete(img.Id);
                     }
                 }

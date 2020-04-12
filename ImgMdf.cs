@@ -69,11 +69,13 @@ namespace ImageBank
         {
             lock (_imglock) {
                 var sb = new StringBuilder();
-                var mincounter = _imgList.Min(e => e.Value.Counter);
-                var count = _imgList.Count(e => e.Value.Counter == mincounter);
-                sb.Append($"{mincounter}:{count}/");
-                count = _imgList.Count;
-                sb.Append($"{count}: ");
+                var mc = _imgList.Min(e => e.Value.Counter);
+                var cc = _imgList.Count(e => e.Value.Counter == mc);
+                var md = _imgList.Where(e => e.Value.Counter == mc).Min(e => (int)e.Value.Distance);
+                var cd = _imgList.Where(e => e.Value.Counter == mc).Count(e => (int)e.Value.Distance == md);
+                sb.Append($"{cc}:{mc}/");
+                sb.Append($"{cd}:{md}/");
+                sb.Append($"{_imgList.Count}: ");
                 return sb.ToString();
             }
         }
@@ -82,8 +84,7 @@ namespace ImageBank
         {
             lock (_imgList) {
                 var idX = _imgList
-                    .OrderBy(e => e.Value.Counter)
-                    .ThenBy(e => e.Value.LastCheck)
+                    .OrderBy(e => e.Value.LastCheck)
                     .FirstOrDefault()
                     .Value
                     .Id;

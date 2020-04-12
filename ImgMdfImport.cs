@@ -53,6 +53,15 @@ namespace ImageBank
                     out var message,
                     out var bitmapchanged)) {
                     progress?.Report($"Corrupted image: {shortfilename}: {message}");
+
+                    if (message.Equals("too big image", StringComparison.OrdinalIgnoreCase)) {
+                        var filejpg = Path.ChangeExtension(filename, AppConsts.JpgExtension);
+                        if (!filejpg.Equals(filename, StringComparison.OrdinalIgnoreCase)) {
+                            File.WriteAllBytes(filejpg, imgdata);
+                            Helper.DeleteToRecycleBin(filename);
+                        }
+                    }
+
                     bad++;
                     continue;
                 }

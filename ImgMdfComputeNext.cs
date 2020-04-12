@@ -36,6 +36,12 @@ namespace ImageBank
                 }
             }
 
+            if (imgX.Format != MagicFormat.Jpeg && imgX.Format != MagicFormat.Png) {
+                Delete(idX);
+                backgroundworker.ReportProgress(0, $"{idX} deleted");
+                return;
+            }
+
             if (!File.Exists(imgX.FileName)) {
                 Delete(idX);
                 backgroundworker.ReportProgress(0, $"{idX} deleted");
