@@ -11,14 +11,14 @@ namespace ImageBank.Tests
     public class HelperTests
     {
         [TestMethod()]
-        public void ComputeHash3250Test()
+        public void ComputeHash3216Test()
         {
             var array = new byte[] { 0x00, 0x01, 0x02, 0x03 };
-            var hash1 = Helper.ComputeHash3250(array);
-            Assert.IsTrue(hash1.Equals("ygetmyp5lfmlmzlfu3qyrezblaqspkhv4fd26hjm7iia5a33ok", StringComparison.Ordinal));
+            var hash1 = Helper.ComputeHash3216(array);
+            Assert.IsTrue(hash1.Equals("ygetmyp5lfmlmzlf", StringComparison.Ordinal));
             array[0] = 0x04;
-            var hash2 = Helper.ComputeHash3250(array);
-            Assert.IsTrue(hash2.Equals("jlnnu6bhz5zyt2jb5e5ht462o2nrwq7odjnpwyr23tkf2s2plg", StringComparison.Ordinal));
+            var hash2 = Helper.ComputeHash3216(array);
+            Assert.IsTrue(hash2.Equals("jlnnu6bhz5zyt2jb", StringComparison.Ordinal));
         }
 
         [TestMethod()]
@@ -135,57 +135,6 @@ namespace ImageBank.Tests
 
             File.WriteAllBytes("org.webp", webpdata); ;
             */
-        }
-
-        [TestMethod()]
-        public void ScdTest()
-        {
-            var data = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_org)) {
-                Assert.Fail();
-            }
-
-            var h_org = ScdHelper.Compute(b_org);
-
-            data = File.ReadAllBytes("org_r90.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_org_r90)) {
-                Assert.Fail();
-            }
-
-            var h_org_r90 = ScdHelper.Compute(b_org_r90);
-            var d = h_org.GetDistance(h_org_r90);
-
-            data = File.ReadAllBytes("org_r10.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_org_r10)) {
-                Assert.Fail();
-            }
-
-            var h_org_r10 = ScdHelper.Compute(b_org_r10);
-            d = h_org.GetDistance(h_org_r10);
-
-            data = File.ReadAllBytes("cor.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_cor)) {
-                Assert.Fail();
-            }
-
-            var h_cor = ScdHelper.Compute(b_cor);
-            d = h_org.GetDistance(h_cor);
-
-            data = File.ReadAllBytes("org_resized.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_org_resized)) {
-                Assert.Fail();
-            }
-
-            var h_org_resized = ScdHelper.Compute(b_org_resized);
-            d = h_org.GetDistance(h_org_resized);
-
-            data = File.ReadAllBytes("org_sim1.jpg");
-            if (!Helper.GetBitmapFromImageData(data, out var b_org_sim1)) {
-                Assert.Fail();
-            }
-
-            var h_org_sim1 = ScdHelper.Compute(b_org_sim1);
-            d = h_org.GetDistance(h_org_sim1);
         }
     }
 }

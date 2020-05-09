@@ -4,27 +4,22 @@ namespace ImageBank
 {
     public class Img
     {
-        public int Id { get; }
+        public string Id { get; }
 
-        private string _checksum;
-        public string Checksum
+        private string _folder;
+        public string Folder
         {
-            get => _checksum;
+            get => _folder;
             set
             {
-                _checksum = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrChecksum, value);
+                _folder = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFolder, value);
             }
         }
+        public string FileName => Helper.GetFileName(Id, Folder);
 
-        public string Name => Helper.GetName(Id);
-
-        public string Folder => Helper.GetFolder(Id);
-
-        public string FileName => Helper.GetFileName(Name, Folder);
-
-        private int _nextid;
-        public int NextId
+        private string _nextid;
+        public string NextId
         {
             get => _nextid;
             set
@@ -67,41 +62,27 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastadded;
-        public DateTime LastAdded
+        private DateTime _lastmodified;
+        public DateTime LastModified
         {
-            get => _lastadded;
+            get => _lastmodified;
             set
             {
-                _lastadded = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastAdded, value);
+                _lastmodified = value;
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastModified, value);
             }
         }
 
-        private Scd _vector;
+        private byte[] _vector;
 
-        public Scd Vector
+        public void SetVector(byte[] vector)
         {
-            get => _vector;
-            set
-            {
-                if (value != null) {
-                    _vector = value;
-                    var buffer = value.GetBuffer();
-                    ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrVector, buffer);
-                }
-            }
+            _vector = vector;
         }
 
-        private MagicFormat _format;
-        public MagicFormat Format
+        public byte[] GetVector()
         {
-            get => _format;
-            set
-            {
-                _format = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFormat, (int)value);
-            }
+            return _vector;
         }
 
         private int _counter;
@@ -116,26 +97,24 @@ namespace ImageBank
         }
 
         public Img(
-            int id,
-            string checksum,
+            string id,
+            string folder,
             DateTime lastview,
-            int nextid,
+            string nextid,
             float distance,
             DateTime lastcheck,
-            DateTime lastadded,
-            Scd vector,
-            MagicFormat format,
+            DateTime lastmodified,
+            byte[] vector,
             int counter)
         {
             Id = id;
-            _checksum = checksum;
+            _folder = folder;
             _lastview = lastview;
             _nextid = nextid;
             _distance = distance;
             _lastcheck = lastcheck;
-            _lastadded = lastadded;
+            _lastmodified = lastmodified;
             _vector = vector;
-            _format = format;
             _counter = counter;
         }
     }

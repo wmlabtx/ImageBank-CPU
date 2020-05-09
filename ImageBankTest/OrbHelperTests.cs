@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenCvSharp;
 using System.Drawing;
 using System.IO;
+using System.Text;
 
 namespace ImageBank.Tests
 {
@@ -11,45 +11,60 @@ namespace ImageBank.Tests
         [TestMethod()]
         public void ComputeOrbsTest()
         {
-            /*
-            var imgdata = File.ReadAllBytes("org.jpg");
-            if (!Helper.GetBitmapFromImgData(imgdata, out Bitmap bitmap, out _)) {
-                Assert.Fail();
-            }
-
-            using (var thump = Helper.GetThumpFromBitmap(bitmap)) {
-                if (!OrbHelper.ComputeOrbs(thump, out ulong[] vector)) {
-                    Assert.Fail();
-                }
-
-                Assert.IsTrue(vector.Length >= 4 && vector.Length <= 128);
-            }
-            */
-        }
-
-        [TestMethod()]
-        public void GetDistanceTest()
-        {
             var imagedata = File.ReadAllBytes("org.jpg");
             if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.ComputeOrbs(bitmap, out ulong[] orbs)) {
+            if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
+                Assert.Fail();
+            }
+        }
+
+        private byte[] GetVector(string filename)
+        {
+            var imagedata = File.ReadAllBytes(filename);
+            if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            var imagedatapng = File.ReadAllBytes("orgpng.png");
-            if (!Helper.GetBitmapFromImageData(imagedatapng, out Bitmap bitmappng)) {
+            if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.ComputeOrbs(bitmappng, out ulong[] orbspng)) {
-                Assert.Fail();
+            return vector;
+        }
+
+        [TestMethod()]
+        public void GetDistanceTest()
+        {
+            var baseline = GetVector("org.jpg");
+            var files = new[] {
+                "org_png.jpg",
+                "org_resized.jpg",
+                "org_nologo.jpg", 
+                "org_r10.jpg", 
+                "org_r90.jpg", 
+                "org_sim1.jpg",
+                "org_sim2.jpg",
+                "org_crop.jpg",
+                "org_nosim1.jpg",
+                "org_nosim2.jpg",
+                "org_mirror.jpg"
+            };
+
+            var sb = new StringBuilder();
+            foreach (var filename in files) {
+                var vector = GetVector(filename);
+                var distance = OrbHelper.CosineDistance(baseline, vector);
+                if (sb.Length > 0) {
+                    sb.AppendLine();
+                }
+
+                sb.Append($"{filename}: {distance:F4}");
             }
 
-            var zero = OrbHelper.GetSim(orbs, orbspng, 32);
-            var zeroone = 64 - OrbHelper.GetDistance(orbs, 0, orbspng, 0);
+            File.WriteAllText("report.txt", sb.ToString());
         }
     }
 }

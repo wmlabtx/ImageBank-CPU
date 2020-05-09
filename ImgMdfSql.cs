@@ -1,13 +1,11 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
-using System.Diagnostics.Contracts;
-using System;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void SqlUpdateProperty(int id, string key, object val)
+        public static void SqlUpdateProperty(string id, string key, object val)
         {
             lock (_sqllock) {
                 var sqltext = $"UPDATE {AppConsts.TableImages} SET {key} = @{key} WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}";
@@ -19,18 +17,7 @@ namespace ImageBank
             }
         }
 
-        public static void SqlUpdateVar(string key, object val)
-        {
-            lock (_sqllock) {
-                var sqltext = $"UPDATE {AppConsts.TableVars} SET {key} = @{key}";
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private static void SqlDelete(int id)
+        private static void SqlDelete(string id)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -50,66 +37,38 @@ namespace ImageBank
                     var sb = new StringBuilder();
                     sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                     sb.Append($"{AppConsts.AttrId}, ");
-                    sb.Append($"{AppConsts.AttrChecksum}, ");
+                    sb.Append($"{AppConsts.AttrFolder}, ");
                     sb.Append($"{AppConsts.AttrNextId}, ");
                     sb.Append($"{AppConsts.AttrDistance}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrVector}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
-                    sb.Append($"{AppConsts.AttrFormat}, ");
-                    sb.Append($"{AppConsts.AttrLastAdded}");
+                    sb.Append($"{AppConsts.AttrLastModified}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
-                    sb.Append($"@{AppConsts.AttrChecksum}, ");
+                    sb.Append($"@{AppConsts.AttrFolder}, ");
                     sb.Append($"@{AppConsts.AttrNextId}, ");
                     sb.Append($"@{AppConsts.AttrDistance}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrVector}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
-                    sb.Append($"@{AppConsts.AttrFormat}, ");
-                    sb.Append($"@{AppConsts.AttrLastAdded}");
+                    sb.Append($"@{AppConsts.AttrLastModified}");
                     sb.Append(")");
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChecksum}", img.Checksum);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFolder}", img.Folder);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextId}", img.NextId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDistance}", img.Distance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
-                    var buffer = img.Vector.GetBuffer();
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", buffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", img.GetVector());
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFormat}", img.Format);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastModified}", img.LastModified);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
-        }
-
-        private static int SqlGetIdByChecksum(string checksum)
-        {
-            Contract.Requires(checksum != null);
-            lock (_sqllock) {
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrId} ");
-                sb.Append($"FROM {AppConsts.TableImages} ");
-                sb.Append($"WHERE {AppConsts.AttrChecksum} = @{AppConsts.AttrChecksum}");
-                var sqltext = sb.ToString();
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChecksum}", checksum);
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        while (reader.Read()) {
-                            var id = reader.GetInt32(0);
-                            return id;
-                        }
-                    }
-                }
-            }
-
-            return 0;
         }
     }
 }

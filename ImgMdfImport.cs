@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -8,97 +7,91 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {        
-        private void Import(int maxadd, IProgress<string> progress)
+        public void Import()
         { 
             AppVars.SuspendEvent.Reset();
-
-            Helper.CleanupDirectories(AppConsts.PathCollection, progress);
 
             var added = 0;
             var found = 0;
             var bad = 0;
             var dt = DateTime.Now;
 
-            progress?.Report($"importing...");
+            ((IProgress<string>)AppVars.Progress).Report($"importing...");
             var directoryInfo = new DirectoryInfo(AppConsts.PathCollection);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
             foreach (var fileInfo in fileInfos) {
-                if (added >= maxadd) {
-                    break;
-                }
-
                 var filename = fileInfo.FullName;
                 var shortfilename = filename.Substring(AppConsts.PathCollection.Length);
 
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
-                    progress?.Report($"{shortfilename} (a:{added}/f:{found}/b:{bad})...");
+                    ((IProgress<string>)AppVars.Progress).Report($"{shortfilename} (a:{added}/f:{found}/b:{bad})...");
                 }
 
-                var fid = Helper.GetId(filename);
-                if (fid > 0) {
-                    if (Helper.IsNativePath(filename)) {
+                var name = Path.GetFileNameWithoutExtension(filename);
+                lock (_imglock) {
+                    if (_imgList.ContainsKey(name)) {
                         continue;
                     }
                 }
 
+                var directory = Path.GetDirectoryName(filename);
+                var folder = directory.Substring(AppConsts.PathCollection.Length);
+                var lastmodified = File.GetLastWriteTime(filename);
+
                 if (!Helper.GetImageDataFromFile(
                     filename,
-                    out var imgdata,
-                    out var magicformat,
+                    out byte[] imgdata,
 #pragma warning disable CA2000 // Dispose objects before losing scope
                     out Bitmap bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
-                    out var checksum,
-                    out var message,
-                    out var bitmapchanged)) {
-                    progress?.Report($"Corrupted image: {shortfilename}: {message}");
-
-                    if (message.Equals("too big image", StringComparison.OrdinalIgnoreCase)) {
-                        var filejpg = Path.ChangeExtension(filename, AppConsts.JpgExtension);
-                        if (!filejpg.Equals(filename, StringComparison.OrdinalIgnoreCase)) {
-                            File.WriteAllBytes(filejpg, imgdata);
-                            Helper.DeleteToRecycleBin(filename);
-                        }
-                    }
-
+                    out string id,
+                    out string message)) {
+                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
-                    continue;
+                    return;
                 }
 
+                var lastview = GetMinLastView();
                 lock (_imglock) {
-                    var idchecksum = SqlGetIdByChecksum(checksum);
-                    if (idchecksum > 0) {
-                        if (_imgList.TryGetValue(idchecksum, out Img imgchecksum)) {
-                            found++;
-                            imgchecksum.LastAdded = DateTime.Now;
+                    if (_imgList.TryGetValue(id, out Img imgfound)) {
+                        found++;
+
+                        if (imgfound.Folder.Equals(folder, StringComparison.OrdinalIgnoreCase)) {
                             Helper.DeleteToRecycleBin(filename);
                             continue;
                         }
+                        else {
+                            Delete(imgfound.Id);
+                            lastview = imgfound.LastView;
+                        }
                     }
                 }
 
-                var scd = ScdHelper.Compute(bitmap);
+                if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
+                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
+                    bad++;
+                    return;
+                }
+
                 bitmap.Dispose();
 
-                var id = AllocateId();
-                var lastview = GetMinLastView();
                 var lastcheck = GetMinLastCheck();
                 var img = new Img(
                     id: id,
-                    checksum: checksum,
+                    folder: folder,
                     lastview: lastview,
-                    nextid: 0,
-                    distance: 0f,
+                    nextid: string.Empty,
+                    distance: 256f,
                     lastcheck: lastcheck,
-                    lastadded: DateTime.Now,
-                    vector: scd,
-                    format: magicformat,
+                    lastmodified: lastmodified,
+                    vector: vector,
                     counter: 0);
 
                 Add(img);
                 if (!filename.Equals(img.FileName, StringComparison.OrdinalIgnoreCase)) {
-                    Helper.WriteData(img.FileName, imgdata);
+                    File.WriteAllBytes(img.FileName, imgdata);
+                    File.SetLastWriteTime(img.FileName, lastmodified);
                     Helper.DeleteToRecycleBin(filename);
                 }
 
@@ -115,15 +108,10 @@ namespace ImageBank
                 added++;
             }
 
-            Helper.CleanupDirectories(AppConsts.PathCollection, progress);
+            ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
+            Helper.CleanupDirectories(AppConsts.PathCollection, AppVars.Progress);
 
             AppVars.SuspendEvent.Set();
-        }
-
-        public void Import(IProgress<string> progress)
-        {
-            Contract.Requires(progress != null);
-            Import(100, progress);
         }
     }
 }

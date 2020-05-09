@@ -4,7 +4,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Delete(int id)
+        public void Delete(string id)
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img)) {
@@ -17,7 +17,7 @@ namespace ImageBank
             ResetRefers(id);
         }
 
-        private void ResetRefers(int id)
+        private void ResetRefers(string id)
         {
             lock (_imglock) {
                 var minlc = GetMinLastCheck();

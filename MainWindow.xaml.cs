@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -70,6 +71,13 @@ namespace ImageBank
         {
             ImportClick();
         }
+
+        private void MoveClick(object sender, EventArgs e)
+        {
+            var folder = ((MenuItem)sender).Tag as string;
+            MoveClick(folder);
+        }
+        
 
         private void ExitClick(object sender, EventArgs e)
         {

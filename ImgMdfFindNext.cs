@@ -1,69 +1,53 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private bool FindNext(int idX, out int nextid, out float distance)
+        private bool FindNext(string idX, out string nextid, out float distance)
         {            
-            var candidates = new List<Tuple<int, Scd>>();
-            Scd vectorX;
+            var candidates = new List<Tuple<string, byte[]>>();
+            byte[] vectorX;
+            nextid = string.Empty;
+            distance = 256f;
             lock (_imglock) {
                 if (!_imgList.TryGetValue(idX, out Img imgX)) {
-                    nextid = 0;
-                    distance = 0f;
-                    nextid = 0;
                     return false; 
                 }
 
-                distance = imgX.Distance;
-                nextid = imgX.NextId;
-                vectorX = imgX.Vector;
-                if (vectorX.IsEmpty()) {
-                    if (!Helper.GetImageDataFromFile(
-                        imgX.FileName,
-                        out var imgdata,
-                        out var magicformat,
-#pragma warning disable CA2000 // Dispose objects before losing scope
-                        out Bitmap bitmap,
-#pragma warning restore CA2000 // Dispose objects before losing scope
-                        out var checksum,
-                        out var message,
-                        out var bitmapchanged)) {
-                        return false;
-                    }
-
-                    if (bitmapchanged) {
-                        Helper.WriteData(imgX.FileName, imgdata);
-                        imgX.Format = magicformat;
-                        imgX.Checksum = checksum;
-                    }
-
-                    imgX.Vector = ScdHelper.Compute(bitmap);
-                    vectorX = imgX.Vector;
-                    nextid = 0;
-                }
-
-                if (nextid <= 0 || !_imgList.TryGetValue(nextid, out var imgY)) {
-                    distance = 0f;
-                    nextid = 0;
-                }
+                vectorX = imgX.GetVector();
 
                 foreach (var e in _imgList) {
-                    if (e.Value.Id != imgX.Id) {
-                        if (!e.Value.Vector.IsEmpty()) {
-                            candidates.Add(new Tuple<int, Scd>(e.Value.Id, e.Value.Vector));
+                    if (!e.Value.Id.Equals(imgX.Id, StringComparison.OrdinalIgnoreCase)) {
+                        candidates.Add(new Tuple<string, byte[]>(e.Value.Id, e.Value.GetVector()));
+                    }
+                }
+
+                /*
+                if (imgX.Folder.StartsWith(AppConsts.FolderLegacy, StringComparison.OrdinalIgnoreCase)) {
+                    foreach (var e in _imgList) {
+                        if (!e.Value.Id.Equals(imgX.Id, StringComparison.OrdinalIgnoreCase)) {
+                            candidates.Add(new Tuple<string, byte[]>(e.Value.Id, e.Value.GetVector()));
                         }
                     }
                 }
+                else {
+                   foreach (var e in _imgList) {
+                        if (!e.Value.Id.Equals(imgX.Id, StringComparison.OrdinalIgnoreCase)) {
+                            if (e.Value.Folder.StartsWith(imgX.Folder, StringComparison.OrdinalIgnoreCase)) {
+                                candidates.Add(new Tuple<string, byte[]>(e.Value.Id, e.Value.GetVector()));
+                            }
+                        }
+                    }
+                }
+                */
             }
 
             var index = 0;
             while (index < candidates.Count) {
-                var edistance = vectorX.GetDistance(candidates[index].Item2);
-                if (nextid == 0 || edistance < distance) {
+                var edistance = OrbHelper.CosineDistance(vectorX, candidates[index].Item2);
+                if (string.IsNullOrEmpty(nextid) || edistance < distance) {
                     distance = edistance;
                     nextid = candidates[index].Item1;
                 }

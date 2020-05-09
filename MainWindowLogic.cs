@@ -52,7 +52,7 @@ namespace ImageBank
 
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Load(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
             EnableElements();
@@ -88,11 +88,18 @@ namespace ImageBank
 
         private async void ImportClick()
         {
-            
-            await Task.Run(() => { AppVars.Collection.Import(AppVars.BackgroundProgress); }).ConfigureAwait(true);
-
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Import(); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void MoveClick(string folder)
+        {
+            DisableElements();
+            await Task.Run(() => { AppVars.Collection.Move(folder); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(AppVars.ImgPanel[0].Id, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -100,23 +107,23 @@ namespace ImageBank
         private void PictureLeftBoxMouseClick()
         {
             ImgPanelDelete(0);
-            AppVars.Collection.UpdateLastView(AppVars.ImgPanel[1].Id);
+            //AppVars.Collection.UpdateLastView(AppVars.ImgPanel[1].Id);
         }
 
         private void PictureRightBoxMouseClick()
         {
             ImgPanelDelete(1);
-            AppVars.Collection.UpdateLastView(AppVars.ImgPanel[0].Id);
+            //AppVars.Collection.UpdateLastView(AppVars.ImgPanel[0].Id);
         }
 
         private async void ButtonLeftNextMouseClick()
         {
             AppVars.Collection.UpdateLastView(AppVars.ImgPanel[0].Id);
-            AppVars.Collection.UpdateLastView(AppVars.ImgPanel[1].Id);
+            //AppVars.Collection.UpdateLastView(AppVars.ImgPanel[1].Id);
             AppVars.Collection.UpdateCounter(AppVars.ImgPanel[0].Id);
 
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -201,8 +208,7 @@ namespace ImageBank
                 pBoxes[index].Source = Helper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                var extension = GetExtensionName(AppVars.ImgPanel[index].Format);
-                sb.Append($"{AppVars.ImgPanel[index].Name}.{extension}");
+                sb.Append($"{AppVars.ImgPanel[index].Folder}\\{AppVars.ImgPanel[index].Id}");
 
                 if (AppVars.ImgPanel[index].Counter > 0) {
                     sb.Append($" {AppVars.ImgPanel[index].Counter}");
@@ -215,40 +221,20 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].LastView))} ago");
-                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].LastAdded))} ago]");
+                sb.Append($" [{AppVars.ImgPanel[index].Year}]");
                 sb.Append($" ({AppVars.ImgPanel[index].Distance:F2})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
-                if (AppVars.ImgPanel[index].Format == MagicFormat.WebP) {
-                    scb = System.Windows.Media.Brushes.LightYellow;
+                if (!AppVars.ImgPanel[index].Folder.StartsWith("Legacy", StringComparison.OrdinalIgnoreCase)) {
+                    scb = System.Windows.Media.Brushes.Yellow;
                 }
 
-                if (AppVars.ImgPanel[index].Format == MagicFormat.WebPLossLess) {
-                    scb = System.Windows.Media.Brushes.Gold;
-                }
-
-                if (AppVars.ImgPanel[index].Format == MagicFormat.Png) {
-                    scb = System.Windows.Media.Brushes.LightSteelBlue;
+                if (AppVars.ImgPanel[index].Folder.StartsWith("Kandid", StringComparison.OrdinalIgnoreCase)) {
+                    scb = System.Windows.Media.Brushes.PaleGreen;
                 }
 
                 pLabels[index].Background = scb;
-            }
-
-            if (
-                AppVars.ImgPanel[0].Format == MagicFormat.Jpeg &&
-                AppVars.ImgPanel[1].Format == MagicFormat.Jpeg &&
-                AppVars.ImgPanel[0].Bitmap.Width == AppVars.ImgPanel[1].Bitmap.Width &&
-                AppVars.ImgPanel[0].Bitmap.Height == AppVars.ImgPanel[1].Bitmap.Height &&
-                AppVars.ImgPanel[0].Distance < 2f
-                ) {
-                if (AppVars.ImgPanel[0].Length < AppVars.ImgPanel[1].Length) {
-                    pLabels[0].Background = System.Windows.Media.Brushes.Pink;
-                }
-
-                if (AppVars.ImgPanel[0].Length > AppVars.ImgPanel[1].Length) {
-                    pLabels[1].Background = System.Windows.Media.Brushes.Pink;
-                }
             }
 
             if (AppVars.ImgPanel[0].Id == AppVars.ImgPanel[1].Id) {
@@ -297,7 +283,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Delete(AppVars.ImgPanel[index].Id); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

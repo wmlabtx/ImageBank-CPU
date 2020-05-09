@@ -8,7 +8,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
@@ -40,20 +39,20 @@ namespace ImageBank
 
         #region Hash
 
-        public static string ComputeHash3250(byte[] array)
+        public static string ComputeHash3216(byte[] array)
         {
             var digits = "abcdefghijklmnopqrstuvwxyz234567".ToCharArray();
             if (digits.Length != 32) {
                 throw new IndexOutOfRangeException();
             }
 
-            var sb = new StringBuilder(50);
+            var sb = new StringBuilder(16);
             using (var sha256 = SHA256.Create()) {
                 var hash = sha256.ComputeHash(array);
                 var index = 0;
                 var posbyte = hash.Length - 1;
                 var posbit = 0;
-                for (var poschar = 0; poschar < 50; poschar++) {
+                for (var poschar = 0; poschar < 16; poschar++) {
                     index = 0;
                     for (var i = 0; i < 5; i++) {
                         if ((hash[posbyte] & (1 << posbit)) != 0) {
@@ -72,50 +71,6 @@ namespace ImageBank
             }
 
             return sb.ToString();
-        }
-
-        #endregion
-
-        #region Base36
-
-        public static string ComputeBase36(int value)
-        {
-            var digits = "0123456789abcdefghijklmnopqrstuvwxyz".ToCharArray();
-            if (digits.Length != 36) {
-                throw new IndexOutOfRangeException();
-            }
-
-            var sb = new StringBuilder();
-            do {
-                sb.Append(digits[value % digits.Length]);
-                value /= digits.Length;
-            }
-            while (value != 0);
-
-            return sb.ToString();
-        }
-
-        public static int DecodeBase36(string value)
-        {
-            Contract.Requires(value != null);
-            var digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-            int decoded = digits.IndexOf(value[0]);
-            if (decoded < 0) {
-                return 0;
-            }
-
-            var k = digits.Length;
-            for (var i = 1; i < value.Length; ++i) {
-                var digit = digits.IndexOf(value[i]);
-                if (digit < 0) {
-                    return 0;
-                }
-
-                decoded += digit * k;
-                k *= digits.Length;
-            }
-
-            return decoded;
         }
 
         #endregion
@@ -168,73 +123,25 @@ namespace ImageBank
 
         #region Strings
 
-        public static string GetName(int id)
+        public static string GetFileName(string id, string folder)
         {
-            return string.Concat(AppConsts.Prefix, ComputeBase36(id));
-        }
-
-        public static string GetFolder(int id)
-        {
-            var ifolder = id % 100;
-            return $"{ifolder:D2}";
-        }
-
-        public static string GetFileName(string name, string folder)
-        {
-            return $"{AppConsts.PathCollection}{folder}\\{name}{AppConsts.MzxExtension}";
-        }
-
-        public static int GetId(string filename)
-        {
-            var name = Path.GetFileNameWithoutExtension(filename);
-            if (name.Length < AppConsts.Prefix.Length) {
-                return 0;
-            }
-
-            if (!name.StartsWith(AppConsts.Prefix, StringComparison.OrdinalIgnoreCase)) {
-                return 0;
-            }
-
-            name = name.Substring(AppConsts.Prefix.Length);
-            if (name.Length == 0) {
-                return 0;
-            }
-
-            return DecodeBase36(name);
-        }
-
-        public static bool IsNativePath(string filename)
-        {
-            var fullpath = Path.GetDirectoryName(filename);
-            if (fullpath.Length < AppConsts.PathCollection.Length) {
-                return false;
-            }
-
-            var path = fullpath.Substring(AppConsts.PathCollection.Length);
-            if (path.Length == 0) {
-                return false;
-            }
-
-            if (!int.TryParse(path, out var id)) {
-                return false;
-            }
-
-            if (id < 0 || id > 99) {
-                return false;
-            }
-
-            return true;
-        }
-
-        public static string GetExtension(string filename)
-        {
-            var name = Path.GetExtension(filename);
-            return name;
+            return $"{AppConsts.PathCollection}{folder}\\{id}{AppConsts.JpgExtension}";
         }
 
         #endregion
 
         #region Image
+
+        public static Bitmap RepixelBitmap(Bitmap bitmap)
+        {
+            Contract.Requires(bitmap != null);
+            var bitmap24bppRgb = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(bitmap24bppRgb)) {
+                g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
+            }
+
+            return bitmap24bppRgb;
+        }
 
         public static Bitmap ResizeBitmap(Bitmap bitmap, int width, int height)
         {
@@ -256,25 +163,19 @@ namespace ImageBank
             return destImage;
         }
 
-        public static Bitmap RepixelBitmap(Bitmap bitmap)
-        {
-            Contract.Requires(bitmap != null);
-            var bitmap24bppRgb = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var g = Graphics.FromImage(bitmap24bppRgb)) {
-                g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
-            }
-
-            return bitmap24bppRgb;
-        }
-
         public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
         {
             try {
                 using (var mat = BitmapConverter.ToMat(bitmap)) {
+
                     //var iep = new ImageEncodingParam(ImwriteFlags.WebPQuality, 101);
                     //Cv2.ImEncode(AppConsts.WebpExtension, mat, out imagedata, iep);
-                    var iep = new ImageEncodingParam(ImwriteFlags.PngCompression, 9);
-                    Cv2.ImEncode(AppConsts.PngExtension, mat, out imagedata, iep);
+
+                    //var iep = new ImageEncodingParam(ImwriteFlags.PngCompression, 9);
+                    //Cv2.ImEncode(AppConsts.PngExtension, mat, out imagedata, iep);
+
+                    var iep = new ImageEncodingParam(ImwriteFlags.JpegQuality, 95);
+                    Cv2.ImEncode(AppConsts.JpgExtension, mat, out imagedata, iep);
                     return true;
                 }
             }
@@ -339,24 +240,20 @@ namespace ImageBank
         public static bool GetImageDataFromFile(
             string filename,
             out byte[] imagedata,
-            out MagicFormat magicformat,
             out Bitmap bitmap,
             out string checksum,
-            out string message,
-            out bool bitmapchanged)
+            out string message)
         {
             imagedata = null;
-            magicformat = MagicFormat.Unknown;
             bitmap = null;
             checksum = null;
             message = null;
-            bitmapchanged = false;
             if (!File.Exists(filename)) {
                 message = "missing file";
                 return false;
             }
 
-            var extension = GetExtension(filename);
+            var extension = Path.GetExtension(filename);
             if (string.IsNullOrEmpty(extension)) {
                 message = "no extention";
                 return false;
@@ -404,21 +301,15 @@ namespace ImageBank
                 return false;
             }
 
-            const float fmax = 6000f * 4000f;
-            var fx = (float)Math.Sqrt(fmax / (bitmap.Width * bitmap.Height));
-            if (fx < 1f) {
-                message = "too big image";
-                return false;
-            }
+            var bitmapchanged = false;
 
             if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
                 bitmap = RepixelBitmap(bitmap);
                 bitmapchanged = true;
             }
 
-            magicformat = GetMagicFormat(imagedata);
-            if (magicformat != MagicFormat.Png && 
-                magicformat != MagicFormat.Jpeg) {
+            var magicformat = GetMagicFormat(imagedata);
+            if (magicformat != MagicFormat.Jpeg) {
                 bitmapchanged = true;
             }
 
@@ -428,10 +319,10 @@ namespace ImageBank
                     return false;
                 }
 
-                magicformat = MagicFormat.Png;
+                File.WriteAllBytes(filename, imagedata);
             }
 
-            checksum = ComputeHash3250(imagedata);
+            checksum = ComputeHash3216(imagedata);
             return true;
         }
 

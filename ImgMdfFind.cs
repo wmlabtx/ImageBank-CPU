@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Find(int idX, int idY, IProgress<string> progress)
+        public void Find(string idX, string idY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
 
@@ -18,30 +18,62 @@ namespace ImageBank
                         return;
                     }
 
-                    if (idX <= 0) {
+                    if (string.IsNullOrEmpty(idX)) {
+                        
+                        /*
                         var mincounter = int.MaxValue;
-                        var mind = int.MaxValue;
-                        var minlv = DateTime.MaxValue; 
+                        var minlv = DateTime.MaxValue;
                         foreach (var e in _imgList) {
-                            if (e.Value.NextId <= 0 || !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
+                            if (string.IsNullOrEmpty(e.Value.NextId) || 
+                                e.Value.Id.Equals(e.Value.NextId, StringComparison.OrdinalIgnoreCase) ||
+                                !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
                                 continue;
                             }
 
                             if (e.Value.Counter < mincounter) {
                                 idX = e.Value.Id;
                                 mincounter = e.Value.Counter;
-                                mind = (int)e.Value.Distance;
                                 minlv = e.Value.LastView;
                             }
                             else {
                                 if (e.Value.Counter == mincounter) {
-                                    if ((int)e.Value.Distance < mind) {
+                                    if (!_imgList.TryGetValue(e.Value.NextId, out Img imgnext)) {
+                                        continue;
+                                    }
+
+                                    if (imgnext.LastView < minlv) {
                                         idX = e.Value.Id;
-                                        mind = (int)e.Value.Distance;
+                                        minlv = imgnext.LastView;
+                                    }
+                                }
+                            }
+                        }
+                        */
+                        
+                        /*
+                        var mincounter = int.MaxValue;
+                        var mind = float.MaxValue;
+                        var minlv = DateTime.MaxValue; 
+                        foreach (var e in _imgList) {
+                            if (string.IsNullOrEmpty(e.Value.NextId) || !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
+                                continue;
+                            }
+
+                            if (e.Value.Counter < mincounter) {
+                                idX = e.Value.Id;
+                                mincounter = e.Value.Counter;
+                                mind = e.Value.Distance;
+                                minlv = e.Value.LastView;
+                            }
+                            else {
+                                if (e.Value.Counter == mincounter) {
+                                    if (e.Value.Distance < mind) {
+                                        idX = e.Value.Id;
+                                        mind = e.Value.Distance;
                                         minlv = e.Value.LastView;
                                     }
                                     else {
-                                        if ((int)e.Value.Distance == mind) {
+                                        if (e.Value.Distance == mind) {
                                             if (e.Value.LastView < minlv) {
                                                 idX = e.Value.Id;
                                                 minlv = e.Value.LastView;
@@ -51,8 +83,23 @@ namespace ImageBank
                                 }
                             }
                         }
+                        */
 
-                        if (idX <= 0) {
+                        var minlv = DateTime.MaxValue;
+                        foreach (var e in _imgList) {
+                            if (string.IsNullOrEmpty(e.Value.NextId) || 
+                                e.Value.NextId.Equals(e.Value.Id, StringComparison.OrdinalIgnoreCase) || 
+                                !_imgList.TryGetValue(e.Value.NextId, out var imgy)) {
+                                continue;
+                            }
+
+                            if (e.Value.LastView < minlv) {
+                                idX = e.Value.Id;
+                                minlv = e.Value.LastView;
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(idX)) {
                             progress.Report("No images to view");
                             return;
                         }
@@ -60,33 +107,41 @@ namespace ImageBank
 
                     if (!_imgList.TryGetValue(idX, out Img imgX)) {
                         Delete(idX);
-                        idX = 0;
+                        progress.Report($"{idX} deleted");
+                        idX = string.Empty;
+                        idY = string.Empty;
                         continue;
                     }
 
                     AppVars.ImgPanel[0] = GetImgPanel(idX);
                     if (AppVars.ImgPanel[0] == null) {
                         Delete(idX);
-                        idX = 0;
+                        progress.Report($"{idX} deleted");
+                        idX = string.Empty;
+                        idY = string.Empty;
                         continue;
                     }
 
-                    if (idY <= 0) {
+                    if (string.IsNullOrEmpty(idY)) {
                         idY = imgX.NextId;
                     }
 
                     if (!_imgList.TryGetValue(idY, out Img imgY)) {
                         Delete(idY);
-                        imgX.NextId = 0;
-                        idX = 0;
+                        progress.Report($"{idY} deleted");
+                        imgX.NextId = string.Empty;
+                        idX = string.Empty;
+                        idY = string.Empty;
                         continue;
                     }
 
                     AppVars.ImgPanel[1] = GetImgPanel(idY);
                     if (AppVars.ImgPanel[1] == null) {
                         Delete(idY);
-                        imgX.NextId = 0;
-                        idX = 0;
+                        progress.Report($"{idY} deleted");
+                        imgX.NextId = string.Empty;
+                        idX = string.Empty;
+                        idY = string.Empty;
                         continue;
                     }
 

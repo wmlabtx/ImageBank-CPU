@@ -12,6 +12,9 @@
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>
+            <MenuItem Header="Move">
+                <MenuItem Header="Kandid" Tag="Kandid" Click="MoveClick" />
+            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>
