@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Drawing;
@@ -10,6 +11,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        /*
         public void Compute(BackgroundWorker backgroundworker)
         {
             Contract.Requires(backgroundworker != null);
@@ -61,7 +63,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
+                if (!OrbHelper.Compute(bitmap, out Mat descriptors)) {
                     return;
                 }
 
@@ -73,11 +75,11 @@ namespace ImageBank
                     id: id,
                     folder: imgX.Folder,
                     lastview: lastview,
-                    nextid: string.Empty,
+                    nextid: id,
                     distance: 256f,
                     lastcheck: lastcheck,
                     lastmodified: lastmodified,
-                    vector: vector,
+                    descriptors: descriptors,
                     counter: 0);
 
                 Add(img);
@@ -95,6 +97,10 @@ namespace ImageBank
 
             var sb = new StringBuilder();
             if (Math.Abs(distance - imgX.Distance) > 0.0001) {
+                if (distance < imgX.Distance) {
+                    imgX.Counter = 0;
+                }
+
                 sb.Append($"{imgX.Folder}\\{imgX.Id}: ");
                 sb.Append($"{imgX.Distance:F2} ");
                 sb.Append($"{char.ConvertFromUtf32(distance < imgX.Distance ? 0x2192 : 0x2193)} ");
@@ -121,5 +127,6 @@ namespace ImageBank
                 backgroundworker.ReportProgress(0, message);
             }
         }
+        */
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenCvSharp;
 using System.Drawing;
 using System.IO;
 using System.Text;
@@ -11,34 +12,39 @@ namespace ImageBank.Tests
         [TestMethod()]
         public void ComputeOrbsTest()
         {
+            /*
             var imagedata = File.ReadAllBytes("org.jpg");
             if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
+            if (!OrbHelper.Compute(bitmap, out Mat mat)) {
                 Assert.Fail();
             }
+            */
         }
 
-        private byte[] GetVector(string filename)
+        /*
+        private Mat GetDescriptors(string filename)
         {
             var imagedata = File.ReadAllBytes(filename);
             if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.Compute(bitmap, out byte[] vector)) {
+            if (!OrbHelper.Compute(bitmap, out Mat descriptors)) {
                 Assert.Fail();
             }
 
-            return vector;
+            return descriptors;
         }
+        */
 
         [TestMethod()]
         public void GetDistanceTest()
         {
-            var baseline = GetVector("org.jpg");
+            /*
+            var baseline = GetDescriptors("org.jpg");
             var files = new[] {
                 "org_png.jpg",
                 "org_resized.jpg",
@@ -55,8 +61,8 @@ namespace ImageBank.Tests
 
             var sb = new StringBuilder();
             foreach (var filename in files) {
-                var vector = GetVector(filename);
-                var distance = OrbHelper.CosineDistance(baseline, vector);
+                var descriptors = GetDescriptors(filename);
+                var distance = OrbHelper.GetDistance(baseline, descriptors);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
@@ -65,6 +71,7 @@ namespace ImageBank.Tests
             }
 
             File.WriteAllText("report.txt", sb.ToString());
+            */
         }
     }
 }

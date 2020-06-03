@@ -67,9 +67,19 @@ namespace ImageBank
             }
         }
 
-        private void ImportClick(object sender, EventArgs e)
+        private void ImportDtClick(object sender, EventArgs e)
         {
-            ImportClick();
+            ImportDtClick();
+        }
+
+        private void ImportRwClick(object sender, EventArgs e)
+        {
+            ImportRwClick();
+        }
+
+        private void ImportHpClick(object sender, EventArgs e)
+        {
+            ImportHpClick();
         }
 
         private void MoveClick(object sender, EventArgs e)
@@ -77,7 +87,21 @@ namespace ImageBank
             var folder = ((MenuItem)sender).Tag as string;
             MoveClick(folder);
         }
-        
+
+        private void Rotate90Click(object sender, EventArgs e)
+        {
+            Rotate90Click();
+        }
+
+        private void Rotate180Click(object sender, EventArgs e)
+        {
+            Rotate180Click();
+        }
+
+        private void Rotate270Click(object sender, EventArgs e)
+        {
+            Rotate270Click();
+        }
 
         private void ExitClick(object sender, EventArgs e)
         {

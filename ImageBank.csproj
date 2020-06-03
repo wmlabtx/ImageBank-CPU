@@ -33,7 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -96,6 +96,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Scd.cs" />
+    <Compile Include="ScdHelper.cs" />
+    <Compile Include="SCD_Descriptor.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -112,12 +115,13 @@
     <Compile Include="ImgMdfAdd.cs" />
     <Compile Include="ImgMdfComputeNext.cs" />
     <Compile Include="ImgMdfDelete.cs" />
+    <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />
     <Compile Include="ImgMdfFindNext.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />
-    <Compile Include="ImgMdfMove.cs" />
+    <Compile Include="ImgMdfConfirm.cs" />
     <Compile Include="ImgMdfSql.cs" />
     <Compile Include="ImgPanel.cs" />
     <Compile Include="MagicFormat.cs" />
@@ -129,7 +133,6 @@
   <ItemGroup>
     <Compile Include="MainWindowLogic.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="OrbDescriptor.cs" />
     <Compile Include="OrbHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

@@ -11,14 +11,13 @@ namespace ImageBank.Tests
     public class HelperTests
     {
         [TestMethod()]
-        public void ComputeHash3216Test()
+        public void ComputeHashTest()
         {
             var array = new byte[] { 0x00, 0x01, 0x02, 0x03 };
-            var hash1 = Helper.ComputeHash3216(array);
-            Assert.IsTrue(hash1.Equals("ygetmyp5lfmlmzlf", StringComparison.Ordinal));
+            var hash1 = Helper.ComputeHash(array);
             array[0] = 0x04;
-            var hash2 = Helper.ComputeHash3216(array);
-            Assert.IsTrue(hash2.Equals("jlnnu6bhz5zyt2jb", StringComparison.Ordinal));
+            var hash2 = Helper.ComputeHash(array);
+            Assert.AreNotEqual(hash1, hash2);
         }
 
         [TestMethod()]

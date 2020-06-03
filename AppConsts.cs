@@ -2,14 +2,16 @@
 {
     public static class AppConsts
     {
-        //private const string PathRoot = @"D:\Users\Murad\Documents\SDb\";
-        private const string PathRoot = @"M:\SDb\";
-        public const string PathCollection = PathRoot + @"Hp\";
+        private const string PathRoot = @"D:\Users\Murad\Documents\SDb\";
+        public const string PathHp = PathRoot + @"Hp\";
+        public const string PathDt = PathRoot + @"Dt\";
+        public const string PathRw = PathRoot + @"Rw\";
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
-        public const string FolderLegacy = @"Legacy\";
-        public const string PathLegacy = PathRoot + FolderLegacy;
-
         public const int MaxImages = 200000;
+        public const int MaxImagesInFolder = 2000;
+        public const int MaxDescriptorsInImage = 64; // 64 * 32 = 2048
+        public const int MaxOrbScope = 500;
+        public const int MaxHamming = 2;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -23,14 +25,17 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
-        public const string AttrId = "Id"; // f0s...44j (16 lenght)
-        public const string AttrFolder = "Folder";
-        public const string AttrLastView = "LastView";
-        public const string AttrNextId = "NextId"; // f0s...44j (16 lenght)
-        public const string AttrDistance = "Distance"; // 0.0123 or 45.3439 or 63.99
-        public const string AttrLastCheck = "LastCheck";
-        public const string AttrLastModified = "LastModified";
-        public const string AttrVector = "Vector";
-        public const string AttrCounter = "Counter";
+        public const string AttrName = "Name"; // (string 10 length)
+        public const string AttrFolder = "Folder"; // 0..99
+        public const string AttrPath = "Path"; // (string 128 length)
+        public const string AttrHash = "Hash"; // (8 bytes)
+        public const string AttrPHash = "PHash"; // (8 bytes)
+        public const string AttrCounter = "Counter"; // 1..
+        public const string AttrLastView = "LastView"; // datetime
+        public const string AttrWidth = "Width"; // int
+        public const string AttrHeigth = "Heigth"; // int
+        public const string AttrSize = "Size"; // int
+        public const string AttrDescriptors = "Descriptors"; // 1024 bytes
+        public const string AttrScd = "Scd"; // 1024 bytes
     }
 }

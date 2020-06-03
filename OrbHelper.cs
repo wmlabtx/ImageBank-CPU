@@ -1,58 +1,50 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using OpenCvSharp.ImgHash;
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
-
+using System.Linq;
 
 namespace ImageBank
 {
     public static class OrbHelper
     {
-        public static bool Compute(Bitmap bitmap, out byte[] vector)
+        public static bool Compute(Bitmap bitmap, out ulong phash, out ulong[] descriptors)
         {
             Contract.Requires(bitmap != null);
-            vector = null;
-            using (var orb = ORB.Create(500)) {
-                using (var thumb = Helper.ResizeBitmap(bitmap, 512, 512))
-                using (var matcolor = BitmapConverter.ToMat(thumb)) {
+            phash = 0;
+            descriptors = null;
+            using (var orb = ORB.Create(AppConsts.MaxDescriptorsInImage)) {
+                using (var matcolor = BitmapConverter.ToMat(bitmap)) {
                     if (matcolor.Width == 0 || matcolor.Height == 0) {
                         return false;
                     }
 
                     using (var mat = new Mat()) {
                         Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                        using (var descriptors = new Mat()) {
-                            orb.DetectAndCompute(mat, null, out _, descriptors);
-                            if (descriptors.Rows == 0 || descriptors.Cols != 32) {
+                        using (var phashmaker = PHash.Create())
+                        using (var matphash = new Mat()) {
+                            phashmaker.Compute(mat, matphash);
+                            if (matphash.Rows != 1 || matphash.Cols != 8) {
                                 return false;
                             }
 
-                            descriptors.GetArray(out byte[] buffer);
-                            var n = Math.Min(500, buffer.Length / 32);
-                            var hist = new ulong[256];
-                            ulong hmax = 0;
-                            var offset = 0;
-                            var descriptor = new byte[32];
-                            for (var i = 0; i < n; i++) {
-                                Buffer.BlockCopy(buffer, offset, descriptor, 0, 32);
-                                offset += 32;
-                                var ba = new BitArray(descriptor);
-                                for (var j = 0; j < 256; j++) {
-                                    if (ba[j]) {
-                                        hist[j]++;
-                                        if (hist[j] > hmax) {
-                                            hmax = hist[j];
-                                        }
-                                    }
-                                }
+                            matphash.GetArray(out byte[] buffer);
+                            phash = BitConverter.ToUInt64(buffer, 0);
+                        }
+
+                        using (var matdescriptors = new Mat()) {
+                            orb.DetectAndCompute(mat, null, out _, matdescriptors);
+                            if (matdescriptors.Rows == 0 || matdescriptors.Cols != 32) {
+                                return false;
                             }
 
-                            vector = new byte[256];
-                            for (var j = 0; j < 256; j++) {
-                                vector[j] = (byte)((hist[j] * 255) / hmax);
-                            }
+                            matdescriptors.GetArray(out byte[] buffer);
+                            var length = Math.Min(buffer.Length, AppConsts.MaxDescriptorsInImage * 32);
+                            descriptors = new ulong[length / sizeof(ulong)];
+                            Buffer.BlockCopy(buffer, 0, descriptors, 0, length);
                         }
                     }
                 }
@@ -61,26 +53,50 @@ namespace ImageBank
             return true;
         }
 
-        public static float CosineDistance(byte[] x, byte[] y)
+        public static int GetDistance(ulong[] x, int xoffset, ulong[] y, int yoffset)
         {
             Contract.Requires(x != null);
             Contract.Requires(y != null);
-            Contract.Requires(x.Length > 0);
-            Contract.Requires(y.Length > 0);
-            Contract.Requires(x.Length == y.Length);
-            var m = 0f;
-            var a = 0f;
-            var b = 0f;
-            for (var i = 0; i < x.Length; i++) {
-                if (Math.Abs(x[i]) > 0.0001) {
-                    m += (float)x[i] * y[i];
-                    a += (float)x[i] * x[i];
-                    b += (float)y[i] * y[i];
-                }
+
+            var distance = 0;
+            for (var i = 0; i < 4; i++) {
+                distance += Intrinsic.PopCnt(x[xoffset + i] ^ y[yoffset + i]);
             }
 
-            var distance = (float)(100f * Math.Acos(m / (Math.Sqrt(a) * Math.Sqrt(b))) / Math.PI);
             return distance;
+        }
+
+        public static int[] GetMatches(ulong[] x, ulong[] y)
+        {
+            Contract.Requires(x != null);
+            Contract.Requires(y != null);
+
+            var list = new List<Tuple<int, int, int>>();
+            var xoffset = 0;
+            var xmax = Math.Min(AppConsts.MaxDescriptorsInImage * 4, x.Length);
+            var ymax = Math.Min(AppConsts.MaxDescriptorsInImage * 4, y.Length);
+            while (xoffset < xmax) {
+                var yoffset = 0;
+                while (yoffset < ymax) {
+                    var distance = GetDistance(x, xoffset, y, yoffset);
+                    list.Add(new Tuple<int, int, int>(xoffset, yoffset, distance));
+                    yoffset += 4;
+                }
+
+                xoffset += 4;
+            }
+
+            list = list.OrderBy(e => e.Item3).ToList();
+            var matches = new List<int>();
+            while (list.Count > 0) {
+                var minx = list[0].Item1;
+                var miny = list[0].Item2;
+                var mind = list[0].Item3;
+                matches.Add(mind);
+                list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
+            }
+
+            return matches.ToArray();
         }
     }
 }

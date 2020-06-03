@@ -1,37 +1,37 @@
-﻿using System.IO;
+﻿using System.Drawing;
+using System.Linq;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private ImgPanel GetImgPanel(string id)
+        private ImgPanel GetImgPanel(string name)
         {
-            if (!_imgList.TryGetValue(id, out var imgX)) {
-                return null;
+            Img img;
+            var foldercounter = 0;
+            lock (_imglock) {
+                if (!_imgList.TryGetValue(name, out img)) {
+                    return null;
+                }
+
+                foldercounter = _imgList.Count(e => e.Value.Folder == img.Folder);
             }
 
-            if (!File.Exists(imgX.FileName)) {
-                return null;
-            }
-
-            var imagedata = File.ReadAllBytes(imgX.FileName);
-            if (imagedata == null || imagedata.Length == 0) {
-                return null;
-            }
-
-            if (!Helper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+            if (!Helper.GetImageDataFromFile(img.FileName, 
+                out byte[] imagedata,
+#pragma warning disable CA2000 // Dispose objects before losing scope
+                out Bitmap bitmap,
+#pragma warning restore CA2000 // Dispose objects before losing scope
+                out _,
+                out _)) {
                 return null;
             }
 
             var imgpanel = new ImgPanel(
-                id: id,
-                folder: imgX.Folder,
-                lastview: imgX.LastView,
-                distance: imgX.Distance,
+                img: img,
                 bitmap: bitmap, 
                 length: imagedata.Length,
-                counter: imgX.Counter,
-                year: imgX.LastModified.Year);
+                foldercounter: foldercounter);
 
             return imgpanel;
         }

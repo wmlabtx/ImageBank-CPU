@@ -1,29 +1,20 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace ImageBank
 {
     public class ImgPanel
     {
-        public string Id { get; }
-        public string Folder { get; }
-        public DateTime LastView { get; }
-        public float Distance { get; }
-        public int Counter { get; }
+        public Img Img { get; }
         public Bitmap Bitmap { get; }
         public long Length { get; }
-        public int Year { get; }
+        public int FolderCounter { get; }
 
-        public ImgPanel(string id, string folder, DateTime lastview, float distance, int counter, Bitmap bitmap, long length, int year)
+        public ImgPanel(Img img, Bitmap bitmap, long length, int foldercounter)
         {
-            Id = id;
-            Folder = folder;
-            LastView = lastview;
-            Distance = distance;
-            Counter = counter;
+            Img = img;
             Bitmap = bitmap;
             Length = length;
-            Year = year;
+            FolderCounter = foldercounter;
         }
     }
 }

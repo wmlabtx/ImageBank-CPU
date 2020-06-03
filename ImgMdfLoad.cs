@@ -21,15 +21,18 @@ namespace ImageBank
 
             var sb = new StringBuilder();
             sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrId}, "); // 0
+            sb.Append($"{AppConsts.AttrName}, "); // 0
             sb.Append($"{AppConsts.AttrFolder}, "); // 1
-            sb.Append($"{AppConsts.AttrLastView}, "); // 2
-            sb.Append($"{AppConsts.AttrNextId}, "); // 3
-            sb.Append($"{AppConsts.AttrDistance}, "); // 4
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 5
-            sb.Append($"{AppConsts.AttrVector}, "); // 6
-            sb.Append($"{AppConsts.AttrCounter}, "); // 7
-            sb.Append($"{AppConsts.AttrLastModified} "); // 8
+            sb.Append($"{AppConsts.AttrPath}, "); // 2
+            sb.Append($"{AppConsts.AttrHash}, "); // 3
+            sb.Append($"{AppConsts.AttrPHash}, "); // 4
+            sb.Append($"{AppConsts.AttrCounter}, "); // 5
+            sb.Append($"{AppConsts.AttrLastView}, "); // 6
+            sb.Append($"{AppConsts.AttrWidth}, "); // 7
+            sb.Append($"{AppConsts.AttrHeigth}, "); // 8
+            sb.Append($"{AppConsts.AttrSize}, "); // 9
+            sb.Append($"{AppConsts.AttrDescriptors}, "); // 10
+            sb.Append($"{AppConsts.AttrScd} "); // 11
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -37,25 +40,37 @@ namespace ImageBank
                     using (var reader = sqlCommand.ExecuteReader()) {
                         var dt = DateTime.Now;
                         while (reader.Read()) {
-                            var id = reader.GetString(0);
-                            var folder = reader.GetString(1);
-                            var lastview = reader.GetDateTime(2);
-                            var nextid = reader.GetString(3);
-                            var distance = reader.GetFloat(4);
-                            var lastcheck = reader.GetDateTime(5);
-                            var vector = (byte[])reader[6];
-                            var counter = reader.GetInt32(7);
-                            var lastmodified = reader.GetDateTime(8);
+                            var name = reader.GetString(0);
+                            var folder = reader.GetInt32(1);
+                            var path = reader.GetString(2);
+                            var bhash = (byte[])reader[3];
+                            var hash = BitConverter.ToUInt64(bhash, 0);
+                            var bphash = (byte[])reader[4];
+                            var phash = BitConverter.ToUInt64(bphash, 0);
+                            var counter = reader.GetInt32(5);
+                            var lastview = reader.GetDateTime(6);
+                            var width = reader.GetInt32(7);
+                            var heigth = reader.GetInt32(8);
+                            var size = reader.GetInt32(9);
+                            var bdescriptors = (byte[])reader[10];
+                            var descriptors = Helper.BufferToDescriptors(bdescriptors);
+                            var bscd = (byte[])reader[11];
+                            var scd = new Scd(bscd);
+
                             var img = new Img(
-                                id: id,
+                                name: name,
+                                hash: hash,
+                                phash: phash,
+                                width: width,
+                                heigth: heigth,
+                                size: size,
+                                scd: scd,
+                                descriptors: descriptors,
                                 folder: folder,
-                                lastview: lastview,
-                                nextid: nextid,
-                                distance: distance,
-                                lastcheck: lastcheck,
-                                vector: vector,
+                                path: path,
                                 counter: counter,
-                                lastmodified: lastmodified);
+                                lastview: lastview
+                                );
 
                             AddToMemory(img);
 

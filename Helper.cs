@@ -19,6 +19,8 @@ namespace ImageBank
 {
     public static class Helper
     {
+        private static readonly RNGCryptoServiceProvider _random = new RNGCryptoServiceProvider();
+
         #region DeleteToRecycleBin
 
         public static void DeleteToRecycleBin(string filename)
@@ -37,40 +39,60 @@ namespace ImageBank
 
         #endregion
 
-        #region Hash
+        #region Random
 
-        public static string ComputeHash3216(byte[] array)
+        /// <returns>xxx-xx-xxx</returns>
+        public static string RandomName()
         {
-            var digits = "abcdefghijklmnopqrstuvwxyz234567".ToCharArray();
-            if (digits.Length != 32) {
-                throw new IndexOutOfRangeException();
+            var d0 = "bcdfghjklmnpqrstvwxyz".ToCharArray();
+            var d1 = "aeiou".ToCharArray();
+            var d2 = "0123456789".ToCharArray();
+            var sb = new StringBuilder("xxx-xx-xxx");
+            var br = new byte[32];
+            _random.GetBytes(br);
+            var bv = new byte[1];
+            _random.GetBytes(bv);
+            if ((bv[0] & 1) == 0) {
+                sb[0] = d0[BitConverter.ToUInt32(br, 0) % d0.Length];
+                sb[1] = d1[BitConverter.ToUInt32(br, 4) % d1.Length];
+                sb[2] = d0[BitConverter.ToUInt32(br, 8) % d0.Length];
+            }
+            else {
+                sb[0] = d1[BitConverter.ToUInt32(br, 0) % d1.Length];
+                sb[1] = d0[BitConverter.ToUInt32(br, 4) % d0.Length];
+                sb[2] = d1[BitConverter.ToUInt32(br, 8) % d1.Length];
             }
 
-            var sb = new StringBuilder(16);
-            using (var sha256 = SHA256.Create()) {
-                var hash = sha256.ComputeHash(array);
-                var index = 0;
-                var posbyte = hash.Length - 1;
-                var posbit = 0;
-                for (var poschar = 0; poschar < 16; poschar++) {
-                    index = 0;
-                    for (var i = 0; i < 5; i++) {
-                        if ((hash[posbyte] & (1 << posbit)) != 0) {
-                            index |= 1 << i;
-                        }
+            sb[3] = '-';
+            sb[4] = d2[BitConverter.ToUInt32(br, 12) % d2.Length];
+            sb[5] = d2[BitConverter.ToUInt32(br, 16) % d2.Length];
+            sb[6] = '-';
 
-                        posbit++;
-                        if (posbit >= 8) {
-                            posbyte--;
-                            posbit = 0;
-                        }
-                    }
-
-                    sb.Append(digits[index]);
-                }
+            if ((bv[0] & 2) == 0) {
+                sb[7] = d1[BitConverter.ToUInt32(br, 20) % d1.Length];
+                sb[8] = d0[BitConverter.ToUInt32(br, 24) % d0.Length];
+                sb[9] = d1[BitConverter.ToUInt32(br, 28) % d1.Length];
+            }
+            else {
+                sb[7] = d0[BitConverter.ToUInt32(br, 20) % d0.Length];
+                sb[8] = d1[BitConverter.ToUInt32(br, 24) % d1.Length];
+                sb[9] = d0[BitConverter.ToUInt32(br, 28) % d0.Length];
             }
 
             return sb.ToString();
+        }
+
+        #endregion
+
+        #region Hash
+
+        public static ulong ComputeHash(byte[] array)
+        {
+            using (var sha256 = SHA256.Create()) {
+                var hash256 = sha256.ComputeHash(array);
+                var hash64 = BitConverter.ToUInt64(hash256, 0);
+                return hash64;
+            }
         }
 
         #endregion
@@ -123,9 +145,15 @@ namespace ImageBank
 
         #region Strings
 
-        public static string GetFileName(string id, string folder)
+        public static string GetFileName(string name, int folder)
         {
-            return $"{AppConsts.PathCollection}{folder}\\{id}{AppConsts.JpgExtension}";
+            return $"{AppConsts.PathHp}{folder:D2}\\{name}{AppConsts.MzxExtension}";
+        }
+
+        public static string GetShortName(Img img)
+        {
+            Contract.Requires(img != null);
+            return $"{img.Folder:D2}\\{img.Name}";
         }
 
         #endregion
@@ -241,12 +269,12 @@ namespace ImageBank
             string filename,
             out byte[] imagedata,
             out Bitmap bitmap,
-            out string checksum,
+            out ulong hash,
             out string message)
         {
             imagedata = null;
             bitmap = null;
-            checksum = null;
+            hash = 0;
             message = null;
             if (!File.Exists(filename)) {
                 message = "missing file";
@@ -322,7 +350,8 @@ namespace ImageBank
                 File.WriteAllBytes(filename, imagedata);
             }
 
-            checksum = ComputeHash3216(imagedata);
+            hash = ComputeHash(imagedata);
+            
             return true;
         }
 
@@ -505,6 +534,26 @@ namespace ImageBank
             }
 
             return decryptedBytes;
+        }
+
+        #endregion
+
+        #region Descriptors
+
+        public static ulong[] BufferToDescriptors(byte[] buffer)
+        {
+            Contract.Requires(buffer != null);
+            var descriptors = new ulong[buffer.Length / sizeof(ulong)];
+            Buffer.BlockCopy(buffer, 0, descriptors, 0, buffer.Length);
+            return descriptors;
+        }
+
+        public static byte[] DescriptorsToBuffer(ulong[] descriptors)
+        {
+            Contract.Requires(descriptors != null);
+            var buffer = new byte[descriptors.Length * sizeof(ulong)];
+            Buffer.BlockCopy(descriptors, 0, buffer, 0, buffer.Length);
+            return buffer;
         }
 
         #endregion

@@ -4,50 +4,58 @@ namespace ImageBank
 {
     public class Img
     {
-        public string Id { get; }
+        public string Name { get; }
 
-        private string _folder;
-        public string Folder
+        public ulong Hash { get; }
+
+        public ulong PHash { get; }
+
+        public int Width { get; }
+
+        public int Heigth { get; }
+
+        public int Size { get; }
+
+        public Scd Scd { get; }
+
+        private readonly ulong[] _descriptors;
+
+        public ulong[] GetDescriptors()
+        {
+            return _descriptors;
+        }
+
+        private int _folder;
+        public int Folder
         {
             get => _folder;
             set
             {
                 _folder = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrFolder, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFolder, value);
             }
         }
-        public string FileName => Helper.GetFileName(Id, Folder);
+        public string FileName => Helper.GetFileName(Name, Folder);
 
-        private string _nextid;
-        public string NextId
+        private string _path;
+        public string Path
         {
-            get => _nextid;
+            get => _path;
             set
             {
-                _nextid = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrNextId, value);
-            }
-        }
-
-        private float _distance;
-        public float Distance
-        {
-            get => _distance;
-            set
-            {
-                _distance = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrDistance, value);
+                _path = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrPath, value);
             }
         }
 
-        private DateTime _lastcheck;
-        public DateTime LastCheck
+        private int _counter;
+        public int Counter
         {
-            get => _lastcheck;
+            get => _counter;
             set
             {
-                _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
+                _counter = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
             }
         }
 
@@ -58,64 +66,38 @@ namespace ImageBank
             set
             {
                 _lastview = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastView, value);
-            }
-        }
-
-        private DateTime _lastmodified;
-        public DateTime LastModified
-        {
-            get => _lastmodified;
-            set
-            {
-                _lastmodified = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastModified, value);
-            }
-        }
-
-        private byte[] _vector;
-
-        public void SetVector(byte[] vector)
-        {
-            _vector = vector;
-        }
-
-        public byte[] GetVector()
-        {
-            return _vector;
-        }
-
-        private int _counter;
-        public int Counter
-        {
-            get => _counter;
-            set
-            {
-                _counter = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrCounter, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastView, value);
             }
         }
 
         public Img(
-            string id,
-            string folder,
-            DateTime lastview,
-            string nextid,
-            float distance,
-            DateTime lastcheck,
-            DateTime lastmodified,
-            byte[] vector,
-            int counter)
+            string name,
+            ulong hash,
+            ulong phash,
+            int width,
+            int heigth,
+            int size,
+            Scd scd,
+            ulong[] descriptors,
+            int folder,
+            string path,
+            int counter,
+            DateTime lastview
+            )
         {
-            Id = id;
+            Name = name;
+            Hash = hash;
+            PHash = phash;
+            Width = width;
+            Heigth = heigth;
+            Size = size;
+            Scd = scd;
+            _descriptors = descriptors;
+
             _folder = folder;
-            _lastview = lastview;
-            _nextid = nextid;
-            _distance = distance;
-            _lastcheck = lastcheck;
-            _lastmodified = lastmodified;
-            _vector = vector;
+            _path = path;
             _counter = counter;
+            _lastview = lastview;
         }
     }
 }

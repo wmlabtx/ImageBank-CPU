@@ -1,32 +1,18 @@
-﻿using System.Linq;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Delete(string id)
+        public void Delete(string name)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(id, out var img)) {
+                if (_imgList.TryGetValue(name, out var img)) {
                     Helper.DeleteToRecycleBin(img.FileName);
-                    _imgList.Remove(id);
+                    _imgList.Remove(name);
+                    _hashList.Remove(img.Hash);
                 }
             }
 
-            SqlDelete(id);
-            ResetRefers(id);
-        }
-
-        private void ResetRefers(string id)
-        {
-            lock (_imglock) {
-                var minlc = GetMinLastCheck();
-                _imgList
-                    .Values
-                    .Where(e => e.NextId == id)
-                    .ToList()
-                    .ForEach(e => e.LastCheck = minlc);
-            }
+            SqlDelete(name);
         }
     }
 }
