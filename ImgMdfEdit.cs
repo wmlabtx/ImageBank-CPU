@@ -52,6 +52,7 @@ namespace ImageBank
                         folder: img.Folder,
                         path: img.Path,
                         counter: img.Counter,
+                        lastadded: img.LastAdded,
                         lastview: img.LastView
                         );
 

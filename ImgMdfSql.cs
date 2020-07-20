@@ -9,11 +9,15 @@ namespace ImageBank
         public static void SqlUpdateProperty(string name, string key, object val)
         {
             lock (_sqllock) {
-                var sqltext = $"UPDATE {AppConsts.TableImages} SET {key} = @{key} WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}";
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
-                    sqlCommand.ExecuteNonQuery();
+                try {
+                    var sqltext = $"UPDATE {AppConsts.TableImages} SET {key} = @{key} WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}";
+                    using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException) {
                 }
             }
         }
@@ -43,6 +47,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrPHash}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
+                    sb.Append($"{AppConsts.AttrLastAdded}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeigth}, ");
@@ -56,6 +61,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrPHash}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
+                    sb.Append($"@{AppConsts.AttrLastAdded}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeigth}, ");
@@ -72,6 +78,7 @@ namespace ImageBank
                     var bphash = BitConverter.GetBytes(img.PHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPHash}", bphash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);

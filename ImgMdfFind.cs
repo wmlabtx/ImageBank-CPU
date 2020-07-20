@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -9,12 +8,13 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        private bool _findtrigger;
+
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
 
             var dt = DateTime.Now;
-            //var distance = 0;
             lock (_imglock) {
                 while (true) {
                     if (_imgList.Count < 2) {
@@ -22,56 +22,17 @@ namespace ImageBank
                         return;
                     }
 
-
-
                     if (string.IsNullOrEmpty(nameX)) {
-                        var lastf = 99;
-                        var fc = new int[100];
-                        foreach (var img in _imgList) {
-                            fc[img.Value.Folder]++;
+                        DateTime minlv;
+                        if (_findtrigger) {
+                            minlv = _imgList.Min(e => e.Value.LastView);
+                        }
+                        else {
+                            minlv = _imgList.Where(e => DateTime.Now.Subtract(e.Value.LastView).TotalDays > 365).Max(e => e.Value.LastView);
                         }
 
-                        while (fc[lastf] == 0 && lastf > 0) {
-                            lastf--;
-                        }
-
-                        var docompress = false;
-                        /*
-                        if (lastf > 0) {
-                            for (var i = 0; i < lastf; i++) {
-                                if (fc[i] < AppConsts.MaxImagesInFolder) {
-                                    docompress = true;
-                                    break;
-                                }
-                            }
-                        }
-                        */ 
-
-                        var df = lastf;
-                        if (!docompress) {
-                            var minct = DateTime.MaxValue;
-                            string mindp = null;
-                            for (var i = 0; i < 99; i++) {
-                                var dp = $"{AppConsts.PathHp}{i:D2}";
-                                if (Directory.Exists(dp)) {
-                                    var ct = Directory.GetLastWriteTime(dp);
-                                    if (ct < minct) {
-                                        minct = ct;
-                                        mindp = dp;
-                                        df = i;
-                                    }
-                                }
-                            }
-
-                            try {
-                                Directory.SetLastWriteTime(mindp, DateTime.Now);
-                            }
-                            catch (IOException) {
-                            }
-                        }
-
-                        var minlv = _imgList.Where(e => e.Value.Folder == df).Min(e => e.Value.LastView);
-                        nameX = _imgList.Where(e => e.Value.Folder == df).FirstOrDefault(e => e.Value.LastView == minlv).Key;
+                        nameX = _imgList.FirstOrDefault(e => e.Value.LastView == minlv).Key;
+                        _findtrigger = !_findtrigger;
                     }
 
                     AppVars.ImgPanel[0] = GetImgPanel(nameX);
@@ -87,70 +48,116 @@ namespace ImageBank
                             break;
                         }
 
-                        nameY = nameX;
-                        var candidates = new List<Tuple<string, ulong[], float>>();
-                        var descriptorsX = AppVars.ImgPanel[0].Img.GetDescriptors();
-                        var scdX = AppVars.ImgPanel[0].Img.Scd;
-                        var pathX = AppVars.ImgPanel[0].Img.Path;
-                        int[] dmatch = null;
-
-                        if (string.IsNullOrEmpty(pathX)) {
-                            foreach (var e in _imgList) {
-                                if (!e.Value.Name.Equals(nameX, StringComparison.OrdinalIgnoreCase)) {
-                                    candidates.Add(new Tuple<string, ulong[], float>(e.Value.Name, e.Value.GetDescriptors(), scdX.GetDistance(e.Value.Scd)));
-                                }
-                            }
-                        }
-                        else {
-                            var pX = pathX.Split('.');
-                            foreach (var e in _imgList) {
-                                if (!e.Value.Name.Equals(nameX, StringComparison.OrdinalIgnoreCase)) {
-                                    if (!string.IsNullOrEmpty(e.Value.Path)) {
-                                        var pY = e.Value.Path.Split('.');
-                                        if (pY.Length >= pX.Length) {
-                                            var issubpath = true;
-                                            for (var i = 0; i < pX.Length; i++) {
-                                                if (!pX[i].Equals(pY[i], StringComparison.OrdinalIgnoreCase)) {
-                                                    issubpath = false;
-                                                    break;
-                                                }
-                                            }
-
-                                            if (issubpath) {
-                                                candidates.Add(new Tuple<string, ulong[], float>(e.Value.Name, e.Value.GetDescriptors(), scdX.GetDistance(e.Value.Scd)));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        nameY = string.Empty;
+                        var imgX = AppVars.ImgPanel[0].Img;
+                        var pX = Array.Empty<string>();
+                        if (!string.IsNullOrEmpty(imgX.Path)) {
+                            pX = imgX.Path.Split('.');
                         }
 
-                        candidates = candidates.OrderBy(e => e.Item3).Take(AppConsts.MaxOrbScope).ToList();
+                        var candidates = new List<Img>();
 
-                        var index = 0;
-                        while (index < candidates.Count) {
-                            var ematch = OrbHelper.GetMatches(descriptorsX, candidates[index].Item2);
-                            if (dmatch == null) {
-                                dmatch = ematch;
-                                nameY = candidates[index].Item1;
+                        bool issubpath;
+                        foreach (var e in _imgList) {
+                            if (e.Value.Name.Equals(imgX.Name, StringComparison.Ordinal)) {
+                                continue;
                             }
-                            else {
-                                var len = Math.Min(dmatch.Length, ematch.Length);
-                                for (var i = 0; i < len; i++) {
-                                    if (ematch[i] < dmatch[i]) {
-                                        dmatch = ematch;
-                                        nameY = candidates[index].Item1;
-                                        break;
-                                    }
-                                    else {
-                                        if (ematch[i] > dmatch[i]) {
+
+                            issubpath = true;
+                            if (pX.Length > 0 && !string.IsNullOrEmpty(e.Value.Path)) {
+                                var pY = e.Value.Path.Split('.');
+                                if (pY.Length >= pX.Length) {
+                                    for (var i = 0; i < pX.Length; i++) {
+                                        if (!pX[i].Equals(pY[i], StringComparison.OrdinalIgnoreCase)) {
+                                            issubpath = false;
                                             break;
                                         }
                                     }
                                 }
                             }
 
-                            index++;
+                            if (!issubpath) {
+                                continue;
+                            }
+
+                            candidates.Add(e.Value);
+                        }
+
+                        var descriptorsX = AppVars.ImgPanel[0].Img.GetDescriptors();
+                        AppVars.ImgPanelHammingDistance = int.MaxValue;
+                        foreach (var e in candidates) {
+                            var d = Intrinsic.PopCnt(imgX.PHash ^ e.PHash);
+                            if (d < AppConsts.MaxHamming && d < AppVars.ImgPanelHammingDistance) {
+                                if (d == 0 && imgX.Width == e.Width && imgX.Heigth == e.Heigth) {
+                                    if (imgX.Size > e.Size) {
+                                        Delete(e.Name);
+                                        progress.Report($"{e.Name} deleted");
+                                        nameY = string.Empty;
+                                        continue;
+                                    }
+                                    else {
+                                        Delete(nameX);
+                                        progress.Report($"{nameX} deleted");
+                                        nameX = string.Empty;
+                                        break;
+                                    }
+                                }
+
+                                nameY = e.Name;
+                                AppVars.ImgPanelHammingDistance = d;
+                                AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Scd);
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(nameX)) {
+                            break;
+                        }
+
+                        if (string.IsNullOrEmpty(nameY)) {
+                            var orbcandidates = new List<Tuple<Img, float>>();
+                            AppVars.ImgPanelScdDistance = float.MaxValue;
+                            foreach (var e in candidates) {
+                                var s = imgX.Scd.GetDistance(e.Scd);
+                                if (s < AppConsts.MaxScd && s < AppVars.ImgPanelScdDistance) {
+                                    nameY = e.Name;
+                                    AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.PHash);
+                                    AppVars.ImgPanelScdDistance = s;
+                                }
+                                else {
+                                    orbcandidates.Add(new Tuple<Img, float>(e, s));
+                                }
+                            }
+
+                            if (string.IsNullOrEmpty(nameY)) {
+                                orbcandidates = orbcandidates.OrderBy(e => e.Item2).Take(AppConsts.OrbHorizon).ToList();
+                                int[] dmatch = null;
+                                foreach (var e in orbcandidates) {
+                                    var ematch = OrbHelper.GetMatches(descriptorsX, e.Item1.GetDescriptors());
+                                    if (dmatch == null) {
+                                        nameY = e.Item1.Name;
+                                        AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.Item1.PHash);
+                                        AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Item1.Scd); ;
+                                        dmatch = ematch;
+                                    }
+                                    else {
+                                        var len = Math.Min(dmatch.Length, ematch.Length);
+                                        for (var i = 0; i < len; i++) {
+                                            if (ematch[i] < dmatch[i]) {
+                                                nameY = e.Item1.Name;
+                                                AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.Item1.PHash);
+                                                AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Item1.Scd); ; ;
+                                                dmatch = ematch;
+                                                break;
+                                            }
+                                            else {
+                                                if (ematch[i] > dmatch[i]) {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         AppVars.ImgPanel[1] = GetImgPanel(nameY);
@@ -159,24 +166,6 @@ namespace ImageBank
                             progress.Report($"{nameY} deleted");
                             nameY = string.Empty;
                             continue;
-                        }
-
-                        AppVars.ImgPanelDistance = Intrinsic.PopCnt(AppVars.ImgPanel[0].Img.PHash ^ AppVars.ImgPanel[1].Img.PHash);
-                        if (AppVars.ImgPanelDistance <= AppConsts.MaxHamming) {
-                            if (AppVars.ImgPanel[0].Bitmap.Width == AppVars.ImgPanel[1].Bitmap.Width && AppVars.ImgPanel[0].Bitmap.Height == AppVars.ImgPanel[1].Bitmap.Height) {
-                                if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
-                                    Delete(nameY);
-                                    progress.Report($"{Helper.GetShortName(AppVars.ImgPanel[1].Img)} deleted");
-                                    nameY = string.Empty;
-                                    continue;
-                                }
-                                else {
-                                    Delete(nameX);
-                                    progress.Report($"{Helper.GetShortName(AppVars.ImgPanel[0].Img)} deleted");
-                                    nameX = string.Empty;
-                                    continue;
-                                }
-                            }
                         }
 
                         break;
@@ -188,12 +177,11 @@ namespace ImageBank
                 }
             }
 
-            var imgX = _imgList[nameX];
-
             var sb = new StringBuilder(GetPrompt());
             var secs = DateTime.Now.Subtract(dt).TotalSeconds;
             sb.Append($"{AppVars.MoveMessage} ");
-            sb.Append($"D{AppVars.ImgPanelDistance} ");
+            sb.Append($"D:{AppVars.ImgPanelHammingDistance} ");
+            sb.Append($"S:{AppVars.ImgPanelScdDistance:F2} ");
             sb.Append($"({secs:F2}s)");
             progress.Report(sb.ToString());
         }

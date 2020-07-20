@@ -70,6 +70,17 @@ namespace ImageBank
             }
         }
 
+        private DateTime _lastadded;
+        public DateTime LastAdded
+        {
+            get => _lastadded;
+            set
+            {
+                _lastadded = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastAdded, value);
+            }
+        }
+
         public Img(
             string name,
             ulong hash,
@@ -82,6 +93,7 @@ namespace ImageBank
             int folder,
             string path,
             int counter,
+            DateTime lastadded,
             DateTime lastview
             )
         {
@@ -97,6 +109,7 @@ namespace ImageBank
             _folder = folder;
             _path = path;
             _counter = counter;
+            _lastadded = lastadded;
             _lastview = lastview;
         }
     }

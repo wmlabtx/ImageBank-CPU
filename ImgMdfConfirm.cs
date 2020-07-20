@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -13,31 +13,57 @@ namespace ImageBank
                 if (_imgList.TryGetValue(name, out var img)) {
                     img.LastView = DateTime.Now;
                     img.Counter += 1;
+                }
+            }
+        }
 
-                    if (img.Folder > 0) {
-                        var cnt = new SortedDictionary<int, int>();
-                        foreach (var e in _imgList) {
-                            if (!cnt.ContainsKey(e.Value.Folder)) {
-                                cnt.Add(e.Value.Folder, 1);
-                            }
-                            else {
-                                cnt[e.Value.Folder]++;
-                            }
-                        }
+        public void Pack()
+        {
+            /*
+            lock (_imglock) {
+                var c = new int[100];
+                foreach (var e in _imgList) {
+                    c[e.Value.Folder]++;
+                }
 
-                        var df = img.Folder - 1;
-                        while (df >= 0) {
-                            if (cnt[df] < AppConsts.MaxImagesInFolder) {
-                                AppVars.MoveMessage =
-                                    $"{img.Folder} [{cnt[img.Folder] - 1}] -> {df} [{cnt[df] + 1}]";
+                AppVars.MoveMessage = string.Empty;
+                var moved = 0;
+                for (var df = 0; df < 98; df++) {
+                    if (c[df] < AppConsts.MaxImagesInFolder && c[df + 1] > 0) {
+                        var minla = _imgList.Where(e => e.Value.Folder == df + 1).Min(e => e.Value.LastAdded);
+                        var img = _imgList.FirstOrDefault(e => e.Value.Folder == df + 1 && e.Value.LastAdded == minla).Value;
+                        c[df]++;
+                        c[df + 1]--;
+                        moved++;
+                        AppVars.MoveMessage = $"{img.Folder} [{c[df + 1]}] -> {df} [{c[df]}] ({moved}) ";
+                        var oldfile = img.FileName;
+                        img.Folder = df;
+                        File.Move(oldfile, img.FileName);
+                    }
+                }
+            }
+            */
+            lock (_imglock) {
+                var c = new int[100];
+                foreach (var e in _imgList) {
+                    c[e.Value.Folder]++;
+                }
 
+                AppVars.MoveMessage = string.Empty;
+                for (var df = 0; df <= 98; df++) {
+                    if (c[df] < AppConsts.MaxImagesInFolder) {
+                        for (var sf = 99; sf > df; sf--) {
+                            if (c[sf] > 0) {
+                                var minla = _imgList.Where(e => e.Value.Folder == sf).Min(e => e.Value.LastAdded);
+                                var img = _imgList.FirstOrDefault(e => e.Value.Folder == sf && e.Value.LastAdded == minla).Value;
+                                c[df]++;
+                                c[sf]--;
+                                AppVars.MoveMessage = $"{sf} [{c[sf]}] -> {df} [{c[df]}] ";
                                 var oldfile = img.FileName;
                                 img.Folder = df;
                                 File.Move(oldfile, img.FileName);
-                                break;
+                                return;
                             }
-
-                            df--;
                         }
                     }
                 }

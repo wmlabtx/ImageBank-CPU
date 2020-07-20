@@ -20,7 +20,13 @@ namespace ImageBank
             ((IProgress<string>)AppVars.Progress).Report($"importing...");
             var directoryInfo = new DirectoryInfo(path);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
-            foreach (var fileInfo in fileInfos) {
+            var random = new Random();
+            while (fileInfos.Count > 0) {
+                var rindex = random.Next(fileInfos.Count);
+                var fileInfo = fileInfos[rindex];
+                fileInfos.RemoveAt(rindex);
+
+                //foreach (var fileInfo in fileInfos) {
                 if (added >= maxadd) {
                     break;
                 }
@@ -78,29 +84,6 @@ namespace ImageBank
                     continue;
                 }
 
-                lock (_imglock) {
-                    var array = _imgList.Select(e => e.Value).ToArray();
-                    foreach (var e in array) {
-                        var distance = Intrinsic.PopCnt(phash ^ e.PHash);
-                        if (distance <= AppConsts.MaxHamming) {
-                            if (
-                                (bitmap.Width == e.Width && bitmap.Height == e.Heigth) ||
-                                (bitmap.Height == e.Width && bitmap.Width == e.Heigth)
-                                ) {
-                                if (imagedata.Length > e.Size) {
-                                    replace++;
-                                    Delete(e.Name);
-                                }
-                                else {
-                                    found++;
-                                    Helper.DeleteToRecycleBin(filename);
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                }
-
                 var scd = new Scd(bitmap);
 
                 var folder = 0;
@@ -118,6 +101,16 @@ namespace ImageBank
                     } 
                 }
 
+                var imgfilename = Helper.GetFileName(name, folder);
+                var lastmodified = File.GetLastWriteTime(filename);
+                if (lastmodified > DateTime.Now) {
+                    lastmodified = DateTime.Now;
+                }
+
+                Helper.WriteData(imgfilename, imagedata);
+                File.SetLastWriteTime(imgfilename, lastmodified);
+                Helper.DeleteToRecycleBin(filename);
+
                 var lastview = DateTime.Now.AddYears(-10);
                 var img = new Img(
                     name: name,
@@ -131,18 +124,11 @@ namespace ImageBank
                     folder: folder,
                     path: string.Empty,
                     counter: 0,
-                    lastview: lastview
-                    );
-
-                bitmap.Dispose();
+                    lastadded: DateTime.Now,
+                    lastview: lastview);
 
                 Add(img);
-                if (!filename.Equals(img.FileName, StringComparison.OrdinalIgnoreCase)) {
-                    var lastmodified = File.GetLastWriteTime(filename);
-                    Helper.WriteData(img.FileName, imagedata);
-                    File.SetLastWriteTime(img.FileName, lastmodified);
-                    Helper.DeleteToRecycleBin(filename);
-                }
+                bitmap.Dispose();
 
                 if (_imgList.Count >= AppConsts.MaxImages) {
                     break;

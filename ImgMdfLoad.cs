@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Text;
 
 namespace ImageBank
@@ -19,6 +21,9 @@ namespace ImageBank
 
             progress.Report("Loading images...");
 
+            var imgtodelete = new List<string>();
+            var imgtoupdate = new List<string>();
+
             var sb = new StringBuilder();
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttrName}, "); // 0
@@ -32,7 +37,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrHeigth}, "); // 8
             sb.Append($"{AppConsts.AttrSize}, "); // 9
             sb.Append($"{AppConsts.AttrDescriptors}, "); // 10
-            sb.Append($"{AppConsts.AttrScd} "); // 11
+            sb.Append($"{AppConsts.AttrScd}, "); // 11
+            sb.Append($"{AppConsts.AttrLastAdded} "); // 12
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -55,7 +61,18 @@ namespace ImageBank
                             var bdescriptors = (byte[])reader[10];
                             var descriptors = Helper.BufferToDescriptors(bdescriptors);
                             var bscd = (byte[])reader[11];
+                            var lastadded = reader.GetDateTime(12);
                             var scd = new Scd(bscd);
+
+                            var file = Helper.GetFileName(name, folder);
+                            if (!File.Exists(file)) {
+                                imgtodelete.Add(name);
+                            }
+                            else {
+                                if (lastadded.Equals(new DateTime(2000, 1, 1))) {
+                                    imgtoupdate.Add(name);
+                                }
+                            }
 
                             var img = new Img(
                                 name: name,
@@ -69,8 +86,9 @@ namespace ImageBank
                                 folder: folder,
                                 path: path,
                                 counter: counter,
+                                lastadded: lastadded,
                                 lastview: lastview
-                                );
+                               );
 
                             AddToMemory(img);
 
@@ -80,6 +98,23 @@ namespace ImageBank
                             }
                         }
                     }
+                }
+
+                foreach (var name in imgtodelete) {
+                    Delete(name);
+                }
+
+                var dtla = DateTime.Now;
+                var cla = 0;
+                foreach (var name in imgtoupdate) {
+                    cla++;
+                    if (DateTime.Now.Subtract(dtla).TotalMilliseconds > AppConsts.TimeLapse) {
+                        dtla = DateTime.Now;
+                        progress.Report($"Updating LA ({cla}/{imgtoupdate.Count})...");
+                    }
+
+                    var img = _imgList[name];
+                    img.LastAdded = File.GetLastWriteTime(img.FileName);
                 }
             }
 

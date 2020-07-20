@@ -79,7 +79,7 @@ namespace ImageBank
 
         private void ImportDtClick()
         {
-            Import(AppConsts.PathDt, 1000000);
+            Import(AppConsts.PathDt, 10);
         }
 
         private void ImportRwClick()
@@ -125,10 +125,10 @@ namespace ImageBank
         }
 
         private async void ButtonLeftNextMouseClick()
-        {
-            AppVars.Collection.Confirm(AppVars.ImgPanel[0].Img.Name);
-
+        {            
             DisableElements();
+            await Task.Run(() => { AppVars.Collection.Confirm(AppVars.ImgPanel[0].Img.Name); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -219,7 +219,8 @@ namespace ImageBank
                 sb.Append($" ({ AppVars.ImgPanel[index].Bitmap.Width}x{AppVars.ImgPanel[index].Bitmap.Height})");
                 sb.AppendLine();
 
-                sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago");
+                sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
+                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastAdded))} ago]");
                 sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
 
                 pLabels[index].Text = sb.ToString();
@@ -243,20 +244,23 @@ namespace ImageBank
                     }
                 }
 
-                if (AppVars.ImgPanel[index].Bitmap.Height == 2160) {
-                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                }
-
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanelDistance <= AppConsts.MaxHamming) {
+            if (AppVars.ImgPanelHammingDistance < AppConsts.MaxHamming || AppVars.ImgPanelScdDistance < AppConsts.MaxScd) {
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
                     pLabels[1].Background = scb;
                 }
                 else {
                     pLabels[0].Background = scb;
+                }
+            }
+
+            for (var i = 0; i < 2; i++) {
+                var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 120, 128));
+                if (AppVars.ImgPanel[i].Bitmap.Height == 2160) {
+                    pLabels[i].Background = scb;
                 }
             }
 
@@ -306,6 +310,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Delete(AppVars.ImgPanel[index].Img.Name); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
