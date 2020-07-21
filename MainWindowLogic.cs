@@ -247,7 +247,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanelHammingDistance < AppConsts.MaxHamming || AppVars.ImgPanelScdDistance < AppConsts.MaxScd) {
+            if (AppVars.ImgPanelHammingDistance <= 1) { 
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
                     pLabels[1].Background = scb;

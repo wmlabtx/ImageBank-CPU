@@ -8,7 +8,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private bool _findtrigger;
+        private int _findstep = 1;
 
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
@@ -23,16 +23,13 @@ namespace ImageBank
                     }
 
                     if (string.IsNullOrEmpty(nameX)) {
-                        DateTime minlv;
-                        if (_findtrigger) {
-                            minlv = _imgList.Min(e => e.Value.LastView);
-                        }
-                        else {
-                            minlv = _imgList.Where(e => DateTime.Now.Subtract(e.Value.LastView).TotalDays > 365).Max(e => e.Value.LastView);
+                        var imglist = _imgList.OrderBy(e => e.Value.LastView).Select(e => e.Value).ToArray();
+                        if (_findstep - 1 > imglist.Length) {
+                            _findstep = 1;
                         }
 
-                        nameX = _imgList.FirstOrDefault(e => e.Value.LastView == minlv).Key;
-                        _findtrigger = !_findtrigger;
+                        nameX = imglist[_findstep - 1].Name;
+                        _findstep *= 387;
                     }
 
                     AppVars.ImgPanel[0] = GetImgPanel(nameX);

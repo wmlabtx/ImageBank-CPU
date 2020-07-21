@@ -21,6 +21,7 @@ namespace ImageBank
             var directoryInfo = new DirectoryInfo(path);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
             var random = new Random();
+            var lastview = _imgList.Min(e => e.Value.LastView);
             while (fileInfos.Count > 0) {
                 var rindex = random.Next(fileInfos.Count);
                 var fileInfo = fileInfos[rindex];
@@ -111,7 +112,7 @@ namespace ImageBank
                 File.SetLastWriteTime(imgfilename, lastmodified);
                 Helper.DeleteToRecycleBin(filename);
 
-                var lastview = DateTime.Now.AddYears(-10);
+                lastview = lastview.AddSeconds(-1);
                 var img = new Img(
                     name: name,
                     hash: hash,
