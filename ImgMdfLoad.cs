@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Text;
 
 namespace ImageBank
@@ -21,9 +19,6 @@ namespace ImageBank
 
             progress.Report("Loading images...");
 
-            var imgtodelete = new List<string>();
-            var imgtoupdate = new List<string>();
-
             var sb = new StringBuilder();
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttrName}, "); // 0
@@ -38,13 +33,16 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrSize}, "); // 9
             sb.Append($"{AppConsts.AttrDescriptors}, "); // 10
             sb.Append($"{AppConsts.AttrScd}, "); // 11
-            sb.Append($"{AppConsts.AttrLastAdded} "); // 12
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 12
+            sb.Append($"{AppConsts.AttrDt}, "); // 13
+            sb.Append($"{AppConsts.AttrDv}, "); // 14
+            sb.Append($"{AppConsts.AttrNextName} "); // 15
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
                 using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
                     using (var reader = sqlCommand.ExecuteReader()) {
-                        var dt = DateTime.Now;
+                        var dtn = DateTime.Now;
                         while (reader.Read()) {
                             var name = reader.GetString(0);
                             var folder = reader.GetInt32(1);
@@ -61,19 +59,11 @@ namespace ImageBank
                             var bdescriptors = (byte[])reader[10];
                             var descriptors = Helper.BufferToDescriptors(bdescriptors);
                             var bscd = (byte[])reader[11];
-                            var lastadded = reader.GetDateTime(12);
                             var scd = new Scd(bscd);
-
-                            var file = Helper.GetFileName(name, folder);
-                            if (!File.Exists(file)) {
-                                imgtodelete.Add(name);
-                            }
-                            else {
-                                if (lastadded.Equals(new DateTime(2000, 1, 1))) {
-                                    imgtoupdate.Add(name);
-                                }
-                            }
-
+                            var lastcheck = reader.GetDateTime(12);
+                            var dt = reader.GetString(13);
+                            var dv = reader.GetFloat(14);
+                            var nextname = reader.GetString(15);
                             var img = new Img(
                                 name: name,
                                 hash: hash,
@@ -86,35 +76,21 @@ namespace ImageBank
                                 folder: folder,
                                 path: path,
                                 counter: counter,
-                                lastadded: lastadded,
-                                lastview: lastview
+                                lastcheck: lastcheck,
+                                lastview: lastview,
+                                dt: dt,
+                                dv: dv,
+                                nextname: nextname
                                );
 
                             AddToMemory(img);
 
-                            if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
-                                dt = DateTime.Now;
+                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
+                                dtn = DateTime.Now;
                                 progress.Report($"Loading images ({_imgList.Count})...");
                             }
                         }
                     }
-                }
-
-                foreach (var name in imgtodelete) {
-                    Delete(name);
-                }
-
-                var dtla = DateTime.Now;
-                var cla = 0;
-                foreach (var name in imgtoupdate) {
-                    cla++;
-                    if (DateTime.Now.Subtract(dtla).TotalMilliseconds > AppConsts.TimeLapse) {
-                        dtla = DateTime.Now;
-                        progress.Report($"Updating LA ({cla}/{imgtoupdate.Count})...");
-                    }
-
-                    var img = _imgList[name];
-                    img.LastAdded = File.GetLastWriteTime(img.FileName);
                 }
             }
 

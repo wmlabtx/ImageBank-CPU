@@ -16,6 +16,7 @@ namespace ImageBank
         private double _picsMaxHeight;
         private double _labelMaxHeight;
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
+        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -57,10 +58,11 @@ namespace ImageBank
             EnableElements();
 
             AppVars.SuspendEvent = new ManualResetEvent(true);
-        }
 
-        private void WindowClosing()
-        {
+            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
+            _backgroundWorker.DoWork += DoCompute;
+            _backgroundWorker.ProgressChanged += DoComputeProgress;
+            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -84,7 +86,7 @@ namespace ImageBank
 
         private void ImportRwClick()
         {
-            Import(AppConsts.PathRw, 100);
+            Import(AppConsts.PathRw, 10);
         }
 
         private void ImportHpClick()
@@ -136,11 +138,6 @@ namespace ImageBank
 
         private void ButtonRightNextMouseClick()
         {
-        }
-
-        private void DoComputeSimProgress(object sender, ProgressChangedEventArgs e)
-        {
-            BackgroundStatus.Text = (string)e.UserState;
         }
 
         private void DisableElements()
@@ -220,8 +217,18 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastAdded))} ago]");
+                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
                 sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
+
+                var isbw = AppVars.ImgPanel[index].Img.Scd.IsBw();
+                if (isbw < AppConsts.BwLimit) {
+                    sb.Append(" color");
+                }
+                else {
+                    sb.Append(" bw");
+                }
+
+                sb.Append($" ({isbw})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
@@ -247,7 +254,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanelHammingDistance <= 1) { 
+            if (AppVars.ImgPanel[0].Img.Dt.Equals("H", StringComparison.OrdinalIgnoreCase) && AppVars.ImgPanel[0].Img.Dv < 4f / 64f) { 
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
                     pLabels[1].Background = scb;
@@ -320,7 +327,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Rotate(AppVars.ImgPanel[0].Img.Name, rft); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(AppVars.ImgPanel[0].Img.Name, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -338,6 +345,28 @@ namespace ImageBank
         private void Rotate270Click()
         {
             Rotate(RotateFlipType.Rotate270FlipNone);
+        }
+
+        private void WindowClosing()
+        {
+            DisableElements();
+            _backgroundWorker?.CancelAsync();
+            EnableElements();
+        }
+
+        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
+        {
+            BackgroundStatus.Text = (string)e.UserState;
+        }
+
+        private void DoCompute(object s, DoWorkEventArgs args)
+        {
+            while (!_backgroundWorker.CancellationPending) {
+                AppVars.Collection.Compute(_backgroundWorker);
+                Thread.Sleep(200);
+            }
+
+            args.Cancel = true;
         }
     }
 }

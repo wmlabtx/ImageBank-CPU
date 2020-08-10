@@ -22,6 +22,9 @@
 --UPDATE Images SET Person = 'Pt';
 --UPDATE Images SET MagickHash = '';
 --UPDATE Images SET Vector = 0x;
-UPDATE Images SET LastAdded = '20000101';
+--UPDATE Images SET LastAdded = '20000101';
 --UPDATE Images SET Path = '';
 --UPDATE Images SET Hash = 0
+
+UPDATE Images SET Counter = 0;
+UPDATE Images SET NextName = '0123456789';

@@ -42,5 +42,45 @@ namespace ImageBank
                 return sb.ToString();
             }
         }
+
+        private string GetNextToCheck()
+        {
+            lock (_imglock) {
+                var nameX = string.Empty;
+                var minlc = DateTime.MaxValue;
+                foreach (var e in _imgList) {
+                    if (e.Value.LastCheck < minlc) {
+                        nameX = e.Value.Name;
+                        minlc = e.Value.LastCheck;
+                    }
+                }
+
+                return nameX;
+            }
+        }
+
+        private DateTime GetMinLastCheck()
+        {
+            lock (_imglock) {
+                var min = (_imgList.Count == 0 ?
+                    DateTime.Now :
+                    _imgList.Min(e => e.Value.LastCheck))
+                    .AddSeconds(-1);
+
+                return min;
+            }
+        }
+
+        private DateTime GetMinLastView()
+        {
+            lock (_imglock) {
+                var min = (_imgList.Count == 0 ?
+                    DateTime.Now :
+                    _imgList.Min(e => e.Value.LastView))
+                    .AddSeconds(-1);
+
+                return min;
+            }
+        }
     }
 }

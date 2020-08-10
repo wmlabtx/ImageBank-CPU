@@ -47,13 +47,16 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrPHash}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
-                    sb.Append($"{AppConsts.AttrLastAdded}, ");
+                    sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeigth}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
                     sb.Append($"{AppConsts.AttrDescriptors}, ");
-                    sb.Append($"{AppConsts.AttrScd}");
+                    sb.Append($"{AppConsts.AttrScd}, ");
+                    sb.Append($"{AppConsts.AttrDt}, ");
+                    sb.Append($"{AppConsts.AttrDv}, ");
+                    sb.Append($"{AppConsts.AttrNextName}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrFolder}, ");
@@ -61,13 +64,16 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrPHash}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
-                    sb.Append($"@{AppConsts.AttrLastAdded}, ");
+                    sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeigth}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
                     sb.Append($"@{AppConsts.AttrDescriptors}, ");
-                    sb.Append($"@{AppConsts.AttrScd}");
+                    sb.Append($"@{AppConsts.AttrScd}, ");
+                    sb.Append($"@{AppConsts.AttrDt}, ");
+                    sb.Append($"@{AppConsts.AttrDv}, ");
+                    sb.Append($"@{AppConsts.AttrNextName}");
                     sb.Append(")");
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
@@ -78,7 +84,7 @@ namespace ImageBank
                     var bphash = BitConverter.GetBytes(img.PHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPHash}", bphash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
@@ -87,6 +93,9 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", bdescriptors);
                     var bscd = img.Scd.GetBuffer();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrScd}", bscd);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDt}", img.Dt);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDv}", img.Dv);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);
                     sqlCommand.ExecuteNonQuery();
                 }
             }

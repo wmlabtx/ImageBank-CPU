@@ -10,9 +10,10 @@
         public const int MaxImages = 200000;
         public const int MaxImagesInFolder = 2000;
         public const int MaxDescriptorsInImage = 64; // 64 * 32 = 2048
-        public const int OrbHorizon = 256 ;
-        public const int MaxHamming = 8;
-        public const float MaxScd = 2.0f;
+        public const int OrbHorizon = 1000;
+        public const float MaxHamming = 8f / 64f;
+        public const float MaxScd = 1f;
+        public const int BwLimit = 122;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -32,12 +33,15 @@
         public const string AttrHash = "Hash"; // (8 bytes)
         public const string AttrPHash = "PHash"; // (8 bytes)
         public const string AttrCounter = "Counter"; // 1..
-        public const string AttrLastAdded = "LastAdded"; // datetime
+        public const string AttrLastCheck = "LastCheck"; // datetime
         public const string AttrLastView = "LastView"; // datetime
         public const string AttrWidth = "Width"; // int
         public const string AttrHeigth = "Heigth"; // int
         public const string AttrSize = "Size"; // int
         public const string AttrDescriptors = "Descriptors"; // 1024 bytes
         public const string AttrScd = "Scd"; // 1024 bytes
+        public const string AttrDt = "Dt"; // (string 1 length)
+        public const string AttrDv = "Dv"; // (float 4 bytes)
+        public const string AttrNextName = "NextName"; // (string 10 length)
     }
 }

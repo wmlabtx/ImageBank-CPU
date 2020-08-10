@@ -61,6 +61,18 @@ namespace ImageBank
             return true;
         }
 
+        public int IsBw()
+        {
+            var count = 0;
+            for (var i = 0; i < 256; i++) {
+                if (H[i] == 0) {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         public float GetDistance(Scd other)
         {
             Contract.Requires(other != null);

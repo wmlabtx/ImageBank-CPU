@@ -70,14 +70,47 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastadded;
-        public DateTime LastAdded
+        private DateTime _lastcheck;
+        public DateTime LastCheck
         {
-            get => _lastadded;
+            get => _lastcheck;
             set
             {
-                _lastadded = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastAdded, value);
+                _lastcheck = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
+            }
+        }
+
+        private string _dt;
+        public string Dt
+        {
+            get => _dt;
+            set
+            {
+                _dt = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDt, value);
+            }
+        }
+
+        private float _dv;
+        public float Dv
+        {
+            get => _dv;
+            set
+            {
+                _dv = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDv, value);
+            }
+        }
+
+        private string _nextname;
+        public string NextName
+        {
+            get => _nextname;
+            set
+            {
+                _nextname = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNextName, value);
             }
         }
 
@@ -93,8 +126,11 @@ namespace ImageBank
             int folder,
             string path,
             int counter,
-            DateTime lastadded,
-            DateTime lastview
+            DateTime lastcheck,
+            DateTime lastview,
+            string dt,
+            float dv,
+            string nextname
             )
         {
             Name = name;
@@ -109,8 +145,12 @@ namespace ImageBank
             _folder = folder;
             _path = path;
             _counter = counter;
-            _lastadded = lastadded;
+            _lastcheck = lastcheck;
             _lastview = lastview;
+
+            _dt = dt;
+            _dv = dv;
+            _nextname = nextname;
         }
     }
 }

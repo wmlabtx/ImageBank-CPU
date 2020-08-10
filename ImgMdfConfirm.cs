@@ -54,8 +54,8 @@ namespace ImageBank
                     if (c[df] < AppConsts.MaxImagesInFolder) {
                         for (var sf = 99; sf > df; sf--) {
                             if (c[sf] > 0) {
-                                var minla = _imgList.Where(e => e.Value.Folder == sf).Min(e => e.Value.LastAdded);
-                                var img = _imgList.FirstOrDefault(e => e.Value.Folder == sf && e.Value.LastAdded == minla).Value;
+                                var minla = _imgList.Where(e => e.Value.Folder == sf).Min(e => e.Value.LastView);
+                                var img = _imgList.FirstOrDefault(e => e.Value.Folder == sf && e.Value.LastView == minla).Value;
                                 c[df]++;
                                 c[sf]--;
                                 AppVars.MoveMessage = $"{sf} [{c[sf]}] -> {df} [{c[df]}] ";

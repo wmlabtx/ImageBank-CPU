@@ -1,4 +1,6 @@
-﻿namespace ImageBank
+﻿using System.Linq;
+
+namespace ImageBank
 {
     public partial class ImgMdf
     {
@@ -13,6 +15,19 @@
             }
 
             SqlDelete(name);
+            ResetRefers(name);
+        }
+
+        private void ResetRefers(string name)
+        {
+            lock (_imglock) {
+                var minlc = GetMinLastCheck();
+                _imgList
+                    .Values
+                    .Where(e => e.NextName.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    .ToList()
+                    .ForEach(e => e.LastCheck = minlc);
+            }
         }
     }
 }

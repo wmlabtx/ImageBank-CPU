@@ -21,13 +21,11 @@ namespace ImageBank
             var directoryInfo = new DirectoryInfo(path);
             var fileInfos = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToList();
             var random = new Random();
-            var lastview = _imgList.Min(e => e.Value.LastView);
             while (fileInfos.Count > 0) {
                 var rindex = random.Next(fileInfos.Count);
                 var fileInfo = fileInfos[rindex];
                 fileInfos.RemoveAt(rindex);
 
-                //foreach (var fileInfo in fileInfos) {
                 if (added >= maxadd) {
                     break;
                 }
@@ -112,7 +110,8 @@ namespace ImageBank
                 File.SetLastWriteTime(imgfilename, lastmodified);
                 Helper.DeleteToRecycleBin(filename);
 
-                lastview = lastview.AddSeconds(-1);
+                var lastview = GetMinLastView();
+                var lastcheck = GetMinLastCheck();
                 var img = new Img(
                     name: name,
                     hash: hash,
@@ -125,8 +124,11 @@ namespace ImageBank
                     folder: folder,
                     path: string.Empty,
                     counter: 0,
-                    lastadded: DateTime.Now,
-                    lastview: lastview);
+                    lastcheck: lastcheck,
+                    lastview: lastview,
+                    dt: " ",
+                    dv: 0f,
+                    nextname: "0123456789");
 
                 Add(img);
                 bitmap.Dispose();

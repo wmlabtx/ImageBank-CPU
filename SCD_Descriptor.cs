@@ -36,9 +36,9 @@
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 #pragma warning disable CA1062 // Validate arguments of public methods
 
+using OpenCvSharp.Extensions;
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
 
 namespace ImageBank
 {
@@ -177,9 +177,6 @@ namespace ImageBank
 
         public void Apply(Bitmap srcImg, int NumberOfCoefficients, int NumberOfBitplanesDiscarded)
         {
-
-
-
             int numC = NumberOfCoefficients;
             if (numC < 31)
                 numC = 16;
@@ -204,40 +201,37 @@ namespace ImageBank
             int[] GREEN = new int[_xSize * _ySize];
             int[] BLUE = new int[_xSize * _ySize];
 
+            using (var mat = BitmapConverter.ToMat(srcImg)) {
+                var mats = mat.Split();
+                byte[] srcb;
+                byte[] srcg;
+                byte[] srcr;
+                if (mats.Length == 3) {
+                    mats[0].GetArray(out srcb);
+                    mats[1].GetArray(out srcg);
+                    mats[2].GetArray(out srcr);
+                }
+                else {
+                    mats[0].GetArray(out srcb);
+                    mats[0].GetArray(out srcg);
+                    mats[0].GetArray(out srcr);
+                }
 
-            PixelFormat fmt = (srcImg.PixelFormat == PixelFormat.Format8bppIndexed) ?
-                             PixelFormat.Format8bppIndexed : PixelFormat.Format24bppRgb;
+                if (srcb.Length != RED.Length) {
+                    return;
+                }
 
-            BitmapData srcData = srcImg.LockBits(
-               new Rectangle(0, 0, _xSize, _ySize),
-               ImageLockMode.ReadOnly, fmt);
-
-            int offset = srcData.Stride - srcData.Width * 3;
-
-
-            unsafe {
-                byte* src = (byte*)srcData.Scan0.ToPointer();
-
-                int t = 0;
-
+                var t = 0;
                 for (int y = 0; y < _ySize; y++) {
-                    for (int x = 0; x < _xSize; x++, src += 3) {
-                        RED[t] = src[2];
-                        GREEN[t] = src[1];
-                        BLUE[t] = src[0];
+                    for (int x = 0; x < _xSize; x++) {
+                        RED[t] = srcr[t];
+                        GREEN[t] = srcg[t];
+                        BLUE[t] = srcb[t];
 
                         t++;
                     }
-
-                    src += offset;
-
-
                 }
-
             }
-
-            srcImg.UnlockBits(srcData);
-
 
             init();
             extract(RED, GREEN, BLUE);

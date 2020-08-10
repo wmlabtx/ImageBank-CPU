@@ -8,13 +8,13 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private int _findstep = 1;
+        private int _find = 1;
 
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
 
-            var dt = DateTime.Now;
+            var dtn = DateTime.Now;
             lock (_imglock) {
                 while (true) {
                     if (_imgList.Count < 2) {
@@ -23,162 +23,102 @@ namespace ImageBank
                     }
 
                     if (string.IsNullOrEmpty(nameX)) {
-                        var imglist = _imgList.OrderBy(e => e.Value.LastView).Select(e => e.Value).ToArray();
-                        if (_findstep - 1 > imglist.Length) {
-                            _findstep = 1;
+                        var imglist = _imgList
+                            .Where(e => _imgList.ContainsKey(e.Value.NextName))
+                            .Select(e => e.Value)
+                            .OrderBy(e => e.LastView)
+                            .ToArray();
+
+                        //var mincounter = imglist.Min(e => e.Counter);
+                        //imglist = imglist.Where(e => e.Counter == mincounter).ToArray();
+
+                        if (imglist.Length < 2) {
+                            progress.Report("No images to view");
+                            return;
                         }
 
-                        nameX = imglist[_findstep - 1].Name;
-                        _findstep *= 387;
-                    }
-
-                    AppVars.ImgPanel[0] = GetImgPanel(nameX);
-                    if (AppVars.ImgPanel[0] == null) {
-                        Delete(nameX);
-                        progress.Report($"{nameX} deleted");
-                        nameX = string.Empty;
-                        continue;
-                    }
-
-                    while (true) {
-                        if (string.IsNullOrEmpty(nameX)) {
-                            break;
+                        /*
+                        _find = 1 - _find;
+                        if (_find == 0) {
+                            var maxfolder = imglist.Max(e => e.Folder);
+                            imglist = imglist.Where(e => e.Folder == maxfolder).ToArray();
+                            nameX = imglist.FirstOrDefault().Name;
                         }
-
-                        nameY = string.Empty;
-                        var imgX = AppVars.ImgPanel[0].Img;
-                        var pX = Array.Empty<string>();
-                        if (!string.IsNullOrEmpty(imgX.Path)) {
-                            pX = imgX.Path.Split('.');
-                        }
-
-                        var candidates = new List<Img>();
-
-                        bool issubpath;
-                        foreach (var e in _imgList) {
-                            if (e.Value.Name.Equals(imgX.Name, StringComparison.Ordinal)) {
-                                continue;
-                            }
-
-                            issubpath = true;
-                            if (pX.Length > 0 && !string.IsNullOrEmpty(e.Value.Path)) {
-                                var pY = e.Value.Path.Split('.');
-                                if (pY.Length >= pX.Length) {
-                                    for (var i = 0; i < pX.Length; i++) {
-                                        if (!pX[i].Equals(pY[i], StringComparison.OrdinalIgnoreCase)) {
-                                            issubpath = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (!issubpath) {
-                                continue;
-                            }
-
-                            candidates.Add(e.Value);
-                        }
-
-                        var descriptorsX = AppVars.ImgPanel[0].Img.GetDescriptors();
-                        AppVars.ImgPanelHammingDistance = int.MaxValue;
-                        foreach (var e in candidates) {
-                            var d = Intrinsic.PopCnt(imgX.PHash ^ e.PHash);
-                            if (d < AppConsts.MaxHamming && d < AppVars.ImgPanelHammingDistance) {
-                                if (d == 0 && imgX.Width == e.Width && imgX.Heigth == e.Heigth) {
-                                    if (imgX.Size > e.Size) {
-                                        Delete(e.Name);
-                                        progress.Report($"{e.Name} deleted");
-                                        nameY = string.Empty;
-                                        continue;
-                                    }
-                                    else {
-                                        Delete(nameX);
-                                        progress.Report($"{nameX} deleted");
-                                        nameX = string.Empty;
+                        else {
+                            var dts = new[] { "H", "S", "R" };
+                            do {
+                                 foreach (var dt in dts) {
+                                    var dtscope = imglist.Where(e => e.Dt.Equals(dt, StringComparison.OrdinalIgnoreCase)).ToArray();
+                                    if (dtscope.Length > 0) {
+                                        nameX = dtscope.OrderBy(e => e.Dv).FirstOrDefault().Name;
                                         break;
                                     }
                                 }
-
-                                nameY = e.Name;
-                                AppVars.ImgPanelHammingDistance = d;
-                                AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Scd);
                             }
+                            while (string.IsNullOrEmpty(nameX));
                         }
+                        */
 
-                        if (string.IsNullOrEmpty(nameX)) {
-                            break;
-                        }
+                        
+                        var index = _find - 1;
+                        if (index >= imglist.Length) {
+                            _find = 1;
+                            index = 0;
 
-                        if (string.IsNullOrEmpty(nameY)) {
-                            var orbcandidates = new List<Tuple<Img, float>>();
-                            AppVars.ImgPanelScdDistance = float.MaxValue;
-                            foreach (var e in candidates) {
-                                var s = imgX.Scd.GetDistance(e.Scd);
-                                if (s < AppConsts.MaxScd && s < AppVars.ImgPanelScdDistance) {
-                                    nameY = e.Name;
-                                    AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.PHash);
-                                    AppVars.ImgPanelScdDistance = s;
-                                }
-                                else {
-                                    orbcandidates.Add(new Tuple<Img, float>(e, s));
-                                }
-                            }
-
-                            if (string.IsNullOrEmpty(nameY)) {
-                                orbcandidates = orbcandidates.OrderBy(e => e.Item2).Take(AppConsts.OrbHorizon).ToList();
-                                int[] dmatch = null;
-                                foreach (var e in orbcandidates) {
-                                    var ematch = OrbHelper.GetMatches(descriptorsX, e.Item1.GetDescriptors());
-                                    if (dmatch == null) {
-                                        nameY = e.Item1.Name;
-                                        AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.Item1.PHash);
-                                        AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Item1.Scd); ;
-                                        dmatch = ematch;
-                                    }
-                                    else {
-                                        var len = Math.Min(dmatch.Length, ematch.Length);
-                                        for (var i = 0; i < len; i++) {
-                                            if (ematch[i] < dmatch[i]) {
-                                                nameY = e.Item1.Name;
-                                                AppVars.ImgPanelHammingDistance = Intrinsic.PopCnt(imgX.PHash ^ e.Item1.PHash);
-                                                AppVars.ImgPanelScdDistance = imgX.Scd.GetDistance(e.Item1.Scd); ; ;
-                                                dmatch = ematch;
-                                                break;
-                                            }
-                                            else {
-                                                if (ematch[i] > dmatch[i]) {
-                                                    break;
-                                                }
-                                            }
-                                        }
+                            var mincounter = imglist.Min(e => e.Counter);
+                            imglist = imglist.Where(e => e.Counter == mincounter).ToArray();
+                            var dts = new[] { "H", "S", "R" };
+                            do {
+                                foreach (var dt in dts) {
+                                    var dtscope = imglist.Where(e => e.Dt.Equals(dt, StringComparison.OrdinalIgnoreCase)).ToArray();
+                                    if (dtscope.Length > 0) {
+                                        nameX = dtscope.OrderBy(e => e.Dv).FirstOrDefault().Name;
+                                        break;
                                     }
                                 }
                             }
+                            while (string.IsNullOrEmpty(nameX));
                         }
+                        else {
+                            nameX = imglist[index].Name;
+                            _find *= 2;
+                        }
+                        
 
-                        AppVars.ImgPanel[1] = GetImgPanel(nameY);
-                        if (AppVars.ImgPanel[1] == null) {
-                            Delete(nameY);
-                            progress.Report($"{nameY} deleted");
-                            nameY = string.Empty;
+                        AppVars.ImgPanel[0] = GetImgPanel(nameX);
+                        if (AppVars.ImgPanel[0] == null) {
+                            Delete(nameX);
+                            progress.Report($"{nameX} deleted");
+                            nameX = string.Empty;
                             continue;
                         }
 
-                        break;
-                    }
+                        while (true) {
+                            nameY = AppVars.ImgPanel[0].Img.NextName;
+                            AppVars.ImgPanel[1] = GetImgPanel(nameY);
+                            if (AppVars.ImgPanel[1] == null) {
+                                Delete(nameY);
+                                progress.Report($"{nameY} deleted");
+                                nameY = string.Empty;
+                                continue;
+                            }
 
-                    if (!string.IsNullOrEmpty(nameX)) {
-                        break;
+                            break;
+                        }
+
+                        if (!string.IsNullOrEmpty(nameX)) {
+                            break;
+                        }
                     }
                 }
             }
 
             var sb = new StringBuilder(GetPrompt());
-            var secs = DateTime.Now.Subtract(dt).TotalSeconds;
+            var secs = DateTime.Now.Subtract(dtn).TotalSeconds;
             sb.Append($"{AppVars.MoveMessage} ");
-            sb.Append($"D:{AppVars.ImgPanelHammingDistance} ");
-            sb.Append($"S:{AppVars.ImgPanelScdDistance:F2} ");
+            var imgX = AppVars.ImgPanel[0].Img;
+            sb.Append($" {imgX.Folder:D2}\\{imgX.Name}: ");
+            sb.Append($"[{imgX.Dt}] {imgX.Dv:F4} ");
             sb.Append($"({secs:F2}s)");
             progress.Report(sb.ToString());
         }

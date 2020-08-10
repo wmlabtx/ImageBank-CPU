@@ -33,7 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -96,6 +96,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="Scd.cs" />
     <Compile Include="ScdHelper.cs" />
     <Compile Include="SCD_Descriptor.cs" />
@@ -113,7 +114,6 @@
     <Compile Include="Img.cs" />
     <Compile Include="ImgMdf.cs" />
     <Compile Include="ImgMdfAdd.cs" />
-    <Compile Include="ImgMdfComputeNext.cs" />
     <Compile Include="ImgMdfDelete.cs" />
     <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />

@@ -40,6 +40,7 @@ namespace ImageBank
                         return;
                     }
 
+                    var lastcheck = GetMinLastCheck();
                     var rimg = new Img(
                         name: img.Name,
                         hash: rhash,
@@ -52,8 +53,11 @@ namespace ImageBank
                         folder: img.Folder,
                         path: img.Path,
                         counter: img.Counter,
-                        lastadded: img.LastAdded,
-                        lastview: img.LastView
+                        lastcheck: lastcheck,
+                        lastview: img.LastView,
+                        dt: " ",
+                        dv: 0f,
+                        nextname: "0123456789"
                         );
 
                     bitmap.Dispose();
