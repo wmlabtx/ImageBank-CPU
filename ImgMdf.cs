@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenCvSharp;
+using OpenCvSharp.Flann;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -15,20 +17,16 @@ namespace ImageBank
         private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
         private readonly SortedDictionary<ulong, string> _hashList = new SortedDictionary<ulong, string>();
 
+        private object _flannlock = new object();
+        private bool _flannAvailable = false;
+        private readonly FlannBasedMatcher _flannBasedMatcher = new FlannBasedMatcher(new LshIndexParams(12, 20, 2));
+        private string[] _flannNames;
+
         public ImgMdf()
         {
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=60";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
-        }
-
-        public void UpdatePath(string name, string path)
-        {
-            lock (_imglock) {
-                if (_imgList.TryGetValue(name, out var img)) {
-                    img.Path = path;
-                }
-            }
         }
 
         private string GetPrompt()
@@ -46,28 +44,29 @@ namespace ImageBank
         private string GetNextToCheck()
         {
             lock (_imglock) {
-                var nameX = string.Empty;
-                var minlc = DateTime.MaxValue;
-                foreach (var e in _imgList) {
-                    if (e.Value.LastCheck < minlc) {
-                        nameX = e.Value.Name;
-                        minlc = e.Value.LastCheck;
-                    }
+                var zerolist = _imgList
+                    .Where(e => e.Value.GetDescriptors() == null)
+                    .Select(e => e.Value)
+                    .OrderBy(e => e.LastCheck)
+                    .ToArray();
+
+                if (zerolist.Length == 0) {
+                    zerolist = _imgList
+                    .Where(e => e.Value.Name.Equals(e.Value.NextName, StringComparison.OrdinalIgnoreCase) || !_imgList.ContainsKey(e.Value.NextName))
+                    .Select(e => e.Value)
+                    .OrderBy(e => e.LastCheck)
+                    .ToArray();
                 }
 
+                if (zerolist.Length == 0) {
+                    zerolist = _imgList
+                    .Select(e => e.Value)
+                    .OrderBy(e => e.LastCheck)
+                    .ToArray();
+                }
+
+                var nameX = zerolist.FirstOrDefault().Name;
                 return nameX;
-            }
-        }
-
-        private DateTime GetMinLastCheck()
-        {
-            lock (_imglock) {
-                var min = (_imgList.Count == 0 ?
-                    DateTime.Now :
-                    _imgList.Min(e => e.Value.LastCheck))
-                    .AddSeconds(-1);
-
-                return min;
             }
         }
 

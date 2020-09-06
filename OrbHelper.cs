@@ -1,6 +1,5 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
-using OpenCvSharp.ImgHash;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -11,10 +10,9 @@ namespace ImageBank
 {
     public static class OrbHelper
     {
-        public static bool Compute(Bitmap bitmap, out ulong phash, out ulong[] descriptors)
+        public static bool Compute(Bitmap bitmap, out Mat descriptors)
         {
             Contract.Requires(bitmap != null);
-            phash = 0;
             descriptors = null;
             using (var orb = ORB.Create(AppConsts.MaxDescriptorsInImage)) {
                 using (var matcolor = BitmapConverter.ToMat(bitmap)) {
@@ -24,27 +22,10 @@ namespace ImageBank
 
                     using (var mat = new Mat()) {
                         Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                        using (var phashmaker = PHash.Create())
-                        using (var matphash = new Mat()) {
-                            phashmaker.Compute(mat, matphash);
-                            if (matphash.Rows != 1 || matphash.Cols != 8) {
-                                return false;
-                            }
-
-                            matphash.GetArray(out byte[] buffer);
-                            phash = BitConverter.ToUInt64(buffer, 0);
-                        }
-
-                        using (var matdescriptors = new Mat()) {
-                            orb.DetectAndCompute(mat, null, out _, matdescriptors);
-                            if (matdescriptors.Rows == 0 || matdescriptors.Cols != 32) {
-                                return false;
-                            }
-
-                            matdescriptors.GetArray(out byte[] buffer);
-                            var length = Math.Min(buffer.Length, AppConsts.MaxDescriptorsInImage * 32);
-                            descriptors = new ulong[length / sizeof(ulong)];
-                            Buffer.BlockCopy(buffer, 0, descriptors, 0, length);
+                        descriptors = new Mat();
+                        orb.DetectAndCompute(mat, null, out _, descriptors);
+                        if (descriptors.Rows == 0 || descriptors.Cols != 32) {
+                            return false;
                         }
                     }
                 }
@@ -66,7 +47,7 @@ namespace ImageBank
             return distance;
         }
 
-        public static int[] GetMatches(ulong[] x, ulong[] y)
+        public static byte[] GetMatches(ulong[] x, ulong[] y)
         {
             Contract.Requires(x != null);
             Contract.Requires(y != null);
@@ -87,12 +68,12 @@ namespace ImageBank
             }
 
             list = list.OrderBy(e => e.Item3).ToList();
-            var matches = new List<int>();
+            var matches = new List<byte>();
             while (list.Count > 0) {
                 var minx = list[0].Item1;
                 var miny = list[0].Item2;
                 var mind = list[0].Item3;
-                matches.Add(mind);
+                matches.Add((byte)mind);
                 list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
             }
 

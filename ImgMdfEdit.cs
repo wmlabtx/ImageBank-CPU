@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Drawing;
 
 namespace ImageBank
@@ -33,30 +34,23 @@ namespace ImageBank
                         return;
                     }
 
-                    var rscd = ScdHelper.Compute(bitmap);
-
-                    if (!OrbHelper.Compute(bitmap, out ulong rphash, out ulong[] rdescriptors)) {
+                    if (!OrbHelper.Compute(bitmap, out Mat rdescriptors)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
                         return;
                     }
 
-                    var lastcheck = GetMinLastCheck();
+                    var lastcheck = DateTime.Now.AddYears(-10);
                     var rimg = new Img(
                         name: img.Name,
                         hash: rhash,
-                        phash: rphash,
                         width: bitmap.Width,
                         heigth: bitmap.Height,
                         size: rimagedata.Length,
-                        scd: rscd,
                         descriptors: rdescriptors,
                         folder: img.Folder,
-                        path: img.Path,
                         counter: img.Counter,
-                        lastcheck: lastcheck,
                         lastview: img.LastView,
-                        dt: " ",
-                        dv: 0f,
+                        lastcheck: lastcheck,
                         nextname: "0123456789"
                         );
 

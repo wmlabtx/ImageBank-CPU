@@ -97,9 +97,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ImgMdfCompute.cs" />
-    <Compile Include="Scd.cs" />
-    <Compile Include="ScdHelper.cs" />
-    <Compile Include="SCD_Descriptor.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -118,6 +115,7 @@
     <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />
     <Compile Include="ImgMdfFindNext.cs" />
+    <Compile Include="ImgMdfFlann.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />

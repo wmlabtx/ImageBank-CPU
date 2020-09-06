@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -21,10 +22,10 @@ namespace ImageBank
         private void ResetRefers(string name)
         {
             lock (_imglock) {
-                var minlc = GetMinLastCheck();
+                var minlc = DateTime.Now.AddYears(-10);
                 _imgList
                     .Values
-                    .Where(e => e.NextName.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    .Where(e => e.NextName.Equals(name, StringComparison.OrdinalIgnoreCase))
                     .ToList()
                     .ForEach(e => e.LastCheck = minlc);
             }

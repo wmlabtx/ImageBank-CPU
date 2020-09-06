@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Linq;
 namespace ImageBank
 {
     public partial class ImgMdf
-    {        
+    {
         public void Import(string path, int maxadd)
         { 
             AppVars.SuspendEvent.Reset();
@@ -76,14 +77,12 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.Compute(bitmap, out ulong phash, out ulong[] descriptors)) {
+                if (!OrbHelper.Compute(bitmap, out Mat descriptors)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
                     continue;
                 }
-
-                var scd = new Scd(bitmap);
 
                 var folder = 0;
                 lock (_imglock) {
@@ -111,23 +110,18 @@ namespace ImageBank
                 Helper.DeleteToRecycleBin(filename);
 
                 var lastview = GetMinLastView();
-                var lastcheck = GetMinLastCheck();
+                var lastcheck = DateTime.Now.AddYears(-10);
                 var img = new Img(
                     name: name,
                     hash: hash,
-                    phash: phash,
                     width: bitmap.Width,
                     heigth: bitmap.Height,
                     size: imagedata.Length,
-                    scd: scd,
                     descriptors: descriptors,
                     folder: folder,
-                    path: string.Empty,
                     counter: 0,
-                    lastcheck: lastcheck,
                     lastview: lastview,
-                    dt: " ",
-                    dv: 0f,
+                    lastcheck: lastcheck,
                     nextname: "0123456789");
 
                 Add(img);
@@ -142,6 +136,9 @@ namespace ImageBank
 
             ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
             Helper.CleanupDirectories(path, AppVars.Progress);
+
+            ((IProgress<string>)AppVars.Progress).Report($"flann update...");
+            FlannUpdate();
 
             AppVars.SuspendEvent.Set();
         }

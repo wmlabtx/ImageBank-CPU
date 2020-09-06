@@ -81,12 +81,12 @@ namespace ImageBank
 
         private void ImportDtClick()
         {
-            Import(AppConsts.PathDt, 10);
+            Import(AppConsts.PathDt, 100);
         }
 
         private void ImportRwClick()
         {
-            Import(AppConsts.PathRw, 10);
+            Import(AppConsts.PathRw, 100);
         }
 
         private void ImportHpClick()
@@ -110,7 +110,7 @@ namespace ImageBank
         private async void MoveClick(string path)
         {
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.UpdatePath(AppVars.ImgPanel[0].Img.Name, path); }).ConfigureAwait(true);
+            //await Task.Run(() => { AppVars.Collection.UpdatePath(AppVars.ImgPanel[0].Img.Name, path); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(AppVars.ImgPanel[0].Img.Name, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -164,26 +164,6 @@ namespace ImageBank
             LabelRight.IsEnabled = enabled;
         }
 
-        private static string GetExtensionName(MagicFormat format)
-        {
-            switch (format) {
-                case 0:
-                    return "none";
-                case MagicFormat.Jpeg:
-                    return "jpeg";
-                case MagicFormat.Flif:
-                    return "flif";
-                case MagicFormat.WebP:
-                    return "webp";
-                case MagicFormat.WebPLossLess:
-                    return "webp";
-                case MagicFormat.Png:
-                    return "png";
-                default:
-                    return $"{format}";
-            }
-        }
-
         private void DrawCanvas()
         {
             if (AppVars.ImgPanel[0] == null || AppVars.ImgPanel[1] == null) {
@@ -202,10 +182,6 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Folder:D2}\\{name}");
 
-                if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Img.Path)) {
-                    sb.Append($" ({AppVars.ImgPanel[index].Img.Path})");
-                }
-
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
                 }
@@ -217,18 +193,8 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
+                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
                 sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
-
-                var isbw = AppVars.ImgPanel[index].Img.Scd.IsBw();
-                if (isbw < AppConsts.BwLimit) {
-                    sb.Append(" color");
-                }
-                else {
-                    sb.Append(" bw");
-                }
-
-                sb.Append($" ({isbw})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
@@ -236,39 +202,7 @@ namespace ImageBank
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
 
-                if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Img.Path)) {
-                    var px = AppVars.ImgPanel[index].Img.Path.Split('.');
-                    switch (px[0]) {
-                        case "Art":
-                            scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(204, 238, 255));
-                            break;
-                        case "Kandid":
-                            scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(204, 255, 204));
-                            break;
-                        case "Tpi":
-                            scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(246, 204, 255));
-                            break;
-                    }
-                }
-
                 pLabels[index].Background = scb;
-            }
-
-            if (AppVars.ImgPanel[0].Img.Dt.Equals("H", StringComparison.OrdinalIgnoreCase) && AppVars.ImgPanel[0].Img.Dv < 4f / 64f) { 
-                var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
-                    pLabels[1].Background = scb;
-                }
-                else {
-                    pLabels[0].Background = scb;
-                }
-            }
-
-            for (var i = 0; i < 2; i++) {
-                var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 120, 128));
-                if (AppVars.ImgPanel[i].Bitmap.Height == 2160) {
-                    pLabels[i].Background = scb;
-                }
             }
 
             if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {

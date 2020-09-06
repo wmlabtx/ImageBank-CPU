@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 
 namespace ImageBank
 {
@@ -8,21 +9,25 @@ namespace ImageBank
 
         public ulong Hash { get; }
 
-        public ulong PHash { get; }
-
         public int Width { get; }
 
         public int Heigth { get; }
 
         public int Size { get; }
+         
+        private Mat _descriptors;
 
-        public Scd Scd { get; }
-
-        private readonly ulong[] _descriptors;
-
-        public ulong[] GetDescriptors()
+        public Mat GetDescriptors()
         {
             return _descriptors;
+        }
+        public void SetDescriptors(Mat descriptors)
+        {
+            _descriptors = descriptors;
+            if (_descriptors != null) {
+                _descriptors.GetArray(out byte[] buffer);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDescriptors, buffer);
+            }
         }
 
         private int _folder;
@@ -36,17 +41,6 @@ namespace ImageBank
             }
         }
         public string FileName => Helper.GetFileName(Name, Folder);
-
-        private string _path;
-        public string Path
-        {
-            get => _path;
-            set
-            {
-                _path = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrPath, value);
-            }
-        }
 
         private int _counter;
         public int Counter
@@ -70,39 +64,6 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastcheck;
-        public DateTime LastCheck
-        {
-            get => _lastcheck;
-            set
-            {
-                _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
-            }
-        }
-
-        private string _dt;
-        public string Dt
-        {
-            get => _dt;
-            set
-            {
-                _dt = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDt, value);
-            }
-        }
-
-        private float _dv;
-        public float Dv
-        {
-            get => _dv;
-            set
-            {
-                _dv = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDv, value);
-            }
-        }
-
         private string _nextname;
         public string NextName
         {
@@ -114,42 +75,42 @@ namespace ImageBank
             }
         }
 
+        private DateTime _lastcheck;
+        public DateTime LastCheck
+        {
+            get => _lastcheck;
+            set
+            {
+                _lastcheck = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
+            }
+        }
+
         public Img(
             string name,
             ulong hash,
-            ulong phash,
             int width,
             int heigth,
             int size,
-            Scd scd,
-            ulong[] descriptors,
+            Mat descriptors,
             int folder,
-            string path,
             int counter,
-            DateTime lastcheck,
             DateTime lastview,
-            string dt,
-            float dv,
+            DateTime lastcheck,
             string nextname
             )
         {
             Name = name;
             Hash = hash;
-            PHash = phash;
             Width = width;
             Heigth = heigth;
             Size = size;
-            Scd = scd;
+
             _descriptors = descriptors;
-
             _folder = folder;
-            _path = path;
             _counter = counter;
-            _lastcheck = lastcheck;
             _lastview = lastview;
-
-            _dt = dt;
-            _dv = dv;
+            _lastcheck = lastcheck;
             _nextname = nextname;
         }
     }
