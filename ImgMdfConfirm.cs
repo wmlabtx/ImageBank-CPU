@@ -6,14 +6,12 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Confirm(string name)
+        public void Confirm()
         {
             lock (_imglock) {
                 AppVars.MoveMessage = string.Empty;
-                if (_imgList.TryGetValue(name, out var img)) {
-                    img.LastView = DateTime.Now;
-                    img.Counter += 1;
-                }
+                AppVars.ImgPanel[0].Img.LastView = DateTime.Now;
+                AppVars.ImgPanel[0].Img.AddToHistory(AppVars.ImgPanel[1].Img.Name);
             }
         }
 
@@ -30,8 +28,8 @@ namespace ImageBank
                 var moved = 0;
                 for (var df = 0; df < 98; df++) {
                     if (c[df] < AppConsts.MaxImagesInFolder && c[df + 1] > 0) {
-                        var minla = _imgList.Where(e => e.Value.Folder == df + 1).Min(e => e.Value.LastAdded);
-                        var img = _imgList.FirstOrDefault(e => e.Value.Folder == df + 1 && e.Value.LastAdded == minla).Value;
+                        var maxlv = _imgList.Where(e => e.Value.Folder == df + 1).Max(e => e.Value.LastView);
+                        var img = _imgList.FirstOrDefault(e => e.Value.Folder == df + 1 && e.Value.LastView == maxlv).Value;
                         c[df]++;
                         c[df + 1]--;
                         moved++;
@@ -43,6 +41,7 @@ namespace ImageBank
                 }
             }
             */
+            
             lock (_imglock) {
                 var c = new int[100];
                 foreach (var e in _imgList) {

@@ -24,14 +24,15 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrName}, "); // 0
             sb.Append($"{AppConsts.AttrFolder}, "); // 1
             sb.Append($"{AppConsts.AttrHash}, "); // 2
-            sb.Append($"{AppConsts.AttrCounter}, "); // 3
-            sb.Append($"{AppConsts.AttrLastView}, "); // 4
-            sb.Append($"{AppConsts.AttrWidth}, "); // 5
-            sb.Append($"{AppConsts.AttrHeigth}, "); // 6
-            sb.Append($"{AppConsts.AttrSize}, "); // 7
-            sb.Append($"{AppConsts.AttrDescriptors}, "); // 8
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 9
-            sb.Append($"{AppConsts.AttrNextName} "); // 10
+            sb.Append($"{AppConsts.AttrLastView}, "); // 3
+            sb.Append($"{AppConsts.AttrWidth}, "); // 4
+            sb.Append($"{AppConsts.AttrHeigth}, "); // 5
+            sb.Append($"{AppConsts.AttrSize}, "); // 6
+            sb.Append($"{AppConsts.AttrDescriptors}, "); // 7
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
+            sb.Append($"{AppConsts.AttrNextName}, "); // 9
+            sb.Append($"{AppConsts.AttrHistory}, "); // 10
+            sb.Append($"{AppConsts.AttrFamily} "); // 11
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -43,15 +44,16 @@ namespace ImageBank
                             var folder = reader.GetInt32(1);
                             var bhash = (byte[])reader[2];
                             var hash = BitConverter.ToUInt64(bhash, 0);
-                            var counter = reader.GetInt32(3);
-                            var lastview = reader.GetDateTime(4);
-                            var width = reader.GetInt32(5);
-                            var heigth = reader.GetInt32(6);
-                            var size = reader.GetInt32(7);
-                            var bdescriptors = (byte[])reader[8];
+                            var lastview = reader.GetDateTime(3);
+                            var width = reader.GetInt32(4);
+                            var heigth = reader.GetInt32(5);
+                            var size = reader.GetInt32(6);
+                            var bdescriptors = (byte[])reader[7];
                             var descriptors = Helper.BufferToDescriptors(bdescriptors);
-                            var lastcheck = reader.GetDateTime(9);
-                            var nextname = reader.GetString(10);
+                            var lastcheck = reader.GetDateTime(8);
+                            var nextname = reader.GetString(9);
+                            var history = reader.GetString(10);
+                            var family = reader.GetString(11);
                             var img = new Img(
                                 name: name,
                                 hash: hash,
@@ -60,10 +62,11 @@ namespace ImageBank
                                 size: size,
                                 descriptors: descriptors,
                                 folder: folder,
-                                counter: counter,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
-                                nextname: nextname
+                                nextname: nextname,
+                                history: history,
+                                family: family
                                );
 
                             AddToMemory(img);

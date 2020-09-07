@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -14,7 +13,9 @@ namespace ImageBank
 
             Img imgX;
             var dtn = DateTime.Now;
+            int bigdescriptors;
             lock (_imglock) {
+                bigdescriptors = _imgList.Count(e => e.Value.GetDescriptors() != null && e.Value.GetDescriptors().Height > AppConsts.MaxDescriptorsInImage);
                 while (true) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
@@ -31,6 +32,9 @@ namespace ImageBank
                             progress.Report("No images to view");
                             return;
                         }
+
+                        var mincounter = imglist.Min(e => e.Counter);
+                        imglist = imglist.Where(e => e.Counter == mincounter).ToArray();
 
                         nameX = imglist
                             .OrderBy(e => e.LastView)
@@ -71,6 +75,7 @@ namespace ImageBank
             imgX = AppVars.ImgPanel[0].Img;
             sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
             sb.Append($"({secs:F2}s)");
+            sb.Append($" bigs:{bigdescriptors}");
             progress.Report(sb.ToString());
         }
     }

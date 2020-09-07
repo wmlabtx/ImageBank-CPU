@@ -46,7 +46,8 @@ namespace ImageBank
                 return;
             }
 
-            if (imgX.GetDescriptors() == null) {
+            var descriptorsx = imgX.GetDescriptors();
+            if (descriptorsx == null || descriptorsx.Height > AppConsts.MaxDescriptorsInImage) {
                 if (!Helper.GetImageDataFromFile(
                     imgX.FileName,
                     out _,
@@ -69,15 +70,6 @@ namespace ImageBank
                 bitmap.Dispose();
 
                 imgX.SetDescriptors(descriptors);
-                imgX.Counter = 0;
-
-                int zerolist;
-                lock (_imglock) {
-                    zerolist = _imgList.Count(e => e.Value.GetDescriptors() == null);
-                }
-
-                backgroundworker.ReportProgress(0, $"({zerolist} left)");
-                return;
             }
 
             int nonzerolist;

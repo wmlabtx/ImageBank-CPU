@@ -48,10 +48,11 @@ namespace ImageBank
                         size: rimagedata.Length,
                         descriptors: rdescriptors,
                         folder: img.Folder,
-                        counter: img.Counter,
                         lastview: img.LastView,
                         lastcheck: lastcheck,
-                        nextname: "0123456789"
+                        nextname: "0123456789",
+                        history: img.History,
+                        family: img.Family
                         );
 
                     bitmap.Dispose();

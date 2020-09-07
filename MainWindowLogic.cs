@@ -129,7 +129,7 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Confirm(AppVars.ImgPanel[0].Img.Name); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Confirm(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
@@ -172,6 +172,7 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
+            var sizes = new int[2];
             for (var index = 0; index < 2; index++) {
                 var name = AppVars.ImgPanel[index].Img.Name;
                 pBoxes[index].Tag = name;
@@ -182,8 +183,9 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Folder:D2}\\{name}");
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
+                sizes[index] = AppVars.Collection.FamilySize(AppVars.ImgPanel[index].Img.Family);
+                if (sizes[index]  > 0) {
+                    sb.Append($" [{AppVars.ImgPanel[index].Img.Family}:{sizes[index]}]");
                 }
 
                 sb.AppendLine();
@@ -208,6 +210,11 @@ namespace ImageBank
             if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
                 pLabels[0].Background = System.Windows.Media.Brushes.LightGray;
                 pLabels[1].Background = System.Windows.Media.Brushes.LightGray;
+            }
+
+            if (!string.IsNullOrEmpty(AppVars.ImgPanel[0].Img.Family) && AppVars.ImgPanel[0].Img.Family.Equals(AppVars.ImgPanel[1].Img.Family, StringComparison.OrdinalIgnoreCase)) {
+                pLabels[0].Background = System.Windows.Media.Brushes.LightGreen;
+                pLabels[1].Background = System.Windows.Media.Brushes.LightGreen;
             }
 
             RedrawCanvas();
@@ -279,6 +286,14 @@ namespace ImageBank
         private void Rotate270Click()
         {
             Rotate(RotateFlipType.Rotate270FlipNone);
+        }
+
+        private async void FamilyCombineClick()
+        {
+            DisableElements();
+            await Task.Run(() => { AppVars.Collection.CombineFamilies(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
         }
 
         private void WindowClosing()

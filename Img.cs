@@ -1,5 +1,6 @@
 ﻿using OpenCvSharp;
 using System;
+using System.Diagnostics.Contracts;
 
 namespace ImageBank
 {
@@ -42,17 +43,6 @@ namespace ImageBank
         }
         public string FileName => Helper.GetFileName(Name, Folder);
 
-        private int _counter;
-        public int Counter
-        {
-            get => _counter;
-            set
-            {
-                _counter = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
-            }
-        }
-
         private DateTime _lastview;
         public DateTime LastView
         {
@@ -86,6 +76,78 @@ namespace ImageBank
             }
         }
 
+        private string _history;
+        public string History
+        {
+            get => _history;
+            set
+            {
+                _history = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, value);
+            }
+        }
+
+        public bool IsInHistory(string name)
+        {
+            var offset = 0;
+            while (offset + 10 <= _history.Length) {
+                if (string.CompareOrdinal(_history, offset, name, 0, 10) == 0) {
+                    return true;
+                }
+
+                offset += 10;
+            }
+
+            return false;
+        }
+
+        public void AddToHistory(string name)
+        {
+            Contract.Requires(name != null && name.Length == 10);
+
+            if (!IsInHistory(name)) {
+                return;
+            }
+
+            _history = string.Concat(_history, name);
+            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, _history);
+        }
+
+        public void RemoveFromHistory(string name)
+        {
+            Contract.Requires(name != null && name.Length == 10);
+
+            var offset = 0;
+            while (offset + 10 <= _history.Length) {
+                if (string.CompareOrdinal(_history, offset, name, 0, 10) == 0) {
+                    _history = _history.Remove(offset, 10);
+                    ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, _history);
+                    return;
+                }
+
+                offset += 10;
+            }
+        }
+
+        public int Counter
+        {
+            get
+            {
+                return _history.Length / 10;
+            }
+        }
+
+        private string _family;
+        public string Family
+        {
+            get => _family;
+            set
+            {
+                _family = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFamily, value);
+            }
+        }
+
         public Img(
             string name,
             ulong hash,
@@ -94,10 +156,11 @@ namespace ImageBank
             int size,
             Mat descriptors,
             int folder,
-            int counter,
             DateTime lastview,
             DateTime lastcheck,
-            string nextname
+            string nextname,
+            string history,
+            string family
             )
         {
             Name = name;
@@ -108,10 +171,12 @@ namespace ImageBank
 
             _descriptors = descriptors;
             _folder = folder;
-            _counter = counter;
             _lastview = lastview;
             _lastcheck = lastcheck;
             _nextname = nextname;
+
+            _history = history;
+            _family = family;
         }
     }
 }

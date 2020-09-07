@@ -119,10 +119,11 @@ namespace ImageBank
                     size: imagedata.Length,
                     descriptors: descriptors,
                     folder: folder,
-                    counter: 0,
                     lastview: lastview,
                     lastcheck: lastcheck,
-                    nextname: "0123456789");
+                    nextname: "0123456789",
+                    history: string.Empty,
+                    family: string.Empty);
 
                 Add(img);
                 bitmap.Dispose();

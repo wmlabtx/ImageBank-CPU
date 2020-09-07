@@ -82,6 +82,21 @@ namespace ImageBank
             return sb.ToString();
         }
 
+        public static string RandomFamily()
+        {
+            var d0 = "bcdfghjklmnpqrstvwxyz".ToCharArray();
+            var d1 = "aeiou".ToCharArray();
+            var sb = new StringBuilder("01234");
+            var br = new byte[20];
+            _random.GetBytes(br);
+            sb[0] = d0[BitConverter.ToUInt32(br, 0) % d0.Length];
+            sb[1] = d1[BitConverter.ToUInt32(br, 4) % d1.Length];
+            sb[2] = d0[BitConverter.ToUInt32(br, 8) % d0.Length];
+            sb[3] = d1[BitConverter.ToUInt32(br, 12) % d1.Length];
+            sb[4] = d0[BitConverter.ToUInt32(br, 16) % d0.Length];
+            return sb.ToString();
+        }
+
         #endregion
 
         #region Hash

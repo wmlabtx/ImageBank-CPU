@@ -117,6 +117,7 @@
     <Compile Include="ImgMdfFindNext.cs" />
     <Compile Include="ImgMdfFlann.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
+    <Compile Include="ImgMdfFamily.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />
     <Compile Include="ImgMdfConfirm.cs" />

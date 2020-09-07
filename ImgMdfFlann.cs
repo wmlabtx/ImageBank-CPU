@@ -63,7 +63,9 @@ namespace ImageBank
                         var candidates = votes.OrderByDescending(e => e.Value).Select(e => e.Key).ToArray();
                         foreach (var candidate in candidates) {
                             if (_imgList.ContainsKey(candidate)) {
-                                return candidate;
+                                if (!imgX.IsInHistory(candidate)) {
+                                    return candidate;
+                                }
                             }
                         }
 

@@ -18,23 +18,9 @@
                 <MenuItem Header="Rotate 90" Click="Rotate90Click" />
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
-            </MenuItem>            
-            <MenuItem Header="Move">
-                <MenuItem Header="Art">
-                    <MenuItem Header="Alex" Tag="Art.Alex" Click="MoveClick" />
-                </MenuItem>
-                <MenuItem Header="Kandid">
-                    <MenuItem Header="Root" Tag="Kandid" Click="MoveClick" />
-                    <Separator/>
-                    <MenuItem Header="Aygun" Tag="Kandid.Aygun" Click="MoveClick" />
-                    <MenuItem Header="Narmina" Tag="Kandid.Narmina" Click="MoveClick" />
-                    <MenuItem Header="Polina" Tag="Kandid.Polina" Click="MoveClick" />
-                </MenuItem>
-                <MenuItem Header="Tpi">
-                    <MenuItem Header="Berenice" Tag="Tpi.Berenice" Click="MoveClick" />
-                    <MenuItem Header="Gabi" Tag="Tpi.Gabi" Click="MoveClick" />
-                    <MenuItem Header="Pamela" Tag="Tpi.Pamela" Click="MoveClick" />
-                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="Family">
+                <MenuItem Header="Combine" Click="FamilyCombineClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

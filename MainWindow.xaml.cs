@@ -103,6 +103,11 @@ namespace ImageBank
             Rotate270Click();
         }
 
+        private void FamilyCombineClick(object sender, EventArgs e)
+        {
+            FamilyCombineClick();
+        }
+
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
