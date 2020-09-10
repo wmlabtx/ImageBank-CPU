@@ -34,7 +34,7 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!OrbHelper.Compute(bitmap, out Mat rdescriptors)) {
+                    if (!DescriptorHelper.Compute(bitmap, out var rdescriptors)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
                         return;
                     }
@@ -51,6 +51,7 @@ namespace ImageBank
                         lastview: img.LastView,
                         lastcheck: lastcheck,
                         nextname: "0123456789",
+                        distance: 0f,
                         history: img.History,
                         family: img.Family
                         );

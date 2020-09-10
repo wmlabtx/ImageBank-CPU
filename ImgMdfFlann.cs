@@ -6,6 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        /*
         private void FlannUpdate()
         {
             Img[] imgs;
@@ -78,5 +79,6 @@ namespace ImageBank
                 }
             }
         }
+        */
     }
 }

@@ -555,26 +555,20 @@ namespace ImageBank
 
         #region Descriptors
 
-        public static Mat BufferToDescriptors(byte[] buffer)
+        public static ulong[] BufferToDescriptors(byte[] buffer)
         {
-            if (buffer == null || buffer.Length < 32) {
-                return null;
-            }
-
-            var mat = new Mat(buffer.Length / 32, 32, MatType.CV_8U);
-            mat.SetArray(buffer);
-            return mat;
+            Contract.Requires(buffer != null);
+            var descriptors = new ulong[buffer.Length / sizeof(ulong)];
+            Buffer.BlockCopy(buffer, 0, descriptors, 0, buffer.Length);
+            return descriptors;
         }
 
-        public static byte[] DescriptorsToBuffer(Mat descriptors)
+        public static byte[] DescriptorsToBuffer(ulong[] descriptors)
         {
-            if (descriptors != null) {
-                descriptors.GetArray<byte>(out var buffer);
-                return buffer;
-            }
-            else {
-                return null;
-            }
+            Contract.Requires(descriptors != null);
+            var buffer = new byte[descriptors.Length * sizeof(ulong)];
+            Buffer.BlockCopy(descriptors, 0, buffer, 0, buffer.Length);
+            return buffer;
         }
 
         #endregion

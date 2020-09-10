@@ -1,6 +1,4 @@
-﻿using OpenCvSharp;
-using OpenCvSharp.Flann;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -17,11 +15,6 @@ namespace ImageBank
         private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
         private readonly SortedDictionary<ulong, string> _hashList = new SortedDictionary<ulong, string>();
 
-        private object _flannlock = new object();
-        private bool _flannAvailable = false;
-        private readonly FlannBasedMatcher _flannBasedMatcher = new FlannBasedMatcher(new LshIndexParams(12, 20, 2));
-        private string[] _flannNames;
-
         public ImgMdf()
         {
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=60";
@@ -36,37 +29,10 @@ namespace ImageBank
                 var mc = _imgList.Min(e => e.Value.Counter);
                 var cc = _imgList.Count(e => e.Value.Counter == mc);
                 sb.Append($"{cc}:{mc}/");
+                var nz = _imgList.Count(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0);
+                sb.Append($"{nz}/");
                 sb.Append($"{_imgList.Count}: ");
                 return sb.ToString();
-            }
-        }
-
-        private string GetNextToCheck()
-        {
-            lock (_imglock) {
-                var zerolist = _imgList
-                    .Where(e => e.Value.GetDescriptors() == null)
-                    .Select(e => e.Value)
-                    .OrderBy(e => e.LastCheck)
-                    .ToArray();
-
-                if (zerolist.Length == 0) {
-                    zerolist = _imgList
-                    .Where(e => e.Value.Name.Equals(e.Value.NextName, StringComparison.OrdinalIgnoreCase) || !_imgList.ContainsKey(e.Value.NextName))
-                    .Select(e => e.Value)
-                    .OrderBy(e => e.LastCheck)
-                    .ToArray();
-                }
-
-                if (zerolist.Length == 0) {
-                    zerolist = _imgList
-                    .Select(e => e.Value)
-                    .OrderBy(e => e.LastCheck)
-                    .ToArray();
-                }
-
-                var nameX = zerolist.FirstOrDefault().Name;
-                return nameX;
             }
         }
 

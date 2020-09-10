@@ -1,6 +1,6 @@
 ﻿--TRUNCATE TABLE Images;
---DBCC SHRINKDATABASE(N'D:\Users\Murad\Documents\Sdb\Db\IMAGES.MDF')
---GO
+DBCC SHRINKDATABASE(N'D:\Users\Murad\Documents\Sdb\Db\IMAGES.MDF')
+GO
 
 --TRUNCATE TABLE Vars;
 --INSERT INTO Vars (Id) VALUES (0);
@@ -26,5 +26,10 @@
 --UPDATE Images SET Path = '';
 --UPDATE Images SET Hash = 0
 
-UPDATE Images SET Counter = 0;
-UPDATE Images SET NextName = '0123456789';
+--UPDATE Images SET Counter = 0;
+--UPDATE Images SET NextName = '0123456789';
+
+UPDATE Images SET Descriptors = 0x;
+UPDATE Images SET Distance = 256;
+UPDATE Images SET History = '';
+UPDATE Images SET Family = '';

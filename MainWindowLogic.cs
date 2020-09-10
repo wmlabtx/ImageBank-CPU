@@ -107,7 +107,8 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void MoveClick(string path)
+        /*
+        private void MoveClick(string path)
         {
             DisableElements();
             //await Task.Run(() => { AppVars.Collection.UpdatePath(AppVars.ImgPanel[0].Img.Name, path); }).ConfigureAwait(true);
@@ -115,6 +116,7 @@ namespace ImageBank
             DrawCanvas();
             EnableElements();
         }
+        */
 
         private void PictureLeftBoxMouseClick()
         {
@@ -196,7 +198,7 @@ namespace ImageBank
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
                 sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
-                sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
+                //sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -13,9 +14,7 @@ namespace ImageBank
 
             Img imgX;
             var dtn = DateTime.Now;
-            int bigdescriptors;
             lock (_imglock) {
-                bigdescriptors = _imgList.Count(e => e.Value.GetDescriptors() != null && e.Value.GetDescriptors().Height > AppConsts.MaxDescriptorsInImage);
                 while (true) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
@@ -24,7 +23,7 @@ namespace ImageBank
 
                     if (string.IsNullOrEmpty(nameX)) {
                         var imglist = _imgList
-                            .Where(e => e.Value.GetDescriptors() != null && _imgList.ContainsKey(e.Value.NextName))
+                            .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0 && _imgList.ContainsKey(e.Value.NextName))
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -34,13 +33,58 @@ namespace ImageBank
                         }
 
                         var mincounter = imglist.Min(e => e.Counter);
-                        imglist = imglist.Where(e => e.Counter == mincounter).ToArray();
-
-                        nameX = imglist
+                        imglist = imglist
+                            .Where(e => e.Counter == mincounter)
                             .OrderBy(e => e.LastView)
+                            .ToArray();
+
+
+                        /*
+                        var families = new SortedDictionary<string, DateTime>();
+                        foreach(var img in imglist) {
+                            var family = img.Family;
+                            if (families.ContainsKey(family)) {
+                                if (img.LastView > families[family]) {
+                                    families[family] = img.LastView;
+                                }
+                            }
+                            else {
+                                families.Add(family, img.LastView);
+                            }
+                        }
+
+                        var minfamily = string.Empty;
+                        var minlv = DateTime.MaxValue;
+                        foreach (var familypair in families) {
+                            if (familypair.Value < minlv) {
+                                minlv = familypair.Value;
+                                minfamily = familypair.Key;
+                            }
+                        }
+
+                        Img[] familylist;
+                        if (string.IsNullOrEmpty(minfamily)) {
+                            familylist = imglist
+                                .Where(e => string.IsNullOrEmpty(e.Family))
+                                .OrderBy(e => e.LastView)
+                                .ToArray();
+                        }
+                        else {
+                            familylist = imglist
+                                .Where(e => e.Family.Equals(minfamily, StringComparison.OrdinalIgnoreCase))
+                                .OrderBy(e => e.LastView)
+                                .ToArray();
+                        }
+
+                        nameX = familylist
                             .FirstOrDefault()
                             .Name;
-                        
+                        */
+
+                        nameX = imglist
+                            .FirstOrDefault()
+                            .Name;
+
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
                             Delete(nameX);
@@ -74,8 +118,8 @@ namespace ImageBank
             sb.Append($"{AppVars.MoveMessage} ");
             imgX = AppVars.ImgPanel[0].Img;
             sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
+            sb.Append($"{imgX.Distance:F2} ");
             sb.Append($"({secs:F2}s)");
-            sb.Append($" bigs:{bigdescriptors}");
             progress.Report(sb.ToString());
         }
     }

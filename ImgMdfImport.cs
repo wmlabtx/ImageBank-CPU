@@ -77,7 +77,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!OrbHelper.Compute(bitmap, out Mat descriptors)) {
+                if (!DescriptorHelper.Compute(bitmap, out var descriptors)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
@@ -122,6 +122,7 @@ namespace ImageBank
                     lastview: lastview,
                     lastcheck: lastcheck,
                     nextname: "0123456789",
+                    distance: 0f,
                     history: string.Empty,
                     family: string.Empty);
 
@@ -138,8 +139,8 @@ namespace ImageBank
             ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
             Helper.CleanupDirectories(path, AppVars.Progress);
 
-            ((IProgress<string>)AppVars.Progress).Report($"flann update...");
-            FlannUpdate();
+            //((IProgress<string>)AppVars.Progress).Report($"flann update...");
+            //FlannUpdate();
 
             AppVars.SuspendEvent.Set();
         }

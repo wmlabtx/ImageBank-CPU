@@ -1,15 +1,18 @@
-﻿using OpenCvSharp;
+﻿/*
+using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Linq;
+*/
 
 namespace ImageBank
 {
     public static class OrbHelper
     {
+        /*
         public static bool Compute(Bitmap bitmap, out Mat descriptors)
         {
             Contract.Requires(bitmap != null);
@@ -79,5 +82,6 @@ namespace ImageBank
 
             return matches.ToArray();
         }
+        */
     }
 }

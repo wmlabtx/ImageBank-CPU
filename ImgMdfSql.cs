@@ -51,6 +51,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrDescriptors}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrNextName}, ");
+                    sb.Append($"{AppConsts.AttrDistance}, ");
                     sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrFamily}");
                     sb.Append(") VALUES (");
@@ -64,6 +65,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrDescriptors}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrNextName}, ");
+                    sb.Append($"@{AppConsts.AttrDistance}, ");
                     sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrFamily}");
                     sb.Append(")");
@@ -76,10 +78,11 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    var bdescriptors = Helper.DescriptorsToBuffer(img.GetDescriptors());
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", bdescriptors);
+                    var buffer = Helper.DescriptorsToBuffer(img.Descriptors);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", buffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDistance}", img.Distance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", img.History);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
                     sqlCommand.ExecuteNonQuery();

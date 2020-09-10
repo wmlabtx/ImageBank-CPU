@@ -31,8 +31,9 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrDescriptors}, "); // 7
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
             sb.Append($"{AppConsts.AttrNextName}, "); // 9
-            sb.Append($"{AppConsts.AttrHistory}, "); // 10
-            sb.Append($"{AppConsts.AttrFamily} "); // 11
+            sb.Append($"{AppConsts.AttrDistance}, "); // 10
+            sb.Append($"{AppConsts.AttrHistory}, "); // 11
+            sb.Append($"{AppConsts.AttrFamily} "); // 12
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -48,12 +49,13 @@ namespace ImageBank
                             var width = reader.GetInt32(4);
                             var heigth = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
-                            var bdescriptors = (byte[])reader[7];
-                            var descriptors = Helper.BufferToDescriptors(bdescriptors);
+                            var buffer = (byte[])reader[7];
+                            var descriptors = Helper.BufferToDescriptors(buffer);
                             var lastcheck = reader.GetDateTime(8);
                             var nextname = reader.GetString(9);
-                            var history = reader.GetString(10);
-                            var family = reader.GetString(11);
+                            var distance = reader.GetFloat(10);
+                            var history = reader.GetString(11);
+                            var family = reader.GetString(12);
                             var img = new Img(
                                 name: name,
                                 hash: hash,
@@ -65,6 +67,7 @@ namespace ImageBank
                                 lastview: lastview,
                                 lastcheck: lastcheck,
                                 nextname: nextname,
+                                distance: distance,
                                 history: history,
                                 family: family
                                );

@@ -15,18 +15,17 @@ namespace ImageBank
         public int Heigth { get; }
 
         public int Size { get; }
-         
-        private Mat _descriptors;
 
-        public Mat GetDescriptors()
+        private ulong[] _descriptors;
+        #pragma warning disable CA1819 // Properties should not return arrays
+        public ulong[] Descriptors
+        #pragma warning restore CA1819 // Properties should not return arrays
         {
-            return _descriptors;
-        }
-        public void SetDescriptors(Mat descriptors)
-        {
-            _descriptors = descriptors;
-            if (_descriptors != null) {
-                _descriptors.GetArray(out byte[] buffer);
+            get => _descriptors;
+            set
+            {
+                _descriptors = value;
+                var buffer = Helper.DescriptorsToBuffer(_descriptors);
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDescriptors, buffer);
             }
         }
@@ -41,6 +40,7 @@ namespace ImageBank
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFolder, value);
             }
         }
+
         public string FileName => Helper.GetFileName(Name, Folder);
 
         private DateTime _lastview;
@@ -105,7 +105,7 @@ namespace ImageBank
         {
             Contract.Requires(name != null && name.Length == 10);
 
-            if (!IsInHistory(name)) {
+            if (IsInHistory(name)) {
                 return;
             }
 
@@ -148,17 +148,29 @@ namespace ImageBank
             }
         }
 
+        private float _distance;
+        public float Distance
+        {
+            get => _distance;
+            set
+            {
+                _distance = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDistance, value);
+            }
+        }
+
         public Img(
             string name,
             ulong hash,
             int width,
             int heigth,
             int size,
-            Mat descriptors,
+            ulong[] descriptors,
             int folder,
             DateTime lastview,
             DateTime lastcheck,
             string nextname,
+            float distance,
             string history,
             string family
             )
@@ -174,6 +186,7 @@ namespace ImageBank
             _lastview = lastview;
             _lastcheck = lastcheck;
             _nextname = nextname;
+            _distance = distance;
 
             _history = history;
             _family = family;

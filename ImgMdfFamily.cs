@@ -20,7 +20,7 @@ namespace ImageBank
 
         public void MoveFamily(string oldfamily, string newfamily)
         {
-            if (oldfamily == null || oldfamily.Length != 4) {
+            if (oldfamily == null || oldfamily.Length != 5) {
                 return;
             }
 
