@@ -1,8 +1,6 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.IO;
@@ -30,28 +28,28 @@ namespace ImageBank
 
                 string nameX = null;
                 while (string.IsNullOrEmpty(nameX)) {
-                    Img[] xlist;
-                    xlist = _imgList
-                        .Where(e => e.Value.Descriptors == null || e.Value.Descriptors.Length == 0)
+                    var imglist = _imgList
                         .Select(e => e.Value)
-                        .OrderBy(e => e.LastCheck)
                         .ToArray();
 
-                    if (xlist.Length > 0) {
-                        nameX = xlist.First().Name;
-                    }
+                    /*
+                    var mincounter = imglist.Min(e => e.Counter);
+                    imglist = imglist
+                        .Where(e => e.Counter == mincounter)
+                        .ToArray();
+                    */
+/*
 
-                    if (string.IsNullOrEmpty(nameX)) {
-                        xlist = _imgList
-                            .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0)
-                            .Select(e => e.Value)
-                            .OrderBy(e => e.LastCheck)
-                            .ToArray();
+                    var maxfolder = imglist.Max(e => e.Folder);
+                    imglist = imglist
+                        .Where(e => e.Folder == maxfolder)
+                        .ToArray();
+*/
 
-                        if (xlist.Length > 0) {
-                            nameX = xlist.First().Name;
-                        }
-                    }
+                    nameX = imglist
+                        .OrderBy(e => e.LastCheck)
+                        .FirstOrDefault()
+                        .Name;
                 }
 
                 if (!_imgList.TryGetValue(nameX, out imgX)) {
@@ -88,10 +86,6 @@ namespace ImageBank
                     bitmap.Dispose();
 
                     imgX.Descriptors = descriptors;
-
-                    if (!_imgList.ContainsKey(imgX.NextName)) {
-                        imgX.Distance = 256f;
-                    }
                 }
 
                 var history = imgX.History;
@@ -120,28 +114,16 @@ namespace ImageBank
 
             var distance = float.MaxValue;
             var nextname = string.Empty;
-            var random = new Random();
-            var sw = Stopwatch.StartNew();
-            while (candidates.Count > 0) {
-                var index = random.Next(candidates.Count);
-                var candidate = candidates[index];
-                candidates.RemoveAt(index);
-
+            foreach (var candidate in candidates) { 
                 var d = DescriptorHelper.GetDistance(imgX.Descriptors, candidate.Descriptors);
                 if (d < distance) {
                     distance = d;
                     nextname = candidate.Name;
                 }
-
-                if (sw.ElapsedMilliseconds > 1000) {
-                    break;
-                }
             }
-
-            sw.Stop();
             
             var sb = new StringBuilder();
-            if (distance < imgX.Distance) {
+            if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
                 sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
                 sb.Append($"{imgX.Distance:F2} ");
@@ -153,10 +135,7 @@ namespace ImageBank
                 }
             }
             else {
-                if (
-                    Math.Abs(distance - imgX.Distance) < 0.0001 &&
-                    !nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)
-                    ) {
+                if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
                     sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
                     sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
                     sb.Append($"{imgX.NextName} ");

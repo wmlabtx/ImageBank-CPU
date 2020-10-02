@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Diagnostics.Contracts;
 
 namespace ImageBank

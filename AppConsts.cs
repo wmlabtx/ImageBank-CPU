@@ -9,7 +9,8 @@
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
         public const int MaxImages = 200000;
         public const int MaxImagesInFolder = 2000;
-        public const int MaxDescriptorsInImage = 100; // 3200 bytes
+        public const int MaxDescriptorsInImage = 500;
+        public const int MaxClustersInImage = 10; // 320 bytes
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";

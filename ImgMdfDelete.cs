@@ -22,12 +22,15 @@ namespace ImageBank
         private void ResetRefers(string name)
         {
             lock (_imglock) {
-                var minlc = DateTime.Now.AddYears(-10);
-                _imgList
-                    .Values
-                    .Where(e => e.NextName.Equals(name, StringComparison.OrdinalIgnoreCase))
-                    .ToList()
-                    .ForEach(e => e.LastCheck = minlc);
+                var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                foreach (var img in _imgList) {
+                    if (img.Value.NextName.Equals(name, StringComparison.OrdinalIgnoreCase)) {
+                        img.Value.NextName = "0123456789";
+                        img.Value.LastCheck = minlc;
+                    }
+
+                    img.Value.RemoveFromHistory(name);
+                }
             }
         }
     }

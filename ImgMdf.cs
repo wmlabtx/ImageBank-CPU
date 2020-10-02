@@ -29,8 +29,6 @@ namespace ImageBank
                 var mc = _imgList.Min(e => e.Value.Counter);
                 var cc = _imgList.Count(e => e.Value.Counter == mc);
                 sb.Append($"{cc}:{mc}/");
-                var nz = _imgList.Count(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0);
-                sb.Append($"{nz}/");
                 sb.Append($"{_imgList.Count}: ");
                 return sb.ToString();
             }

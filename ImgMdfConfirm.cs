@@ -49,20 +49,19 @@ namespace ImageBank
                 }
 
                 AppVars.MoveMessage = string.Empty;
-                for (var df = 0; df <= 98; df++) {
+                for (var df = 98; df >= 0; df--) {
                     if (c[df] < AppConsts.MaxImagesInFolder) {
-                        for (var sf = 99; sf > df; sf--) {
-                            if (c[sf] > 0) {
-                                var minla = _imgList.Where(e => e.Value.Folder == sf).Min(e => e.Value.LastView);
-                                var img = _imgList.FirstOrDefault(e => e.Value.Folder == sf && e.Value.LastView == minla).Value;
-                                c[df]++;
-                                c[sf]--;
-                                AppVars.MoveMessage = $"{sf} [{c[sf]}] -> {df} [{c[df]}] ";
-                                var oldfile = img.FileName;
-                                img.Folder = df;
-                                File.Move(oldfile, img.FileName);
-                                return;
-                            }
+                        var sf = df + 1;
+                        if (c[sf] > 0) {
+                            var minla = _imgList.Where(e => e.Value.Folder == sf).Min(e => e.Value.LastView);
+                            var img = _imgList.FirstOrDefault(e => e.Value.Folder == sf && e.Value.LastView == minla).Value;
+                            c[df]++;
+                            c[sf]--;
+                            AppVars.MoveMessage = $"{sf} [{c[sf]}] -> {df} [{c[df]}] ";
+                            var oldfile = img.FileName;
+                            img.Folder = df;
+                            File.Move(oldfile, img.FileName);
+                            return;
                         }
                     }
                 }

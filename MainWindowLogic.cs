@@ -86,7 +86,7 @@ namespace ImageBank
 
         private void ImportRwClick()
         {
-            Import(AppConsts.PathRw, 100);
+            Import(AppConsts.PathRw, int.MaxValue);
         }
 
         private void ImportHpClick()

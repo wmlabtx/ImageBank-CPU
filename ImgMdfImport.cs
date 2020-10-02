@@ -139,8 +139,6 @@ namespace ImageBank
             ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
             Helper.CleanupDirectories(path, AppVars.Progress);
 
-            //((IProgress<string>)AppVars.Progress).Report($"flann update...");
-            //FlannUpdate();
 
             AppVars.SuspendEvent.Set();
         }
