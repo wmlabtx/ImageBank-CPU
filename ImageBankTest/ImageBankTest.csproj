@@ -63,8 +63,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColorLABTest.cs" />
     <Compile Include="HelperTests.cs" />
-    <Compile Include="OrbHelperTests.cs" />
+    <Compile Include="SpectreHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

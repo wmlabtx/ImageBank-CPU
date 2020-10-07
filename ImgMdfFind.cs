@@ -7,7 +7,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        //private int _offset = 1;
+        private int _offset = 1;
 
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
@@ -25,11 +25,10 @@ namespace ImageBank
 
                     if (string.IsNullOrEmpty(nameX)) {
                         var imglist = _imgList
-                            .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0 && _imgList.ContainsKey(e.Value.NextName))
-                            .OrderByDescending(e => e.Value.LastCheck)
-                            .Take(1000)
+                            .Where(e => _imgList.ContainsKey(e.Value.NextName))
+                            .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0)
+                            .OrderBy(e => e.Value.LastView)
                             .Select(e => e.Value)
-                            .OrderBy(e => e.LastView)
                             .ToArray();
 
                         if (imglist.Length < 2) {
@@ -42,24 +41,9 @@ namespace ImageBank
                             .Where(e => e.Counter == mincounter)
                             .ToArray();
 
-                        var maxfolder = imglist.Max(e => e.Folder);
-                        imglist = imglist
-                            .Where(e => e.Folder == maxfolder)
-                            .ToArray();
-
-                        sb.Append($"{maxfolder}:{imglist.Length} ");
-
-                        nameX = imglist
-                            .OrderBy(e => e.Distance)
-                            .FirstOrDefault()
-                            .Name;
-
-                        /*
                         if (_offset - 1 >= imglist.Length) {
                             _offset = 1;
-                            var mincounter = imglist.Min(e => e.Counter);
                             nameX = imglist
-                                .Where(e => e.Counter == mincounter)
                                 .OrderBy(e => e.Distance)
                                 .FirstOrDefault()
                                 .Name;
@@ -69,7 +53,6 @@ namespace ImageBank
                             nameX = imglist[_offset - 1].Name;
                             _offset *= 10;
                         }
-                        */
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
@@ -103,8 +86,8 @@ namespace ImageBank
             sb.Append($"{AppVars.MoveMessage} ");
             imgX = AppVars.ImgPanel[0].Img;
             sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
-            sb.Append($"{imgX.Distance:F2} ");
-            sb.Append($"({secs:F2}s)");
+            sb.Append($"{imgX.Distance:F4} ");
+            sb.Append($"({secs:F4}s)");
             progress.Report(sb.ToString());
         }
     }

@@ -32,12 +32,12 @@ namespace ImageBank
                         .Select(e => e.Value)
                         .ToArray();
 
-                    /*
+                    
                     var mincounter = imglist.Min(e => e.Counter);
                     imglist = imglist
                         .Where(e => e.Counter == mincounter)
                         .ToArray();
-                    */
+                    
 /*
 
                     var maxfolder = imglist.Max(e => e.Folder);
@@ -126,9 +126,9 @@ namespace ImageBank
             if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
                 sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
-                sb.Append($"{imgX.Distance:F2} ");
+                sb.Append($"{imgX.Distance:F4} ");
                 sb.Append($"{char.ConvertFromUtf32(distance < imgX.Distance ? 0x2192 : 0x2193)} ");
-                sb.Append($"{distance:F2} ");
+                sb.Append($"{distance:F4} ");
                 imgX.Distance = distance;
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
                     imgX.NextName = nextname;

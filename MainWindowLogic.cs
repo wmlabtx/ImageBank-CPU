@@ -206,6 +206,10 @@ namespace ImageBank
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
 
+                if (AppVars.ImgPanel[index].Img.Heigth == 2160) {
+                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                }
+
                 pLabels[index].Background = scb;
             }
 

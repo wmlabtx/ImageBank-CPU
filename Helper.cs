@@ -152,7 +152,7 @@ namespace ImageBank
                 return str;
 
             ksize /= 1024;
-            str = $"{ksize:F2} Mb";
+            str = $"{ksize:F4} Mb";
             return str;
         }
 

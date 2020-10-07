@@ -50,7 +50,7 @@ namespace ImageBank
                             var heigth = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
                             var buffer = (byte[])reader[7];
-                            var descriptors = Helper.BufferToDescriptors(buffer);
+                            var descriptors = DescriptorHelper.FromBuffer(buffer);
                             var lastcheck = reader.GetDateTime(8);
                             var nextname = reader.GetString(9);
                             var distance = reader.GetFloat(10);

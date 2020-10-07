@@ -12,6 +12,9 @@ namespace ImageBank
                 AppVars.MoveMessage = string.Empty;
                 AppVars.ImgPanel[0].Img.LastView = DateTime.Now;
                 AppVars.ImgPanel[0].Img.AddToHistory(AppVars.ImgPanel[1].Img.Name);
+                var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                AppVars.ImgPanel[0].Img.NextName = "0123456789";
+                AppVars.ImgPanel[0].Img.LastCheck = minlc;
             }
         }
 

@@ -15,16 +15,16 @@ namespace ImageBank
 
         public int Size { get; }
 
-        private ulong[] _descriptors;
+        private ColorLAB[] _descriptors;
         #pragma warning disable CA1819 // Properties should not return arrays
-        public ulong[] Descriptors
+        public ColorLAB[] Descriptors
         #pragma warning restore CA1819 // Properties should not return arrays
         {
             get => _descriptors;
             set
             {
                 _descriptors = value;
-                var buffer = Helper.DescriptorsToBuffer(_descriptors);
+                var buffer = DescriptorHelper.ToBuffer(_descriptors);
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDescriptors, buffer);
             }
         }
@@ -164,7 +164,7 @@ namespace ImageBank
             int width,
             int heigth,
             int size,
-            ulong[] descriptors,
+            ColorLAB[] descriptors,
             int folder,
             DateTime lastview,
             DateTime lastcheck,

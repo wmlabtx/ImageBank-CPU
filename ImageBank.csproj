@@ -96,8 +96,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ColorLAB.cs" />
+    <Compile Include="ColorRGB.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="DescriptorHelper.cs" />
+    <Compile Include="SpectreHelper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

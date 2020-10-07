@@ -4,17 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 
 namespace ImageBank
 {
-    public static class DescriptorHelper
+    public static class SpectreHelper
     {
         public static bool Compute(Bitmap bitmap, out ColorLAB[] spectre)
         {
             Contract.Requires(bitmap != null && bitmap.Width > 0 && bitmap.Height > 0);
             spectre = null;
             using (var bitmap8x8 = Helper.ResizeBitmap(bitmap, 8, 8)) {
+                bitmap8x8.Save("bitmap8x8.png", ImageFormat.Png);
                 using (var mat8x8 = BitmapConverter.ToMat(bitmap8x8)) {
                     mat8x8.GetArray<Vec3b>(out var rgbpixels);
                     spectre = new ColorLAB[rgbpixels.Length];
@@ -86,13 +88,13 @@ namespace ImageBank
         public static ColorLAB[] FromBuffer(byte[] buffer)
         {
             Contract.Requires(buffer != null);
-            var fb = new float[buffer.Length / sizeof(float)];
+            var fb = new byte[buffer.Length / sizeof(float)];
             Buffer.BlockCopy(buffer, 0, fb, 0, buffer.Length);
             var spectre = new ColorLAB[fb.Length / 3];
             for (var i = 0; i < spectre.Length; i++) {
                 spectre[i] = new ColorLAB(fb[i * 3], fb[i * 3 + 1], fb[i * 3 + 2]);
             }
-
+            
             return spectre;
         }
     }

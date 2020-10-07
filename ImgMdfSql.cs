@@ -78,7 +78,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    var buffer = Helper.DescriptorsToBuffer(img.Descriptors);
+                    var buffer = DescriptorHelper.ToBuffer(img.Descriptors);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", buffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);

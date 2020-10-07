@@ -7,43 +7,38 @@ using System.Text;
 namespace ImageBank.Tests
 {
     [TestClass()]
-    public class OrbHelperTests
+    public class SpectreHelperTests
     {
         [TestMethod()]
-        public void ComputeOrbsTest()
+        public void ComputeTest()
         {
-            /*
             var imagedata = File.ReadAllBytes("org.jpg");
             if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.Compute(bitmap, out Mat mat)) {
+            if (!SpectreHelper.Compute(bitmap, out var spectre)) {
                 Assert.Fail();
             }
-            */
         }
 
-        /*
-        private Mat GetDescriptors(string filename)
+        private ColorLAB[] GetDescriptors(string filename)
         {
             var imagedata = File.ReadAllBytes(filename);
             if (!Helper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
                 Assert.Fail();
             }
 
-            if (!OrbHelper.Compute(bitmap, out Mat descriptors)) {
+            if (!SpectreHelper.Compute(bitmap, out var spectre)) {
                 Assert.Fail();
             }
 
-            return descriptors;
+            return spectre;
         }
-        */
 
         [TestMethod()]
         public void GetDistanceTest()
         {
-            /*
             var baseline = GetDescriptors("org.jpg");
             var files = new[] {
                 "org_png.jpg",
@@ -62,7 +57,7 @@ namespace ImageBank.Tests
             var sb = new StringBuilder();
             foreach (var filename in files) {
                 var descriptors = GetDescriptors(filename);
-                var distance = OrbHelper.GetDistance(baseline, descriptors);
+                var distance = SpectreHelper.GetDistance(baseline, descriptors);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
@@ -71,7 +66,6 @@ namespace ImageBank.Tests
             }
 
             File.WriteAllText("report.txt", sb.ToString());
-            */
         }
     }
 }
