@@ -26,9 +26,6 @@ namespace ImageBank
         {
             lock (_imglock) {
                 var sb = new StringBuilder();
-                var mc = _imgList.Min(e => e.Value.Counter);
-                var cc = _imgList.Count(e => e.Value.Counter == mc);
-                sb.Append($"{cc}:{mc}/");
                 sb.Append($"{_imgList.Count}: ");
                 return sb.ToString();
             }

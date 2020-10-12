@@ -28,12 +28,13 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrWidth}, "); // 4
             sb.Append($"{AppConsts.AttrHeigth}, "); // 5
             sb.Append($"{AppConsts.AttrSize}, "); // 6
-            sb.Append($"{AppConsts.AttrDescriptors}, "); // 7
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
-            sb.Append($"{AppConsts.AttrNextName}, "); // 9
-            sb.Append($"{AppConsts.AttrDistance}, "); // 10
-            sb.Append($"{AppConsts.AttrHistory}, "); // 11
-            sb.Append($"{AppConsts.AttrFamily} "); // 12
+            sb.Append($"{AppConsts.AttrLab256}, "); // 7
+            sb.Append($"{AppConsts.AttrRgb256}, "); // 8
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 9
+            sb.Append($"{AppConsts.AttrLastAdded}, "); // 10
+            sb.Append($"{AppConsts.AttrNextName}, "); // 11
+            sb.Append($"{AppConsts.AttrDistance}, "); // 12
+            sb.Append($"{AppConsts.AttrFamily} "); // 13
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -49,13 +50,14 @@ namespace ImageBank
                             var width = reader.GetInt32(4);
                             var heigth = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
-                            var buffer = (byte[])reader[7];
-                            var descriptors = DescriptorHelper.FromBuffer(buffer);
-                            var lastcheck = reader.GetDateTime(8);
-                            var nextname = reader.GetString(9);
-                            var distance = reader.GetFloat(10);
-                            var history = reader.GetString(11);
-                            var family = reader.GetString(12);
+                            var blab = (byte[])reader[7];
+                            var brgb = (byte[])reader[8];
+                            var descriptors = DescriptorHelper.FromBuffer(blab, brgb);
+                            var lastcheck = reader.GetDateTime(9);
+                            var lastadded = reader.GetDateTime(10);
+                            var nextname = reader.GetString(11);
+                            var distance = reader.GetFloat(12);
+                            var family = reader.GetString(13);
                             var img = new Img(
                                 name: name,
                                 hash: hash,
@@ -66,9 +68,9 @@ namespace ImageBank
                                 folder: folder,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
+                                lastadded: lastadded,
                                 nextname: nextname,
                                 distance: distance,
-                                history: history,
                                 family: family
                                );
 

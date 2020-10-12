@@ -2,11 +2,11 @@
 {
     public class ColorRGB
     {
-        public float R { get; set; }
-        public float G { get; set; }
-        public float B { get; set; }
+        public byte R { get; set; }
+        public byte G { get; set; }
+        public byte B { get; set; }
 
-        public ColorRGB(float r, float g, float b)
+        public ColorRGB(byte r, byte g, byte b)
         {
             R = r;
             G = g;

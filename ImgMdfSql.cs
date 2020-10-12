@@ -48,11 +48,12 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeigth}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
-                    sb.Append($"{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"{AppConsts.AttrLab256}, ");
+                    sb.Append($"{AppConsts.AttrRgb256}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"{AppConsts.AttrLastAdded}, ");
                     sb.Append($"{AppConsts.AttrNextName}, ");
                     sb.Append($"{AppConsts.AttrDistance}, ");
-                    sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrFamily}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrName}, ");
@@ -62,11 +63,12 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeigth}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
-                    sb.Append($"@{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"@{AppConsts.AttrLab256}, ");
+                    sb.Append($"@{AppConsts.AttrRgb256}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"@{AppConsts.AttrLastAdded}, ");
                     sb.Append($"@{AppConsts.AttrNextName}, ");
                     sb.Append($"@{AppConsts.AttrDistance}, ");
-                    sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrFamily}");
                     sb.Append(")");
                     sqlCommand.CommandText = sb.ToString();
@@ -78,12 +80,13 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    var buffer = DescriptorHelper.ToBuffer(img.Descriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", buffer);
+                    DescriptorHelper.ToBuffer(img.Descriptors, out var blab, out var brgb);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLab256}", blab);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrRgb256}", brgb);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDistance}", img.Distance);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", img.History);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
                     sqlCommand.ExecuteNonQuery();
                 }

@@ -14,9 +14,9 @@ namespace ImageBank
         {
             Contract.Requires(bitmap != null && bitmap.Width > 0 && bitmap.Height > 0);
             spectre = null;
-            using (var bitmap8x8 = Helper.ResizeBitmap(bitmap, 8, 8)) {
-                using (var mat8x8 = BitmapConverter.ToMat(bitmap8x8)) {
-                    mat8x8.GetArray<Vec3b>(out var rgbpixels);
+            using (var bitmapx = Helper.ResizeBitmap(bitmap, 8, 8)) {
+                using (var matx = BitmapConverter.ToMat(bitmapx)) {
+                    matx.GetArray<Vec3b>(out var rgbpixels);
                     spectre = new ColorLAB[rgbpixels.Length];
                     for (var i = 0; i < rgbpixels.Length; i++) {
                         var colorRGB = new ColorRGB(rgbpixels[i].Item2, rgbpixels[i].Item1, rgbpixels[i].Item0);
@@ -37,7 +37,10 @@ namespace ImageBank
             while (xoffset < x.Length) {
                 var yoffset = 0;
                 while (yoffset < y.Length) {
-                    var distance = x[xoffset].CIEDE2000(y[yoffset]);
+                    var distance = x[xoffset].IRGB == y[yoffset].IRGB ?
+                        x[xoffset].CIEDE2000(y[yoffset]) :
+                        64f;
+
                     list.Add(new Tuple<int, int, float>(xoffset, yoffset, distance));
                     yoffset++;
                 }
@@ -68,32 +71,63 @@ namespace ImageBank
             return avgdistance;
         }
 
-        public static byte[] ToBuffer(ColorLAB[] spectre)
+        public static void ToBuffer(ColorLAB[] spectre, out byte[] blab, out byte[] brgb)
         {
             Contract.Requires(spectre != null);
+
+            brgb = new byte[spectre.Length];
             var fb = new float[spectre.Length * 3];
             for (var i = 0; i < spectre.Length; i++) {
                 fb[i * 3] = spectre[i].L;
                 fb[i * 3 + 1] = spectre[i].A;
                 fb[i * 3 + 2] = spectre[i].B;
+                brgb[i] = spectre[i].IRGB;
             }
 
-            var b = new byte[fb.Length * sizeof(float)];
-            Buffer.BlockCopy(fb, 0, b, 0, b.Length);
-            return b;
+            blab = new byte[fb.Length * sizeof(float)];
+            Buffer.BlockCopy(fb, 0, blab, 0, blab.Length);
         }
 
-        public static ColorLAB[] FromBuffer(byte[] buffer)
+        public static ColorLAB[] FromBuffer(byte[] blab, byte[] brgb)
         {
-            Contract.Requires(buffer != null);
-            var fb = new float[buffer.Length / sizeof(float)];
-            Buffer.BlockCopy(buffer, 0, fb, 0, buffer.Length);
+            Contract.Requires(blab != null);
+            Contract.Requires(brgb != null);
+
+            var fb = new float[blab.Length / sizeof(float)];
+            Buffer.BlockCopy(blab, 0, fb, 0, blab.Length);
             var spectre = new ColorLAB[fb.Length / 3];
             for (var i = 0; i < spectre.Length; i++) {
-                spectre[i] = new ColorLAB(fb[i * 3], fb[i * 3 + 1], fb[i * 3 + 2]);
+                spectre[i] = new ColorLAB(fb[i * 3], fb[i * 3 + 1], fb[i * 3 + 2], brgb[i]);
             }
 
             return spectre;
+        }
+
+        public static int GetMatch(byte[] x, byte[] y)
+        {
+            Contract.Requires(x != null);
+            Contract.Requires(y != null);
+
+            var i = 0;
+            var j = 0;
+            var m = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i] == y[j]) {
+                    i++;
+                    j++;
+                    m++;
+                }
+                else {
+                    if (x[i] < y[j]) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+                }
+            }
+
+            return m;
         }
     }
 }

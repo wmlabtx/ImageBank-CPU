@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -36,23 +37,37 @@ namespace ImageBank
                             return;
                         }
 
-                        var mincounter = imglist.Min(e => e.Counter);
+                        /*
+                        var df = new SortedDictionary<int, DateTime>();
+                        foreach(var img in imglist) {
+                            if (df.ContainsKey(img.Folder)) {
+                                if (df[img.Folder] < img.LastView) {
+                                    df[img.Folder] = img.LastView;
+                                }
+                            }
+                            else {
+                                df.Add(img.Folder, img.LastView);
+                            }
+                        }
+
+                        var mind = df.Min(e => e.Value);
+                        var minf = df.First(e => e.Value == mind).Key;
                         imglist = imglist
-                            .Where(e => e.Counter == mincounter)
+                            .Where(e => e.Folder == minf)
                             .ToArray();
+
+                        nameX = imglist
+                            .OrderBy(e => e.LastView)
+                            .FirstOrDefault()
+                            .Name;
+                            */
 
                         if (_offset - 1 >= imglist.Length) {
                             _offset = 1;
-                            nameX = imglist
-                                .OrderBy(e => e.Distance)
-                                .FirstOrDefault()
-                                .Name;
                         }
 
-                        if (string.IsNullOrEmpty(nameX)) {
-                            nameX = imglist[_offset - 1].Name;
-                            _offset *= 10;
-                        }
+                        nameX = imglist[_offset - 1].Name;
+                        _offset *= 10;
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
@@ -89,6 +104,50 @@ namespace ImageBank
             sb.Append($"{imgX.Distance:F4} ");
             sb.Append($"({secs:F4}s)");
             progress.Report(sb.ToString());
+        }
+
+        public void FastFindNext(Img imgX)
+        {
+            Contract.Requires(imgX != null);
+
+            var nextname = imgX.NextName;
+            var distance = float.MaxValue;
+            lock (_imglock) {
+                if (_imgList.Count < 2) {
+                    return;
+                }
+
+                foreach (var img in _imgList) {
+                    if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                        continue;
+                    }
+
+                    if (imgX.Name.Equals(img.Value.Name, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(imgX.Family) &&
+                        !imgX.Family.Equals(img.Value.Family, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    var imgdistance = DescriptorHelper.GetDistance(imgX.Descriptors, img.Value.Descriptors);
+                    if (imgdistance < distance) {
+                        nextname = img.Value.Name;
+                        distance = imgdistance;
+                    }
+                }
+
+                if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
+                    imgX.Distance = distance;
+                }
+
+                if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
+                    imgX.NextName = nextname;
+                }
+
+                imgX.LastCheck = DateTime.Now;
+            }
         }
     }
 }

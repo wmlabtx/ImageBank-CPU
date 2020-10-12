@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Drawing;
 
 namespace ImageBank
@@ -50,9 +49,9 @@ namespace ImageBank
                         folder: img.Folder,
                         lastview: img.LastView,
                         lastcheck: lastcheck,
+                        lastadded: img.LastAdded,
                         nextname: "0123456789",
                         distance: 0f,
-                        history: img.History,
                         family: img.Family
                         );
 

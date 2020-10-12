@@ -8,7 +8,7 @@ namespace ImageBank
     {
         public int FamilySize(string family)
         {
-            if (family == null || family.Length != 5) {
+            if (family == null || family.Length == 0) {
                 return 0;
             }
 
@@ -20,19 +20,21 @@ namespace ImageBank
 
         public void MoveFamily(string oldfamily, string newfamily)
         {
-            if (oldfamily == null || oldfamily.Length != 5) {
+            if (oldfamily == null || oldfamily.Length == 0) {
                 return;
             }
 
-            if (newfamily == null || newfamily.Length != 5) {
+            if (newfamily == null || newfamily.Length == 0) {
                 return;
             }
 
-            _imgList
+            lock (_imglock) {
+                _imgList
                 .Where(e => e.Value.Family.Equals(oldfamily, StringComparison.OrdinalIgnoreCase))
                 .Select(e => e.Value)
                 .ToList()
                 .ForEach(e => e.Family = newfamily);
+            }
         }
 
 
@@ -77,6 +79,14 @@ namespace ImageBank
             else {
                 MoveFamily(imgY.Family, imgX.Family);
             }
+        }
+
+        public void AssignFamily(Img imgX, string family)
+        {
+            Contract.Requires(imgX != null);
+            imgX.Family = family;
+            FastFindNext(imgX);
+            AppVars.ImgPanel[1] = GetImgPanel(imgX.NextName);
         }
     }
 }

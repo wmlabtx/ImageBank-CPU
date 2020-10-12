@@ -82,13 +82,11 @@ namespace ImageBank
             ImportHpClick();
         }
 
-        /*
-        private void MoveClick(object sender, EventArgs e)
+        private void MoveToClick(object sender, RoutedEventArgs e)
         {
-            var folder = ((MenuItem)sender).Tag as string;
-            MoveClick(folder);
+            var tag = (string)((MenuItem)sender).Tag;
+            MoveTo(tag);
         }
-        */
 
         private void Rotate90Click(object sender, EventArgs e)
         {

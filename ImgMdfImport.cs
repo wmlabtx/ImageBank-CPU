@@ -1,8 +1,8 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace ImageBank
 {
@@ -33,6 +33,20 @@ namespace ImageBank
 
                 var filename = fileInfo.FullName;
                 var shortfilename = filename.Substring(AppConsts.PathHp.Length);
+                var family = string.Empty;
+                var pars = shortfilename.Split('\\');
+                if (pars.Length > 1) {
+                    var fsb = new StringBuilder();
+                    for (var i = 0; i < pars.Length - 1; i++) {
+                        if (i > 0) {
+                            fsb.Append('.');
+                        }
+
+                        fsb.Append(pars[i]);
+                    }
+
+                    family = fsb.ToString();
+                }
 
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
@@ -67,21 +81,29 @@ namespace ImageBank
                     continue;
                 }
 
-                lock (_imglock) {
-                    if (_hashList.TryGetValue(hash, out string namefound)) {
-                        var imgfound = _imgList[namefound];
-
-                        found++;
-                        Helper.DeleteToRecycleBin(filename);
-                        continue;
-                    }
-                }
-
                 if (!DescriptorHelper.Compute(bitmap, out var descriptors)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
                     continue;
+                }
+
+                lock (_imglock) {
+                    if (_hashList.TryGetValue(hash, out string namefound)) {
+                        var imgfound = _imgList[namefound];
+                        imgfound.Descriptors = descriptors;
+                        imgfound.LastAdded = DateTime.Now;
+                        if (!imgfound.Family.Equals(family, StringComparison.OrdinalIgnoreCase)) {
+                            imgfound.Family = family;
+                            var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                            imgfound.NextName = "0123456789";
+                            imgfound.LastCheck = minlc;
+                        }
+
+                        found++;
+                        Helper.DeleteToRecycleBin(filename);
+                        continue;
+                    }
                 }
 
                 var folder = 0;
@@ -110,7 +132,7 @@ namespace ImageBank
                 Helper.DeleteToRecycleBin(filename);
 
                 var lastview = GetMinLastView();
-                var lastcheck = DateTime.Now.AddYears(-10);
+                var lastcheck = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                 var img = new Img(
                     name: name,
                     hash: hash,
@@ -121,10 +143,10 @@ namespace ImageBank
                     folder: folder,
                     lastview: lastview,
                     lastcheck: lastcheck,
+                    lastadded: DateTime.Now,
                     nextname: "0123456789",
                     distance: 0f,
-                    history: string.Empty,
-                    family: string.Empty);
+                    family: family);
 
                 Add(img);
                 bitmap.Dispose();
@@ -136,8 +158,8 @@ namespace ImageBank
                 added++;
             }
 
-            ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
-            Helper.CleanupDirectories(path, AppVars.Progress);
+            //((IProgress<string>)AppVars.Progress).Report($"clean-up...");
+            //Helper.CleanupDirectories(path, AppVars.Progress);
 
 
             AppVars.SuspendEvent.Set();

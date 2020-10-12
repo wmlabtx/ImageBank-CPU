@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.IO;
@@ -18,10 +19,11 @@ namespace ImageBank
 
             AppVars.SuspendEvent.WaitOne(Timeout.Infinite);
 
+            var wc = 0;
             Img imgX;
-            List<Img> candidates;
+            List<KeyValuePair<Img, int>> candidates = new List<KeyValuePair<Img, int>>();
             lock (_imglock) {
-                if (_imgList.Count == 0) {
+                if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
@@ -31,20 +33,6 @@ namespace ImageBank
                     var imglist = _imgList
                         .Select(e => e.Value)
                         .ToArray();
-
-                    
-                    var mincounter = imglist.Min(e => e.Counter);
-                    imglist = imglist
-                        .Where(e => e.Counter == mincounter)
-                        .ToArray();
-                    
-/*
-
-                    var maxfolder = imglist.Max(e => e.Folder);
-                    imglist = imglist
-                        .Where(e => e.Folder == maxfolder)
-                        .ToArray();
-*/
 
                     nameX = imglist
                         .OrderBy(e => e.LastCheck)
@@ -88,23 +76,41 @@ namespace ImageBank
                     imgX.Descriptors = descriptors;
                 }
 
-                var history = imgX.History;
-                var offset = 0;
-                while (offset + 10 <= history.Length) {
-                    var prevname = history.Substring(offset, 10);
-                    if (!_imgList.ContainsKey(prevname)) {
-                        imgX.RemoveFromHistory(prevname);
+                candidates.Clear();
+                foreach (var img in _imgList) {
+                    if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                        continue;
                     }
 
-                    offset += 10;
+                    if (imgX.Name.Equals(img.Value.Name, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(imgX.Family) && 
+                        !imgX.Family.Equals(img.Value.Family, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    var match = DescriptorHelper.GetMatch(imgX.GetRainbow(), img.Value.GetRainbow());
+                    candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
                 }
 
-                candidates = _imgList
-                    .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0)
-                    .Where(e => !imgX.IsInHistory(e.Value.Name))
-                    .Where(e => !imgX.Name.Equals(e.Value.Name, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => e.Value)
-                    .ToList();
+                if (candidates.Count == 0) {
+                    foreach (var img in _imgList) {
+                        if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                            continue;
+                        }
+
+                        if (imgX.Name.Equals(img.Value.Name, StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
+
+                        var match = DescriptorHelper.GetMatch(imgX.GetRainbow(), img.Value.GetRainbow());
+                        candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
+                    }
+                }
+
+                wc = candidates.Count;
             }
 
             if (candidates.Count == 0) {
@@ -112,18 +118,30 @@ namespace ImageBank
                 return;
             }
 
+            candidates = candidates.OrderByDescending(e => e.Value).ToList();
+
+            var nextname = imgX.NextName;
             var distance = float.MaxValue;
-            var nextname = string.Empty;
-            foreach (var candidate in candidates) { 
-                var d = DescriptorHelper.GetDistance(imgX.Descriptors, candidate.Descriptors);
-                if (d < distance) {
-                    distance = d;
-                    nextname = candidate.Name;
+            var sw = Stopwatch.StartNew();
+            foreach (var candidate in candidates) {
+                var imgdistance = DescriptorHelper.GetDistance(imgX.Descriptors, candidate.Key.Descriptors);
+                if (imgdistance < distance) {
+                    nextname = candidate.Key.Name;
+                    distance = imgdistance;
+                }
+
+                if (sw.ElapsedMilliseconds > 1000) {
+                    break;
                 }
             }
-            
+
+            sw.Stop();
             var sb = new StringBuilder();
             if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
+                if (wc > 0) {
+                    sb.Append($"{wc}: ");
+                }
+
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
                 sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
                 sb.Append($"{imgX.Distance:F4} ");
@@ -136,6 +154,10 @@ namespace ImageBank
             }
             else {
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
+                    if (wc > 0) {
+                        sb.Append($"{wc}: ");
+                    }
+
                     sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
                     sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
                     sb.Append($"{imgX.NextName} ");

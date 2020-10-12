@@ -28,8 +28,6 @@ namespace ImageBank
                         img.Value.NextName = "0123456789";
                         img.Value.LastCheck = minlc;
                     }
-
-                    img.Value.RemoveFromHistory(name);
                 }
             }
         }

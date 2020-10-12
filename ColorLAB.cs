@@ -8,6 +8,7 @@ namespace ImageBank
         public float L { get; set; }
         public float A { get; set; }
         public float B { get; set; }
+        public byte IRGB { get; set; }
 
         public ColorLAB(ColorRGB colorRGB)
         {
@@ -16,13 +17,15 @@ namespace ImageBank
             L = lab.L;
             A = lab.A;
             B = lab.B;
+            IRGB = lab.IRGB;
         }
 
-        public ColorLAB(float l, float a, float b)
+        public ColorLAB(float l, float a, float b, byte irgb)
         {
             L = l;
             A = a;
             B = b;
+            IRGB = irgb;
         }
 
         private ColorLAB ToLAB(ColorRGB colorRGB)
@@ -30,6 +33,10 @@ namespace ImageBank
             var r = colorRGB.R / 255.0;
             var g = colorRGB.G / 255.0;
             var b = colorRGB.B / 255.0;
+            var r2 = colorRGB.R >> 6;
+            var g2 = colorRGB.G >> 6;
+            var b2 = colorRGB.B >> 6;
+            var irgb = (byte)((r2 << 4) | (g2 << 2) | b2);
 
             r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
             g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
@@ -46,7 +53,8 @@ namespace ImageBank
             var lab = new ColorLAB(
                 (float)((116.0 * y) - 16.0),
                 (float)(500.0 * (x - y)),
-                (float)(200.0 * (y - z))
+                (float)(200.0 * (y - z)),
+                irgb
                 );
 
             return lab;
@@ -71,9 +79,9 @@ namespace ImageBank
             b = (b > 0.0031308) ? (1.055 * Math.Pow(b, 1.0 / 2.4) - 0.055) : 12.92 * b;
 
             var rgb = new ColorRGB(
-                (int)(Math.Max(0, Math.Min(1.0, r)) * 255),
-                (int)(Math.Max(0, Math.Min(1.0, g)) * 255),
-                (int)(Math.Max(0, Math.Min(1.0, b)) * 255)
+                (byte)(Math.Max(0, Math.Min(1.0, r)) * 255),
+                (byte)(Math.Max(0, Math.Min(1.0, g)) * 255),
+                (byte)(Math.Max(0, Math.Min(1.0, b)) * 255)
                 );
 
             return rgb;

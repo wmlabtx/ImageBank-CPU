@@ -198,14 +198,9 @@ namespace ImageBank
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
                 sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
-                //sb.Append($" ({AppVars.ImgPanel[index].FolderCounter})");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
-                if (AppVars.ImgPanel[index].Img.Counter == 0) {
-                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
-                }
-
                 if (AppVars.ImgPanel[index].Img.Heigth == 2160) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 }
@@ -322,6 +317,14 @@ namespace ImageBank
             }
 
             args.Cancel = true;
+        }
+
+        private async void MoveTo(string family)
+        {
+            DisableElements();
+            await Task.Run(() => { AppVars.Collection.AssignFamily(AppVars.ImgPanel[0].Img, family); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
         }
     }
 }
