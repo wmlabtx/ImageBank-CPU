@@ -33,7 +33,7 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!DescriptorHelper.Compute(bitmap, out var rdescriptors)) {
+                    if (!DescriptorHelper.Compute(bitmap, out var rcolors)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
                         return;
                     }
@@ -45,7 +45,7 @@ namespace ImageBank
                         width: bitmap.Width,
                         heigth: bitmap.Height,
                         size: rimagedata.Length,
-                        descriptors: rdescriptors,
+                        colors: rcolors,
                         folder: img.Folder,
                         lastview: img.LastView,
                         lastcheck: lastcheck,

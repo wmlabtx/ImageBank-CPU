@@ -51,7 +51,7 @@ namespace ImageBank
                     return;
                 }
 
-                if (imgX.Descriptors == null || imgX.Descriptors.Length == 0) {
+                if (imgX.GetColors() == null || imgX.GetColors().Length == 0) {
                     if (!Helper.GetImageDataFromFile(
                         imgX.FileName,
                         out _,
@@ -65,7 +65,7 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!DescriptorHelper.Compute(bitmap, out var descriptors)) {
+                    if (!DescriptorHelper.Compute(bitmap, out var colors)) {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
@@ -73,12 +73,12 @@ namespace ImageBank
 
                     bitmap.Dispose();
 
-                    imgX.Descriptors = descriptors;
+                    imgX.SetColors(colors);
                 }
 
                 candidates.Clear();
                 foreach (var img in _imgList) {
-                    if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                    if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
                         continue;
                     }
 
@@ -91,13 +91,13 @@ namespace ImageBank
                         continue;
                     }
 
-                    var match = DescriptorHelper.GetMatch(imgX.GetRainbow(), img.Value.GetRainbow());
+                    var match = DescriptorHelper.GetMatch(imgX.GetColors(), img.Value.GetColors());
                     candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
                 }
 
                 if (candidates.Count == 0) {
                     foreach (var img in _imgList) {
-                        if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                        if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
                             continue;
                         }
 
@@ -105,7 +105,7 @@ namespace ImageBank
                             continue;
                         }
 
-                        var match = DescriptorHelper.GetMatch(imgX.GetRainbow(), img.Value.GetRainbow());
+                        var match = DescriptorHelper.GetMatch(imgX.GetColors(), img.Value.GetColors());
                         candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
                     }
                 }
@@ -124,7 +124,7 @@ namespace ImageBank
             var distance = float.MaxValue;
             var sw = Stopwatch.StartNew();
             foreach (var candidate in candidates) {
-                var imgdistance = DescriptorHelper.GetDistance(imgX.Descriptors, candidate.Key.Descriptors);
+                var imgdistance = DescriptorHelper.GetDistance(imgX.GetColors(), candidate.Key.GetColors());
                 if (imgdistance < distance) {
                     nextname = candidate.Key.Name;
                     distance = imgdistance;

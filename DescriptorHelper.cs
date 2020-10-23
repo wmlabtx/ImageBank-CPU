@@ -10,17 +10,30 @@ namespace ImageBank
 {
     public static class DescriptorHelper
     {
-        public static bool Compute(Bitmap bitmap, out ColorLAB[] spectre)
+        public static bool Compute(Bitmap bitmap, out byte[] colors)
         {
             Contract.Requires(bitmap != null && bitmap.Width > 0 && bitmap.Height > 0);
-            spectre = null;
-            using (var bitmapx = Helper.ResizeBitmap(bitmap, 8, 8)) {
+            colors = null;
+            using (var bitmapx = Helper.ResizeBitmap(bitmap, 10, 10)) {
                 using (var matx = BitmapConverter.ToMat(bitmapx)) {
                     matx.GetArray<Vec3b>(out var rgbpixels);
-                    spectre = new ColorLAB[rgbpixels.Length];
-                    for (var i = 0; i < rgbpixels.Length; i++) {
-                        var colorRGB = new ColorRGB(rgbpixels[i].Item2, rgbpixels[i].Item1, rgbpixels[i].Item0);
-                        spectre[i] = new ColorLAB(colorRGB);
+                    var lcolors = new List<byte[]>();
+                    for (var i = 0; i < 100; i++) {
+                        var pixel = new byte[4];
+                        pixel[0] = rgbpixels[i].Item2;
+                        pixel[1] = rgbpixels[i].Item1;
+                        pixel[2] = rgbpixels[i].Item0;
+                        var r2 = rgbpixels[i].Item2 >> 6;
+                        var g2 = rgbpixels[i].Item1 >> 6;
+                        var b2 = rgbpixels[i].Item0 >> 6;
+                        pixel[3] = (byte)((r2 << 4) | (g2 << 2) | b2);
+                        lcolors.Add(pixel);
+                    }
+
+                    lcolors = lcolors.OrderBy(e => e[3]).ToList();
+                    colors = new byte[400];
+                    for (var i = 0; i < 100; i++) {
+                        Buffer.BlockCopy(lcolors[i], 0, colors, i * 4, 4);
                     }
                 }
             }
@@ -28,7 +41,7 @@ namespace ImageBank
             return true;
         }
 
-        public static float GetDistance(ColorLAB[] x, ColorLAB[] y)
+        public static float GetDistance(byte[] x, byte[] y)
         {
             Contract.Requires(x != null);
             Contract.Requires(y != null);
@@ -37,15 +50,24 @@ namespace ImageBank
             while (xoffset < x.Length) {
                 var yoffset = 0;
                 while (yoffset < y.Length) {
-                    var distance = x[xoffset].IRGB == y[yoffset].IRGB ?
-                        x[xoffset].CIEDE2000(y[yoffset]) :
-                        64f;
+                    if( x[xoffset + 3] == y[yoffset + 3]) {
+                        var mr = (x[xoffset] + y[yoffset]) / 2f; // 127.5
+                        var dr2 = (float)(x[xoffset] - y[yoffset]) * (x[xoffset] - y[yoffset]); // 65025
+                        var dg2 = (float)(x[xoffset + 1] - y[yoffset + 1]) * (x[xoffset + 1] - y[yoffset + 1]);
+                        var db2 = (float)(x[xoffset + 2] - y[yoffset + 2]) * (x[xoffset + 2] - y[yoffset + 2]);
+                        var distance = (float)Math.Sqrt(              // max=768f
+                                ((2f + (mr / 256f)) * dr2) +          // 162435
+                                (4f * dg2) +                          // 260100
+                                ((2f + ((255f - mr) / 256f)) * db2)   // 162435
+                            );
 
-                    list.Add(new Tuple<int, int, float>(xoffset, yoffset, distance));
-                    yoffset++;
+                        list.Add(new Tuple<int, int, float>(xoffset, yoffset, distance));
+                    }
+                    
+                    yoffset += 4;
                 }
 
-                xoffset++;
+                xoffset += 4;
             }
 
             list = list.OrderBy(e => e.Item3).ToList();
@@ -61,10 +83,26 @@ namespace ImageBank
             var sum = 0f;
             var count = 0f;
             var k = 1f;
-            for (var i = 0; i < distances.Count; i++) {
+            var maxi = Math.Min(100, distances.Count);
+            var i = 0;
+            for (; i < maxi; i++) {
                 sum += distances[i] * k;
                 count += k;
                 k *= 0.9f;
+                if (k < 0.01) {
+                    break;
+                }
+            }
+
+            if (k >= 0.01) {
+                for (; i < maxi; i++) {
+                    sum += 768f * k;
+                    count += k;
+                    k *= 0.9f;
+                    if (k < 0.01) {
+                        break;
+                    }
+                }
             }
 
             var avgdistance = sum / count;
@@ -112,17 +150,17 @@ namespace ImageBank
             var j = 0;
             var m = 0;
             while (i < x.Length && j < y.Length) {
-                if (x[i] == y[j]) {
-                    i++;
-                    j++;
+                if (x[i + 3] == y[j + 3]) {
+                    i += 4;
+                    j += 4;
                     m++;
                 }
                 else {
                     if (x[i] < y[j]) {
-                        i++;
+                        i += 4;
                     }
                     else {
-                        j++;
+                        j += 4;
                     }
                 }
             }

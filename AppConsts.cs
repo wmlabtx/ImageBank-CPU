@@ -31,8 +31,7 @@
         public const string AttrWidth = "Width"; // int
         public const string AttrHeigth = "Heigth"; // int
         public const string AttrSize = "Size"; // int
-        public const string AttrLab256 = "Lab256"; // 8*8*3*4 = 768 bytes
-        public const string AttrRgb256 = "Rgb256"; // 8*8 = 64 bytes
+        public const string AttrColors = "Colors"; // 4 * 100 = 400 bytes
         public const string AttrNextName = "NextName"; // (string 10 length)
         public const string AttrLastCheck = "LastCheck"; // datetime
         public const string AttrFamily = "Family"; // (string 4 length)

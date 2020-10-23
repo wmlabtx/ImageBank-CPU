@@ -15,28 +15,15 @@ namespace ImageBank
 
         public int Size { get; }
 
-        private byte[] _rainbow;
-        public byte[] GetRainbow()
+        private byte[] _colors;
+        public byte[] GetColors()
         {
-            return _rainbow;
-        }      
-
-        private ColorLAB[] _descriptors;
-        #pragma warning disable CA1819 // Properties should not return arrays
-        public ColorLAB[] Descriptors
-        #pragma warning restore CA1819 // Properties should not return arrays
+            return _colors;
+        }
+        public void SetColors(byte[] colors)
         {
-            get => _descriptors;
-            set
-            {
-                _descriptors = value;
-                DescriptorHelper.ToBuffer(_descriptors, out var blab, out var brgb);
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLab256, blab);
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrRgb256, brgb);
-                var rainbow = brgb.ToList();
-                rainbow.Sort();
-                _rainbow = rainbow.ToArray();
-            }
+            _colors = colors;
+            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColors, _colors);
         }
 
         private int _folder;
@@ -124,7 +111,7 @@ namespace ImageBank
             int width,
             int heigth,
             int size,
-            ColorLAB[] descriptors,
+            byte[] colors,
             int folder,
             DateTime lastview,
             DateTime lastcheck,
@@ -140,7 +127,7 @@ namespace ImageBank
             Heigth = heigth;
             Size = size;
 
-            _descriptors = descriptors;
+            _colors = colors;
             _folder = folder;
             _lastview = lastview;
             _lastcheck = lastcheck;
@@ -149,11 +136,6 @@ namespace ImageBank
             _distance = distance;
 
             _family = family;
-
-            DescriptorHelper.ToBuffer(_descriptors, out var blab, out var brgb);
-            var rainbow = brgb.ToList();
-            rainbow.Sort();
-            _rainbow = rainbow.ToArray();
         }
     }
 }

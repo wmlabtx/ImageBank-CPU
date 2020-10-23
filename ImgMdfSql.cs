@@ -48,8 +48,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeigth}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
-                    sb.Append($"{AppConsts.AttrLab256}, ");
-                    sb.Append($"{AppConsts.AttrRgb256}, ");
+                    sb.Append($"{AppConsts.AttrColors}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrLastAdded}, ");
                     sb.Append($"{AppConsts.AttrNextName}, ");
@@ -63,8 +62,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeigth}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
-                    sb.Append($"@{AppConsts.AttrLab256}, ");
-                    sb.Append($"@{AppConsts.AttrRgb256}, ");
+                    sb.Append($"@{AppConsts.AttrColors}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrLastAdded}, ");
                     sb.Append($"@{AppConsts.AttrNextName}, ");
@@ -80,9 +78,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    DescriptorHelper.ToBuffer(img.Descriptors, out var blab, out var brgb);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLab256}", blab);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrRgb256}", brgb);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColors}", img.GetColors());
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);

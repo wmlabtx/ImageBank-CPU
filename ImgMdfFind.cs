@@ -27,7 +27,7 @@ namespace ImageBank
                     if (string.IsNullOrEmpty(nameX)) {
                         var imglist = _imgList
                             .Where(e => _imgList.ContainsKey(e.Value.NextName))
-                            .Where(e => e.Value.Descriptors != null && e.Value.Descriptors.Length > 0)
+                            .Where(e => e.Value.GetColors() != null && e.Value.GetColors().Length > 0)
                             .OrderBy(e => e.Value.LastView)
                             .Select(e => e.Value)
                             .ToArray();
@@ -118,7 +118,7 @@ namespace ImageBank
                 }
 
                 foreach (var img in _imgList) {
-                    if (img.Value.Descriptors == null || img.Value.Descriptors.Length == 0) {
+                    if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
                         continue;
                     }
 
@@ -131,7 +131,7 @@ namespace ImageBank
                         continue;
                     }
 
-                    var imgdistance = DescriptorHelper.GetDistance(imgX.Descriptors, img.Value.Descriptors);
+                    var imgdistance = DescriptorHelper.GetDistance(imgX.GetColors(), img.Value.GetColors());
                     if (imgdistance < distance) {
                         nextname = img.Value.Name;
                         distance = imgdistance;

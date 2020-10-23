@@ -81,7 +81,7 @@ namespace ImageBank
                     continue;
                 }
 
-                if (!DescriptorHelper.Compute(bitmap, out var descriptors)) {
+                if (!DescriptorHelper.Compute(bitmap, out var colors)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
@@ -91,7 +91,7 @@ namespace ImageBank
                 lock (_imglock) {
                     if (_hashList.TryGetValue(hash, out string namefound)) {
                         var imgfound = _imgList[namefound];
-                        imgfound.Descriptors = descriptors;
+                        imgfound.SetColors(colors);
                         imgfound.LastAdded = DateTime.Now;
                         if (!imgfound.Family.Equals(family, StringComparison.OrdinalIgnoreCase)) {
                             imgfound.Family = family;
@@ -139,7 +139,7 @@ namespace ImageBank
                     width: bitmap.Width,
                     heigth: bitmap.Height,
                     size: imagedata.Length,
-                    descriptors: descriptors,
+                    colors: colors,
                     folder: folder,
                     lastview: lastview,
                     lastcheck: lastcheck,
