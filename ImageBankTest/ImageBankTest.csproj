@@ -65,7 +65,7 @@
   <ItemGroup>
     <Compile Include="ColorLABTest.cs" />
     <Compile Include="HelperTests.cs" />
-    <Compile Include="SpectreHelperTests.cs" />
+    <Compile Include="ImageHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

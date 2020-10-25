@@ -1,15 +1,51 @@
-﻿using OpenCvSharp;
+﻿using ImageBank.ColorCaches;
+using ImageBank.ColorCaches.Common;
+using ImageBank.ColorCaches.EuclideanDistance;
+using ImageBank.ColorCaches.LocalitySensitiveHash;
+using ImageBank.ColorCaches.Octree;
+using ImageBank.Ditherers;
+using ImageBank.Helpers;
+using ImageBank.Quantizers;
+using ImageBank.Quantizers.MedianCut;
+using ImageBank.Quantizers.NeuQuant;
+using ImageBank.Quantizers.Octree;
+using ImageBank.Quantizers.XiaolinWu;
+using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 
 namespace ImageBank
 {
     public static class DescriptorHelper
     {
+        public static bool Compute(Image image, out byte[] colors)
+        {
+            Contract.Requires(image != null && image.Width > 0 && image.Height > 0);
+
+            ColorModel activeColorModel = ColorModel.LabColorSpace;
+            IColorCache activeColorCache = new LshColorCache();
+            if (activeColorCache is BaseColorCache) {
+                BaseColorCache colorCache = (BaseColorCache)activeColorCache;
+                colorCache.ChangeColorModel(activeColorModel);
+            }
+
+            IColorDitherer activeDitherer = null;
+            IColorQuantizer activeQuantizer = new MedianCutQuantizer();
+            Int32 colorCount = 16;
+
+            Image sourceImage = image;
+            Image targetImage = ImageBuffer.QuantizeImage(sourceImage, activeQuantizer, activeDitherer, colorCount, 1);
+            targetImage.Save("output.png", ImageFormat.Png);
+            targetImage.Dispose();
+            colors = null;
+            return true;
+        }
+
         public static bool Compute(Bitmap bitmap, out byte[] colors)
         {
             Contract.Requires(bitmap != null && bitmap.Width > 0 && bitmap.Height > 0);
