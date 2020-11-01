@@ -9,7 +9,7 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(name, out var img)) {
-                    if (!Helper.GetImageDataFromFile(
+                    if (!ImageHelper.GetImageDataFromFile(
                         img.FileName,
                         out _,
 #pragma warning disable CA2000 // Dispose objects before losing scope
@@ -22,7 +22,7 @@ namespace ImageBank
                     }
 
                     bitmap.RotateFlip(rft);
-                    if (!Helper.GetImageDataFromBitmap(bitmap, out byte[] rimagedata)) {
+                    if (!ImageHelper.GetImageDataFromBitmap(bitmap, out byte[] rimagedata)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Encode error: {img.Folder:D2}\\{name}");
                         return;
                     }
@@ -33,7 +33,7 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!DescriptorHelper.Compute(bitmap, out var rcolors)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rdescriptors)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
                         return;
                     }
@@ -45,7 +45,7 @@ namespace ImageBank
                         width: bitmap.Width,
                         heigth: bitmap.Height,
                         size: rimagedata.Length,
-                        colors: rcolors,
+                        descriptors: rdescriptors,
                         folder: img.Folder,
                         lastview: img.LastView,
                         lastcheck: lastcheck,

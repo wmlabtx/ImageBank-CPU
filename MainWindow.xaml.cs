@@ -103,7 +103,7 @@ namespace ImageBank
             Rotate270Click();
         }
 
-        private void FamilyCombineClick(object sender, EventArgs e)
+        private void FamilyCombineClick(object sender, RoutedEventArgs e)
         {
             FamilyCombineClick();
         }
@@ -111,6 +111,11 @@ namespace ImageBank
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void CopyLiftClick(object sender, RoutedEventArgs e)
+        {
+            CopyLiftClick();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace ImageBank
                 foldercounter = _imgList.Count(e => e.Value.Folder == img.Folder);
             }
 
-            if (!Helper.GetImageDataFromFile(img.FileName, 
+            if (!ImageHelper.GetImageDataFromFile(img.FileName, 
                 out byte[] imagedata,
 #pragma warning disable CA2000 // Dispose objects before losing scope
                 out Bitmap bitmap,

@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\OpenCvSharp4.runtime.win.4.3.0.20200421\build\net\OpenCvSharp4.runtime.win.props" Condition="Exists('packages\OpenCvSharp4.runtime.win.4.3.0.20200421\build\net\OpenCvSharp4.runtime.win.props')" />
-  <Import Project="packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.8\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props" Condition="Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.8\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" />
-  <Import Project="packages\Microsoft.NetFramework.Analyzers.2.9.8\build\Microsoft.NetFramework.Analyzers.props" Condition="Exists('packages\Microsoft.NetFramework.Analyzers.2.9.8\build\Microsoft.NetFramework.Analyzers.props')" />
-  <Import Project="packages\Microsoft.NetCore.Analyzers.2.9.8\build\Microsoft.NetCore.Analyzers.props" Condition="Exists('packages\Microsoft.NetCore.Analyzers.2.9.8\build\Microsoft.NetCore.Analyzers.props')" />
-  <Import Project="packages\Microsoft.CodeQuality.Analyzers.2.9.8\build\Microsoft.CodeQuality.Analyzers.props" Condition="Exists('packages\Microsoft.CodeQuality.Analyzers.2.9.8\build\Microsoft.CodeQuality.Analyzers.props')" />
-  <Import Project="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props" Condition="Exists('packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props')" />
+  <Import Project="packages\Microsoft.CodeAnalysis.FxCopAnalyzers.3.3.0\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props" Condition="Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.3.3.0\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" />
+  <Import Project="packages\Microsoft.NetFramework.Analyzers.3.3.0\build\Microsoft.NetFramework.Analyzers.props" Condition="Exists('packages\Microsoft.NetFramework.Analyzers.3.3.0\build\Microsoft.NetFramework.Analyzers.props')" />
+  <Import Project="packages\Microsoft.NetCore.Analyzers.3.3.0\build\Microsoft.NetCore.Analyzers.props" Condition="Exists('packages\Microsoft.NetCore.Analyzers.3.3.0\build\Microsoft.NetCore.Analyzers.props')" />
+  <Import Project="packages\Microsoft.CodeQuality.Analyzers.3.3.0\build\Microsoft.CodeQuality.Analyzers.props" Condition="Exists('packages\Microsoft.CodeQuality.Analyzers.3.3.0\build\Microsoft.CodeQuality.Analyzers.props')" />
+  <Import Project="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props" Condition="Exists('packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -58,18 +57,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="NetIntrinsics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=8a64b1b2776c69fe, processorArchitecture=MSIL">
-      <HintPath>packages\NetIntrinsics.1.0.4\lib\net451\NetIntrinsics.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenCvSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
-      <HintPath>packages\OpenCvSharp4.4.3.0.20200421\lib\net461\OpenCvSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenCvSharp.Blob, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
-      <HintPath>packages\OpenCvSharp4.4.3.0.20200421\lib\net461\OpenCvSharp.Blob.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenCvSharp.Extensions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
-      <HintPath>packages\OpenCvSharp4.4.3.0.20200421\lib\net461\OpenCvSharp.Extensions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -96,82 +83,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ClusterLAB.cs" />
-    <Compile Include="ColorCaches\BaseColorCache.cs" />
-    <Compile Include="ColorCaches\Common\ColorModel.cs" />
-    <Compile Include="ColorCaches\EuclideanDistance\EuclideanDistanceColorCache.cs" />
-    <Compile Include="ColorCaches\IColorCache.cs" />
-    <Compile Include="ColorCaches\LocalitySensitiveHash\LshBucketInfo.cs" />
-    <Compile Include="ColorCaches\LocalitySensitiveHash\LshColorCache.cs" />
-    <Compile Include="ColorCaches\Octree\OctreeCacheNode.cs" />
-    <Compile Include="ColorCaches\Octree\OctreeColorCache.cs" />
-    <Compile Include="ColorLAB.cs" />
-    <Compile Include="ColorRGB.cs" />
-    <Compile Include="Ditherers\BaseColorDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\AtkinsonDithering.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\BaseErrorDiffusionDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\BurkesDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\FanDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\FilterLiteSierra.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\FloydSteinbergDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\JarvisJudiceNinkeDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\ShiauDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\SierraDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\StuckiDitherer.cs" />
-    <Compile Include="Ditherers\ErrorDiffusion\TwoRowSierraDitherer.cs" />
-    <Compile Include="Ditherers\IColorDitherer.cs" />
-    <Compile Include="Ditherers\Ordered\BaseOrderedDitherer.cs" />
-    <Compile Include="Ditherers\Ordered\BayerDitherer4.cs" />
-    <Compile Include="Ditherers\Ordered\BayerDitherer8.cs" />
-    <Compile Include="Ditherers\Ordered\ClusteredDotDitherer.cs" />
-    <Compile Include="Ditherers\Ordered\DotHalfToneDitherer.cs" />
-    <Compile Include="Extensions\Extend.IEnumerable.cs" />
-    <Compile Include="Extensions\Extend.Image.cs" />
-    <Compile Include="Extensions\Extend.PixelFormat.cs" />
-    <Compile Include="Helpers\ColorModelHelper.cs" />
-    <Compile Include="Helpers\FastRandom.cs" />
-    <Compile Include="Helpers\Guard.cs" />
-    <Compile Include="Helpers\ImageBuffer.cs" />
-    <Compile Include="Helpers\Pixels\IIndexedPixel.cs" />
-    <Compile Include="Helpers\Pixels\Indexed\PixelData1Indexed.cs" />
-    <Compile Include="Helpers\Pixels\Indexed\PixelData4Indexed.cs" />
-    <Compile Include="Helpers\Pixels\Indexed\PixelData8Indexed.cs" />
-    <Compile Include="Helpers\Pixels\INonIndexedPixel.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataArgb1555.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataArgb64.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataArgb8888.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataGray16.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataRgb48.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataRgb555.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataRgb565.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataRgb888.cs" />
-    <Compile Include="Helpers\Pixels\NonIndexed\PixelDataRgb8888.cs" />
-    <Compile Include="Helpers\Pixel.cs" />
-    <Compile Include="Helpers\PixelTransform.cs" />
-    <Compile Include="Helpers\QuantizationHelper.cs" />
-    <Compile Include="ImageData.cs" />
+    <Compile Include="ColorDescriptor.cs" />
     <Compile Include="ImageHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
-    <Compile Include="DescriptorHelper.cs" />
-    <Compile Include="PixelRGB.cs" />
-    <Compile Include="Quantizers\BaseColorCacheQuantizer.cs" />
-    <Compile Include="Quantizers\BaseColorQuantizer.cs" />
-    <Compile Include="Quantizers\DistinctSelection\DistinctBucket.cs" />
-    <Compile Include="Quantizers\DistinctSelection\DistinctColorInfo.cs" />
-    <Compile Include="Quantizers\DistinctSelection\DistinctSelectionQuantizer.cs" />
-    <Compile Include="Quantizers\IColorQuantizer.cs" />
-    <Compile Include="Quantizers\MedianCut\MedianCutCube.cs" />
-    <Compile Include="Quantizers\MedianCut\MedianCutQuantizer.cs" />
-    <Compile Include="Quantizers\NeuQuant\NeuralColorQuantizer.cs" />
-    <Compile Include="Quantizers\Octree\OctreeNode.cs" />
-    <Compile Include="Quantizers\Octree\OctreeQuantizer.cs" />
-    <Compile Include="Quantizers\OptimalPalette\OptimalPaletteQuantizer.cs" />
-    <Compile Include="Quantizers\Popularity\PopularityColorSlot.cs" />
-    <Compile Include="Quantizers\Popularity\PopularityQuantizer.cs" />
-    <Compile Include="Quantizers\Uniform\UniformColorSlot.cs" />
-    <Compile Include="Quantizers\Uniform\UniformQuantizer.cs" />
-    <Compile Include="Quantizers\XiaolinWu\WuColorCube.cs" />
-    <Compile Include="Quantizers\XiaolinWu\WuColorQuantizer.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -205,11 +119,6 @@
   <ItemGroup>
     <Compile Include="MainWindowLogic.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="OrbHelper.cs" />
-    <Compile Include="PathProviders\IPathProvider.cs" />
-    <Compile Include="PathProviders\ReversedPathProvider.cs" />
-    <Compile Include="PathProviders\SerpentinePathProvider.cs" />
-    <Compile Include="PathProviders\StandardPathProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -245,27 +154,25 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\analyzers\dotnet\cs\Microsoft.CodeAnalysis.VersionCheckAnalyzer.resources.dll" />
-    <Analyzer Include="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\analyzers\dotnet\Microsoft.CodeAnalysis.VersionCheckAnalyzer.dll" />
-    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.2.9.8\analyzers\dotnet\cs\Humanizer.dll" />
-    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.CodeQuality.Analyzers.dll" />
-    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.CodeQuality.CSharp.Analyzers.dll" />
-    <Analyzer Include="packages\Microsoft.NetCore.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.NetCore.Analyzers.dll" />
-    <Analyzer Include="packages\Microsoft.NetCore.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.NetCore.CSharp.Analyzers.dll" />
-    <Analyzer Include="packages\Microsoft.NetFramework.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.NetFramework.Analyzers.dll" />
-    <Analyzer Include="packages\Microsoft.NetFramework.Analyzers.2.9.8\analyzers\dotnet\cs\Microsoft.NetFramework.CSharp.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.VersionCheckAnalyzer.resources.dll" />
+    <Analyzer Include="packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\analyzers\dotnet\Microsoft.CodeAnalysis.VersionCheckAnalyzer.dll" />
+    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.3.3.0\analyzers\dotnet\cs\Humanizer.dll" />
+    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.CodeQuality.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.CodeQuality.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.CodeQuality.CSharp.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.NetCore.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.NetCore.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.NetCore.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.NetCore.CSharp.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.NetFramework.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.NetFramework.Analyzers.dll" />
+    <Analyzer Include="packages\Microsoft.NetFramework.Analyzers.3.3.0\analyzers\dotnet\cs\Microsoft.NetFramework.CSharp.Analyzers.dll" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.2.9.8\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.CodeQuality.Analyzers.2.9.8\build\Microsoft.CodeQuality.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeQuality.Analyzers.2.9.8\build\Microsoft.CodeQuality.Analyzers.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.NetCore.Analyzers.2.9.8\build\Microsoft.NetCore.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.NetCore.Analyzers.2.9.8\build\Microsoft.NetCore.Analyzers.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.NetFramework.Analyzers.2.9.8\build\Microsoft.NetFramework.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.NetFramework.Analyzers.2.9.8\build\Microsoft.NetFramework.Analyzers.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.8\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.8\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props'))" />
-    <Error Condition="!Exists('packages\OpenCvSharp4.runtime.win.4.3.0.20200421\build\net\OpenCvSharp4.runtime.win.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\OpenCvSharp4.runtime.win.4.3.0.20200421\build\net\OpenCvSharp4.runtime.win.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeAnalysis.VersionCheckAnalyzer.3.3.0\build\Microsoft.CodeAnalysis.VersionCheckAnalyzer.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeQuality.Analyzers.3.3.0\build\Microsoft.CodeQuality.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeQuality.Analyzers.3.3.0\build\Microsoft.CodeQuality.Analyzers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.NetCore.Analyzers.3.3.0\build\Microsoft.NetCore.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.NetCore.Analyzers.3.3.0\build\Microsoft.NetCore.Analyzers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.NetFramework.Analyzers.3.3.0\build\Microsoft.NetFramework.Analyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.NetFramework.Analyzers.3.3.0\build\Microsoft.NetFramework.Analyzers.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.3.3.0\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeAnalysis.FxCopAnalyzers.3.3.0\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props'))" />
   </Target>
 </Project>

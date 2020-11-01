@@ -3,40 +3,81 @@ using System.Diagnostics.Contracts;
 
 namespace ImageBank
 {
-    public class ColorLAB
+    public class ColorDescriptor :IEquatable<ColorDescriptor>
     {
-        public float L { get; set; }
-        public float A { get; set; }
-        public float B { get; set; }
-        public byte IRGB { get; set; }
+        public int Red { get; }
+        public int Green { get; }
+        public int Blue { get; }
 
-        public ColorLAB(ColorRGB colorRGB)
+        public double L { get; }
+        public double A { get; }
+        public double B { get; }
+
+        public short H { get; }
+        
+        public int Counter { get; set; }
+
+        public ColorDescriptor(int red, int green, int blue)
         {
-            Contract.Requires(colorRGB != null);
-            var lab = ToLAB(colorRGB);
-            L = lab.L;
-            A = lab.A;
-            B = lab.B;
-            IRGB = lab.IRGB;
+            Red = red;
+            Green = green;
+            Blue = blue;
+            ConvertToLAB(red, green, blue, out var dl, out var da, out var db);
+            L = dl;
+            A = da;
+            B = db;
+
+            // L 0.0 100.0 = 100.0                  * 0.15 [0 - 15]
+            // A -86.18 98.25 = 184.43  186     +87        [0 - 28]
+            // B -107.86 94.48 = 202.34 204 0.1569 + 108   [0 - 30] 
+
+            var ol = (int)Math.Round(L * 0.15); // [0..100] -> 0..15 // 5 bit
+            var oa = (int)Math.Round((A + 87.0) * 0.15); // [-86..98] -> 0..28 // 5 bit
+            var ob = (int)Math.Round((B + 108.0) * 0.15); // [-108..94] -> 0..30 // 5 bit
+            H = (short)((ol << 10) | (oa << 5) | ob);
+            Counter = 1;
         }
 
-        public ColorLAB(float l, float a, float b, byte irgb)
+        public double Distance(ColorDescriptor other)
         {
-            L = l;
-            A = a;
-            B = b;
-            IRGB = irgb;
+            Contract.Requires(other != null);
+            return Distance(L, A, B, other.L, other.A, other.B);
         }
 
-        private ColorLAB ToLAB(ColorRGB colorRGB)
+        public static double Distance(short[] x, short[] y)
         {
-            var r = colorRGB.R / 255.0;
-            var g = colorRGB.G / 255.0;
-            var b = colorRGB.B / 255.0;
-            var r2 = colorRGB.R >> 6;
-            var g2 = colorRGB.G >> 6;
-            var b2 = colorRGB.B >> 6;
-            var irgb = (byte)((r2 << 4) | (g2 << 2) | b2);
+            Contract.Requires(x != null);
+            Contract.Requires(y != null);
+            var i = 0;
+            var j = 0;
+            var m = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i] == y[j]) {
+                    i++;
+                    j++;
+                    m++;
+                }
+                else {
+                    if (x[i] < y[j]) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+                }
+            }
+
+            var xdistance = 1.0 - (m / (double)x.Length);
+            var ydistance = 1.0 - (m / (double)y.Length);
+            var distance = (xdistance + ydistance) / 2.0;
+            return distance;
+        }
+
+        private static void ConvertToLAB(int ir, int ig, int ib, out double dl, out double da, out double db)
+        {
+            var r = ir / 255.0;
+            var g = ig / 255.0;
+            var b = ib / 255.0;
 
             r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
             g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
@@ -50,82 +91,48 @@ namespace ImageBank
             y = (y > 0.008856) ? Math.Pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
             z = (z > 0.008856) ? Math.Pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
 
-            var lab = new ColorLAB(
-                (float)((116.0 * y) - 16.0),
-                (float)(500.0 * (x - y)),
-                (float)(200.0 * (y - z)),
-                irgb
-                );
-
-            return lab;
+            dl = (116.0 * y) - 16.0;
+            da = 500.0 * (x - y);
+            db = 200.0 * (y - z);
         }
 
-        public ColorRGB ToRGB()
+        private static double Deg2rad(double deg)
         {
-            var y = (L + 16.0) / 116.0;
-            var x = A / 500.0 + y;
-            var z = y - B / 200.0;
-
-            x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16.0 / 116.0) / 7.787);
-            y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16.0 / 116.0) / 7.787);
-            z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16.0 / 116.0) / 7.787);
-
-            var r = x * 3.2406 + y * -1.5372 + z * -0.4986;
-            var g = x * -0.9689 + y * 1.8758 + z * 0.0415;
-            var b = x * 0.0557 + y * -0.2040 + z * 1.0570;
-
-            r = (r > 0.0031308) ? (1.055 * Math.Pow(r, 1.0 / 2.4) - 0.055) : 12.92 * r;
-            g = (g > 0.0031308) ? (1.055 * Math.Pow(g, 1.0 / 2.4) - 0.055) : 12.92 * g;
-            b = (b > 0.0031308) ? (1.055 * Math.Pow(b, 1.0 / 2.4) - 0.055) : 12.92 * b;
-
-            var rgb = new ColorRGB(
-                (byte)(Math.Max(0, Math.Min(1.0, r)) * 255),
-                (byte)(Math.Max(0, Math.Min(1.0, g)) * 255),
-                (byte)(Math.Max(0, Math.Min(1.0, b)) * 255)
-                );
-
-            return rgb;
+            return deg * (Math.PI / 180.0);
         }
 
-        private static float Deg2rad(float deg)
+        private static double Distance(double l1, double a1, double b1, double l2, double a2, double b2)
         {
-            return (float)(deg * (Math.PI / 180.0));
-        }
-
-        public float CIEDE2000(ColorLAB other)
-        {
-            Contract.Requires(other != null);
-
             const double kL = 1.0, kC = 1.0, kH = 1.0;
             const double pow25To7 = 6103515625.0; // pow(25, 7)
-            var deg360InRad = Deg2rad(360f);
-            var deg180InRad = Deg2rad(180f);
+            var deg360InRad = Deg2rad(360.0);
+            var deg180InRad = Deg2rad(180.0);
 
             /* Equation 2 */
-            double C1 = Math.Sqrt((A * A) + (B * B));
-            double C2 = Math.Sqrt((other.A * other.A) + (other.B * other.B));
-            
+            double C1 = Math.Sqrt((a1 * a1) + (b1 * b1));
+            double C2 = Math.Sqrt((a2 * a2) + (b2 * b2));
+
             /* Equation 3 */
             double barC = (C1 + C2) / 2.0;
-            
+
             /* Equation 4 */
             double G = 0.5 * (1.0 - Math.Sqrt(Math.Pow(barC, 7.0) / (Math.Pow(barC, 7.0) + pow25To7)));
-            
+
             /* Equation 5 */
-            double a1Prime = (1.0 + G) * A;
-            double a2Prime = (1.0 + G) * other.A;
-            
+            double a1Prime = (1.0 + G) * a1;
+            double a2Prime = (1.0 + G) * a2;
+
             /* Equation 6 */
-            double CPrime1 = Math.Sqrt((a1Prime * a1Prime) + (B * B));
-            double CPrime2 = Math.Sqrt((a2Prime * a2Prime) + (other.B * other.B));
-            
+            double CPrime1 = Math.Sqrt((a1Prime * a1Prime) + (b1 * b1));
+            double CPrime2 = Math.Sqrt((a2Prime * a2Prime) + (b2 * b2));
+
             /* Equation 7 */
             double hPrime1;
-            if (Math.Abs(B) < 0.000001 && Math.Abs(a1Prime) < 0.000001) {
+            if (Math.Abs(b1) < 0.000001 && Math.Abs(a1Prime) < 0.000001) {
                 hPrime1 = 0.0;
             }
             else {
-                hPrime1 = Math.Atan2(B, a1Prime);
+                hPrime1 = Math.Atan2(b1, a1Prime);
                 /* 
                  * This must be converted to a hue angle in degrees between 0 
                  * and 360 by addition of 20 to negative hue angles.
@@ -136,11 +143,11 @@ namespace ImageBank
             }
 
             double hPrime2;
-            if (Math.Abs(other.B) < 0.000001 && Math.Abs(a2Prime) < 0.000001) {
+            if (Math.Abs(b2) < 0.000001 && Math.Abs(a2Prime) < 0.000001) {
                 hPrime2 = 0.0;
             }
             else {
-                hPrime2 = Math.Atan2(other.B, a2Prime);
+                hPrime2 = Math.Atan2(b2, a2Prime);
                 /* 
                  * This must be converted to a hue angle in degrees between 0 
                  * and 360 by addition of 2 to negative hue angles.
@@ -151,7 +158,7 @@ namespace ImageBank
             }
 
             /* Equation 8 */
-            double deltaLPrime = other.L - L;
+            double deltaLPrime = l2 - l1;
 
             /* Equation 9 */
             double deltaCPrime = CPrime2 - CPrime1;
@@ -179,7 +186,7 @@ namespace ImageBank
             double deltaHPrime = 2.0 * Math.Sqrt(CPrimeProduct) * Math.Sin(deltahPrime / 2.0);
 
             /* Equation 12 */
-            double barLPrime = (L + other.L) / 2.0;
+            double barLPrime = (l1 + l2) / 2.0;
 
             /* Equation 13 */
             double barCPrime = (CPrime1 + CPrime2) / 2.0;
@@ -210,19 +217,19 @@ namespace ImageBank
 
             /* Equation 16 */
             double deltaTheta = Deg2rad(30f) * Math.Exp(-Math.Pow((barhPrime - Deg2rad(275f)) / Deg2rad(25f), 2.0));
-            
+
             /* Equation 17 */
             double R_C = 2.0 * Math.Sqrt(Math.Pow(barCPrime, 7.0) / (Math.Pow(barCPrime, 7.0) + pow25To7));
-            
+
             /* Equation 18 */
             double S_L = 1 + ((0.015 * Math.Pow(barLPrime - 50.0, 2.0)) / Math.Sqrt(20 + Math.Pow(barLPrime - 50.0, 2.0)));
-            
+
             /* Equation 19 */
             double S_C = 1 + (0.045 * barCPrime);
-            
+
             /* Equation 20 */
             double S_H = 1 + (0.015 * barCPrime * T);
-            
+
             /* Equation 21 */
             double R_T = (-Math.Sin(2.0 * deltaTheta)) * R_C;
 
@@ -233,7 +240,27 @@ namespace ImageBank
                 Math.Pow(deltaHPrime / (kH * S_H), 2.0) +
                 (R_T * (deltaCPrime / (kC * S_C)) * (deltaHPrime / (kH * S_H))));
 
-            return (float)deltaE;
+            return deltaE;
+        }
+
+        public bool Equals(ColorDescriptor other)
+        {
+            Contract.Requires(other != null);
+            return (Red == other.Red) && (Green == other.Green) && (Blue == other.Blue);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as ColorDescriptor);
+        }
+
+        public override int GetHashCode()
+        {
+            int hc = 3;
+            hc = unchecked(hc * 314159 + Red);
+            hc = unchecked(hc * 314159 + Green);
+            hc = unchecked(hc * 314159 + Blue);
+            return hc;
         }
     }
 }

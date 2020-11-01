@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -15,15 +14,16 @@ namespace ImageBank
 
         public int Size { get; }
 
-        private byte[] _colors;
-        public byte[] GetColors()
+        private short[] _descriptors;
+        public short[] GetDescriptors()
         {
-            return _colors;
+            return _descriptors;
         }
-        public void SetColors(byte[] colors)
+        public void SetDescriptors(short[] descriptors)
         {
-            _colors = colors;
-            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColors, _colors);
+            _descriptors = descriptors;
+            var buffer = ImageHelper.DescriptorsToBuffer(_descriptors);
+            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColors, buffer);
         }
 
         private int _folder;
@@ -111,7 +111,7 @@ namespace ImageBank
             int width,
             int heigth,
             int size,
-            byte[] colors,
+            short[] descriptors,
             int folder,
             DateTime lastview,
             DateTime lastcheck,
@@ -127,7 +127,7 @@ namespace ImageBank
             Heigth = heigth;
             Size = size;
 
-            _colors = colors;
+            _descriptors = descriptors;
             _folder = folder;
             _lastview = lastview;
             _lastcheck = lastcheck;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -8,8 +7,6 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private int _offset = 1;
-
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
@@ -27,7 +24,7 @@ namespace ImageBank
                     if (string.IsNullOrEmpty(nameX)) {
                         var imglist = _imgList
                             .Where(e => _imgList.ContainsKey(e.Value.NextName))
-                            .Where(e => e.Value.GetColors() != null && e.Value.GetColors().Length > 0)
+                            .Where(e => e.Value.GetDescriptors() != null && e.Value.GetDescriptors().Length > 0)
                             .OrderBy(e => e.Value.LastView)
                             .Select(e => e.Value)
                             .ToArray();
@@ -37,37 +34,12 @@ namespace ImageBank
                             return;
                         }
 
-                        /*
-                        var df = new SortedDictionary<int, DateTime>();
-                        foreach(var img in imglist) {
-                            if (df.ContainsKey(img.Folder)) {
-                                if (df[img.Folder] < img.LastView) {
-                                    df[img.Folder] = img.LastView;
-                                }
-                            }
-                            else {
-                                df.Add(img.Folder, img.LastView);
-                            }
+                        while (string.IsNullOrEmpty(nameX)) {
+                            nameX = imglist
+                                .OrderBy(e => e.LastView)
+                                .FirstOrDefault()
+                                .Name;
                         }
-
-                        var mind = df.Min(e => e.Value);
-                        var minf = df.First(e => e.Value == mind).Key;
-                        imglist = imglist
-                            .Where(e => e.Folder == minf)
-                            .ToArray();
-
-                        nameX = imglist
-                            .OrderBy(e => e.LastView)
-                            .FirstOrDefault()
-                            .Name;
-                            */
-
-                        if (_offset - 1 >= imglist.Length) {
-                            _offset = 1;
-                        }
-
-                        nameX = imglist[_offset - 1].Name;
-                        _offset *= 10;
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
@@ -111,14 +83,15 @@ namespace ImageBank
             Contract.Requires(imgX != null);
 
             var nextname = imgX.NextName;
-            var distance = float.MaxValue;
+            var distance = double.MaxValue;
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     return;
                 }
 
+                var xcolors = imgX.GetDescriptors();
                 foreach (var img in _imgList) {
-                    if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
+                    if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
                         continue;
                     }
 
@@ -127,11 +100,12 @@ namespace ImageBank
                     }
 
                     if (!string.IsNullOrEmpty(imgX.Family) &&
-                        !imgX.Family.Equals(img.Value.Family, StringComparison.OrdinalIgnoreCase)) {
+                        imgX.Family.Equals(img.Value.Family, StringComparison.OrdinalIgnoreCase)) {
                         continue;
                     }
 
-                    var imgdistance = DescriptorHelper.GetDistance(imgX.GetColors(), img.Value.GetColors());
+                    var ycolors = img.Value.GetDescriptors();
+                    var imgdistance = ColorDescriptor.Distance(xcolors, ycolors);
                     if (imgdistance < distance) {
                         nextname = img.Value.Name;
                         distance = imgdistance;
@@ -139,7 +113,7 @@ namespace ImageBank
                 }
 
                 if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
-                    imgX.Distance = distance;
+                    imgX.Distance = (float)distance;
                 }
 
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {

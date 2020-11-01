@@ -201,6 +201,11 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
+
+                if (AppVars.ImgPanel[index].Img.Folder == 73) {
+                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
+                }
+
                 if (AppVars.ImgPanel[index].Img.Heigth == 2160) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 }
@@ -293,6 +298,16 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.CombineFamilies(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void CopyLiftClick()
+        {
+            DisableElements();
+            await Task.Run(() => { AppVars.Collection.CopyLeft(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

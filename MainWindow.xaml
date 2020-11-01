@@ -21,62 +21,7 @@
             </MenuItem>
             <MenuItem Header="Family">
                 <MenuItem Header="Combine" Click="FamilyCombineClick" />
-                <Separator />
-                <MenuItem Header="Adult">
-                    <MenuItem Header="AlinaLatypova" Tag="Adult.AlinaLatypova" Click="MoveToClick" />
-                    <MenuItem Header="AnaFoxxx" Tag="Adult.AnaFoxxx" Click="MoveToClick" />
-                    <MenuItem Header="AubreyStar" Tag="Adult.AubreyStar" Click="MoveToClick" />
-                    <MenuItem Header="Lucia" Tag="Adult.Lucia" Click="MoveToClick" />
-                    <MenuItem Header="Miran" Tag="Adult.Miran" Click="MoveToClick" />
-                    <MenuItem Header="RuiMatsushita" Tag="Adult.RuiMatsushita" Click="MoveToClick" />
-                    <MenuItem Header="Talinka" Tag="Adult.Talinka" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Art">
-                    <MenuItem Header="Alex" Tag="Art.Alex" Click="MoveToClick" />
-                    <MenuItem Header="SeduBoy" Tag="Art.SeduBoy" Click="MoveToClick" />
-                    <MenuItem Header="NicoleHeat" Tag="Art.NicoleHeat" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Classic">
-                    <MenuItem Header="Chertyonok" Tag="Classic.Chertyonok" Click="MoveToClick" />
-                    <MenuItem Header="Sis" Tag="Classic.Sis" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Japan">
-                    <MenuItem Header="RikaNishimura" Tag="Japan.RikaNishimura" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Kandid">
-                    <MenuItem Header="Root" Tag="Kandid" Click="MoveToClick" />
-                    <Separator/>
-                    <MenuItem Header="Aygun" Tag="Kandid.Aygun" Click="MoveToClick" />
-                    <MenuItem Header="Narmina" Tag="Kandid.Narmina" Click="MoveToClick" />
-                    <MenuItem Header="Polina" Tag="Kandid.Polina" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Ls">
-                    <MenuItem Header="008" Tag="Ls.008" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Model">
-                    <MenuItem Header="Dolly" Tag="Model.Dolly" Click="MoveToClick" />
-                    <MenuItem Header="Sandra" Tag="Model.Sandra" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Pl">
-                    <MenuItem Header="Polly" Tag="Pl.Polly" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Tmtv">
-                    <MenuItem Header="Sasha" Tag="Tmtv.Sasha" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Tpi">
-                    <MenuItem Header="Berenice" Tag="Tpi.Berenice" Click="MoveToClick" />
-                    <MenuItem Header="Gabi" Tag="Tpi.Gabi" Click="MoveToClick" />
-                    <MenuItem Header="Pamela" Tag="Tpi.Pamela" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Vintage">
-                    <MenuItem Header="Ana" Tag="Vintage.Ana" Click="MoveToClick" />
-                    <MenuItem Header="Emily" Tag="Vintage.Emily" Click="MoveToClick" />
-                    <MenuItem Header="Sofia" Tag="Vintage.Sofia" Click="MoveToClick" />
-                </MenuItem>
-                <MenuItem Header="Vlad">
-                    <MenuItem Header="m065Yulya" Tag="Vlad.m065Yulya" Click="MoveToClick" />
-                    <MenuItem Header="y063Dasha" Tag="Vlad.y063Dasha" Click="MoveToClick" />
-                </MenuItem>
+                <MenuItem Header="Copy Left" Click="CopyLiftClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

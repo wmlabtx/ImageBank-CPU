@@ -68,7 +68,7 @@ namespace ImageBank
                     }
                 }
 
-                if (!Helper.GetImageDataFromFile(
+                if (!ImageHelper.GetImageDataFromFile(
                     filename,
                     out byte[] imagedata,
 #pragma warning disable CA2000 // Dispose objects before losing scope
@@ -81,7 +81,7 @@ namespace ImageBank
                     continue;
                 }
 
-                if (!DescriptorHelper.Compute(bitmap, out var colors)) {
+                if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
@@ -91,7 +91,7 @@ namespace ImageBank
                 lock (_imglock) {
                     if (_hashList.TryGetValue(hash, out string namefound)) {
                         var imgfound = _imgList[namefound];
-                        imgfound.SetColors(colors);
+                        imgfound.SetDescriptors(descriptors);
                         imgfound.LastAdded = DateTime.Now;
                         if (!imgfound.Family.Equals(family, StringComparison.OrdinalIgnoreCase)) {
                             imgfound.Family = family;
@@ -139,7 +139,7 @@ namespace ImageBank
                     width: bitmap.Width,
                     heigth: bitmap.Height,
                     size: imagedata.Length,
-                    colors: colors,
+                    descriptors: descriptors,
                     folder: folder,
                     lastview: lastview,
                     lastcheck: lastcheck,

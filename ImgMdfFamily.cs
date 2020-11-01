@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Linq;
 
 namespace ImageBank
@@ -36,7 +37,6 @@ namespace ImageBank
                 .ForEach(e => e.Family = newfamily);
             }
         }
-
 
         public void CombineFamilies(Img imgX, Img imgY)
         {
@@ -87,6 +87,17 @@ namespace ImageBank
             imgX.Family = family;
             FastFindNext(imgX);
             AppVars.ImgPanel[1] = GetImgPanel(imgX.NextName);
+        }
+
+        public void CopyLeft(Img imgX, Img imgY)
+        {
+            Contract.Requires(imgX != null);
+            Contract.Requires(imgY != null);
+
+            var oldfile = imgX.FileName;
+            imgX.Folder = imgY.Folder;
+            File.Move(oldfile, imgX.FileName);
+            Delete(imgY.Name);
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.IO;
@@ -21,7 +20,7 @@ namespace ImageBank
 
             var wc = 0;
             Img imgX;
-            List<KeyValuePair<Img, int>> candidates = new List<KeyValuePair<Img, int>>();
+            List<Img> candidates = new List<Img>();
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
@@ -30,13 +29,12 @@ namespace ImageBank
 
                 string nameX = null;
                 while (string.IsNullOrEmpty(nameX)) {
-                    var imglist = _imgList
-                        .Select(e => e.Value)
-                        .ToArray();
-
-                    nameX = imglist
-                        .OrderBy(e => e.LastCheck)
+                    nameX = _imgList
+                        .OrderBy(e => e.Value.LastView)
+                        .Take(100)
+                        .OrderBy(e => e.Value.LastCheck)
                         .FirstOrDefault()
+                        .Value
                         .Name;
                 }
 
@@ -51,8 +49,8 @@ namespace ImageBank
                     return;
                 }
 
-                if (imgX.GetColors() == null || imgX.GetColors().Length == 0) {
-                    if (!Helper.GetImageDataFromFile(
+                if (imgX.GetDescriptors() == null || imgX.GetDescriptors().Length == 0) {
+                    if (!ImageHelper.GetImageDataFromFile(
                         imgX.FileName,
                         out _,
 #pragma warning disable CA2000 // Dispose objects before losing scope
@@ -65,20 +63,19 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!DescriptorHelper.Compute(bitmap, out var colors)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
                     bitmap.Dispose();
-
-                    imgX.SetColors(colors);
+                    imgX.SetDescriptors(descriptors);
                 }
 
                 candidates.Clear();
                 foreach (var img in _imgList) {
-                    if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
+                    if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
                         continue;
                     }
 
@@ -91,13 +88,12 @@ namespace ImageBank
                         continue;
                     }
 
-                    var match = DescriptorHelper.GetMatch(imgX.GetColors(), img.Value.GetColors());
-                    candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
+                    candidates.Add(img.Value);
                 }
 
                 if (candidates.Count == 0) {
                     foreach (var img in _imgList) {
-                        if (img.Value.GetColors() == null || img.Value.GetColors().Length == 0) {
+                        if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
                             continue;
                         }
 
@@ -105,8 +101,7 @@ namespace ImageBank
                             continue;
                         }
 
-                        var match = DescriptorHelper.GetMatch(imgX.GetColors(), img.Value.GetColors());
-                        candidates.Add(new KeyValuePair<Img, int>(img.Value, match));
+                        candidates.Add(img.Value);
                     }
                 }
 
@@ -118,24 +113,18 @@ namespace ImageBank
                 return;
             }
 
-            candidates = candidates.OrderByDescending(e => e.Value).ToList();
-
             var nextname = imgX.NextName;
-            var distance = float.MaxValue;
-            var sw = Stopwatch.StartNew();
+            var distance = double.MaxValue;
+            var xd = imgX.GetDescriptors();
             foreach (var candidate in candidates) {
-                var imgdistance = DescriptorHelper.GetDistance(imgX.GetColors(), candidate.Key.GetColors());
+                var yd = candidate.GetDescriptors();
+                var imgdistance = ColorDescriptor.Distance(xd, yd);
                 if (imgdistance < distance) {
-                    nextname = candidate.Key.Name;
+                    nextname = candidate.Name;
                     distance = imgdistance;
-                }
-
-                if (sw.ElapsedMilliseconds > 1000) {
-                    break;
                 }
             }
 
-            sw.Stop();
             var sb = new StringBuilder();
             if (Math.Abs(distance - imgX.Distance) >= 0.0001) {
                 if (wc > 0) {
@@ -147,7 +136,7 @@ namespace ImageBank
                 sb.Append($"{imgX.Distance:F4} ");
                 sb.Append($"{char.ConvertFromUtf32(distance < imgX.Distance ? 0x2192 : 0x2193)} ");
                 sb.Append($"{distance:F4} ");
-                imgX.Distance = distance;
+                imgX.Distance = (float)distance;
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
                     imgX.NextName = nextname;
                 }

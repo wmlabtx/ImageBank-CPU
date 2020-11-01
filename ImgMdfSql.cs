@@ -68,7 +68,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrNextName}, ");
                     sb.Append($"@{AppConsts.AttrDistance}, ");
                     sb.Append($"@{AppConsts.AttrFamily}");
-                    sb.Append(")");
+                    sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFolder}", img.Folder);
@@ -78,7 +78,8 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColors}", img.GetColors());
+                    var buffer = ImageHelper.DescriptorsToBuffer(img.GetDescriptors());
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColors}", buffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);

@@ -1,9 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
-using System.Drawing;
-using System;
 using System.Linq;
-using System.Drawing.Imaging;
+
 
 namespace ImageBank.Tests
 {

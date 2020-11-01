@@ -49,7 +49,8 @@ namespace ImageBank
                             var width = reader.GetInt32(4);
                             var heigth = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
-                            var colors = (byte[])reader[7];
+                            var buffer = (byte[])reader[7];
+                            var descriptors = ImageHelper.BufferToDescriptors(buffer);
                             var lastcheck = reader.GetDateTime(8);
                             var lastadded = reader.GetDateTime(9);
                             var nextname = reader.GetString(10);
@@ -61,7 +62,7 @@ namespace ImageBank
                                 width: width,
                                 heigth: heigth,
                                 size: size,
-                                colors: colors,
+                                descriptors: descriptors,
                                 folder: folder,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
