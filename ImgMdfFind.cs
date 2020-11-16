@@ -7,6 +7,9 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        private Random _random = new Random();
+        private int _lastview;
+
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
@@ -34,11 +37,27 @@ namespace ImageBank
                             return;
                         }
 
+                        var scoperecent = imglist.Where(e =>
+                            DateTime.Now.Subtract(e.LastAdded).TotalDays < 1 &&
+                            DateTime.Now.Subtract(e.LastView).TotalDays > 3000
+                            ).ToArray();
+
+                        if (scoperecent.Length > 0) {
+                            var index = _random.Next(scoperecent.Length);
+                            nameX = scoperecent[index].Name;
+                        }
+
                         while (string.IsNullOrEmpty(nameX)) {
-                            nameX = imglist
-                                .OrderBy(e => e.LastView)
-                                .FirstOrDefault()
-                                .Name;
+                            var pos = Helper.IntPow(10, _lastview) - 1;
+                            if (pos >= imglist.Length) {
+                                _lastview = 0;
+                                pos = 0;
+                            }
+                            else {
+                                _lastview++;
+                            }
+
+                            nameX = imglist[pos].Name;
                         }
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
@@ -56,7 +75,7 @@ namespace ImageBank
                             if (AppVars.ImgPanel[1] == null) {
                                 Delete(nameY);
                                 progress.Report($"{nameY} deleted");
-                                continue;
+                                break;
                             }
 
                             break;

@@ -1,0 +1,1 @@
+﻿ALTER INDEX [ClusteredIndex-20201115-083314] ON [dbo].[Images] REORGANIZE

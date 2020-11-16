@@ -29,13 +29,25 @@ namespace ImageBank
 
                 string nameX = null;
                 while (string.IsNullOrEmpty(nameX)) {
-                    nameX = _imgList
-                        .OrderBy(e => e.Value.LastView)
-                        .Take(100)
-                        .OrderBy(e => e.Value.LastCheck)
-                        .FirstOrDefault()
-                        .Value
-                        .Name;
+                    var scoperecent = _imgList.Where(e =>
+                        DateTime.Now.Subtract(e.Value.LastAdded).TotalDays < 1 &&
+                        DateTime.Now.Subtract(e.Value.LastView).TotalDays > 3000
+                        ).ToArray();
+
+                    if (scoperecent.Length > 0) {
+                        nameX = scoperecent
+                                    .OrderBy(e => e.Value.LastCheck)
+                                    .FirstOrDefault()
+                                    .Value
+                                    .Name;
+                    }
+                    else {
+                        nameX = _imgList
+                                    .OrderBy(e => e.Value.LastCheck)
+                                    .FirstOrDefault()
+                                    .Value
+                                    .Name;
+                    }
                 }
 
                 if (!_imgList.TryGetValue(nameX, out imgX)) {

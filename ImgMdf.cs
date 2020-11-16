@@ -26,7 +26,13 @@ namespace ImageBank
         {
             lock (_imglock) {
                 var sb = new StringBuilder();
-                sb.Append($"{_imgList.Count}: ");
+                var maxfolder = _imgList.Count == 0 ? 0 : _imgList.Max(e => e.Value.Folder);
+                var maxfoldercount = _imgList.Count(e => e.Value.Folder == maxfolder);
+                var recent = _imgList.Count(e => 
+                    DateTime.Now.Subtract(e.Value.LastAdded).TotalDays < 1 &&
+                    DateTime.Now.Subtract(e.Value.LastView).TotalDays > 3000
+                    );
+                sb.Append($"{maxfolder}:{maxfoldercount}/({recent})/{_imgList.Count}: ");
                 return sb.ToString();
             }
         }
@@ -40,6 +46,17 @@ namespace ImageBank
                     .AddSeconds(-1);
 
                 return min;
+            }
+        }
+
+        public int GetMaxFolder()
+        {
+            lock (_imglock) {
+                var max = (_imgList.Count == 0 ?
+                    0 :
+                    _imgList.Max(e => e.Value.Folder) - 1);
+                max = Math.Max(0, max);
+                return max;
             }
         }
     }

@@ -175,6 +175,7 @@ namespace ImageBank
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
             var sizes = new int[2];
+            var maxfolder = AppVars.Collection.GetMaxFolder();
             for (var index = 0; index < 2; index++) {
                 var name = AppVars.ImgPanel[index].Img.Name;
                 pBoxes[index].Tag = name;
@@ -202,7 +203,7 @@ namespace ImageBank
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
 
-                if (AppVars.ImgPanel[index].Img.Folder == 73) {
+                if (AppVars.ImgPanel[index].Img.Folder >= maxfolder) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
 
