@@ -29,16 +29,17 @@ namespace ImageBank
 
                 string nameX = null;
                 while (string.IsNullOrEmpty(nameX)) {
-                    var scoperecent = _imgList.Where(e =>
-                        DateTime.Now.Subtract(e.Value.LastAdded).TotalDays < 1 &&
-                        DateTime.Now.Subtract(e.Value.LastView).TotalDays > 3000
-                        ).ToArray();
+                    var scopewrong = _imgList
+                        .Where(e => 
+                            !_imgList.ContainsKey(e.Value.NextName) ||
+                            e.Value.GetDescriptors() == null ||
+                            e.Value.GetDescriptors().Length == 0)
+                        .Select(e => e.Value)
+                        .ToArray();
 
-                    if (scoperecent.Length > 0) {
-                        nameX = scoperecent
-                                    .OrderBy(e => e.Value.LastCheck)
+                    if (scopewrong.Length > 0) {
+                        nameX = scopewrong
                                     .FirstOrDefault()
-                                    .Value
                                     .Name;
                     }
                     else {
@@ -167,6 +168,20 @@ namespace ImageBank
                     imgX.NextName = nextname;
                 }
             }
+
+            /*
+            if (!string.IsNullOrEmpty(imgX.Family)) {
+                lock (_imglock) {
+                    if (!_imgList.TryGetValue(imgX.NextName, out var imgY)) {
+
+                    }
+                    
+                    if (string.IsNullOrEmpty(imgY.Family)) {
+                        imgY.Family = imgX.Family;
+                    }
+                }
+            }
+            */
 
             imgX.LastCheck = DateTime.Now;
             if (sb.Length > 0) {

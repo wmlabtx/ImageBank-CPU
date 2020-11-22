@@ -7,9 +7,6 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private Random _random = new Random();
-        private int _lastview;
-
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
@@ -37,27 +34,18 @@ namespace ImageBank
                             return;
                         }
 
-                        var scoperecent = imglist.Where(e =>
-                            DateTime.Now.Subtract(e.LastAdded).TotalDays < 1 &&
-                            DateTime.Now.Subtract(e.LastView).TotalDays > 3000
-                            ).ToArray();
-
-                        if (scoperecent.Length > 0) {
-                            var index = _random.Next(scoperecent.Length);
-                            nameX = scoperecent[index].Name;
-                        }
-
-                        while (string.IsNullOrEmpty(nameX)) {
-                            var pos = Helper.IntPow(10, _lastview) - 1;
-                            if (pos >= imglist.Length) {
-                                _lastview = 0;
-                                pos = 0;
+                        var mf = imglist.Max(e => e.Folder);
+                        for (var f = mf; f >= 0; f--) {
+                            var scope = imglist
+                                .Where(e => e.Folder == f && DateTime.Now.Subtract(e.LastView).TotalDays > 30)
+                                .ToArray();
+                            if (scope.Length > 0) {
+                                nameX = scope
+                                    .OrderBy(e => e.Distance)
+                                    .FirstOrDefault()
+                                    .Name;
+                                break;
                             }
-                            else {
-                                _lastview++;
-                            }
-
-                            nameX = imglist[pos].Name;
                         }
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
