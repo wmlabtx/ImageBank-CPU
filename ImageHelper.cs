@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -20,7 +21,7 @@ namespace ImageBank
                 using (var ms = new MemoryStream(data)) {
                     bitmap = (Bitmap)Image.FromStream(ms);
                 }
-                
+
                 return true;
             }
             catch (ArgumentException) {
@@ -200,13 +201,13 @@ namespace ImageBank
             return true;
         }
 
-        public static bool ComputeDescriptors(Image image, out short[] descriptors)
+        public static bool ComputeDescriptors(Image image, out byte[] histogram)
         {
+            histogram = null;
             Contract.Requires(image != null);
             Contract.Requires(image.PixelFormat == PixelFormat.Format24bppRgb);
 
-            descriptors = null;
-            const int dim = 64;
+            const int dim = 256;
             byte[] brgs;
             using (var bitmap = ResizeBitmap((Bitmap)image, dim, dim)) {
                 var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
@@ -219,7 +220,12 @@ namespace ImageBank
             }
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-            var colordescriptors = new ColorDescriptor[dim, dim];
+            var colorhistogram = new ColorDescriptor[dim, dim];
+            var M = new byte[dim, dim];
+            var dim2 = dim / 2;
+            var V = new double[dim2, dim2];
+            var S = new double[dim2, dim2];
+            var E = new byte[dim2, dim2];
 #pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 
             var offset = 0;
@@ -228,56 +234,149 @@ namespace ImageBank
                     var blue = brgs[offset++];
                     var green = brgs[offset++];
                     var red = brgs[offset++];
-                    colordescriptors[x, y] = new ColorDescriptor(red, green, blue);
+                    colorhistogram[x, y] = new ColorDescriptor(red, green, blue);
+                    M[x, y] = colorhistogram[x, y].Index;
+                }
+            }
+
+            for (var y = 0; y < dim; y += 2) {
+                for (var x = 0; x < dim; x += 2) {
+                    V[x / 2, y / 2] = (
+                        colorhistogram[x, y].V +
+                        colorhistogram[x + 1, y].V +
+                        colorhistogram[x, y + 1].V +
+                        colorhistogram[x + 1, y + 1].V) / 4.0;
                 }
             }
 
             /*
-            using (var bm = new Bitmap(dim, dim, PixelFormat.Format24bppRgb)) {
-                for (var y = 0; y < dim; y++) {
-                    for (var x = 0; x < dim; x++) {
-                        bm.SetPixel(x, y, Color.FromArgb(colordescriptors[x, y].Red, colordescriptors[x, y].Green, colordescriptors[x, y].Blue));
+            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
+                for (var y = 0; y < dim2; y++) {
+                    for (var x = 0; x < dim2; x++) {
+                        var l = (int)(V[x, y] * 255.0);
+                        Debug.Assert(l <= 255);
+                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
                     }
                 }
 
-                bm.Save("bm0.png", ImageFormat.Png);
+                bm.Save("bm-v.png", ImageFormat.Png);
             }
             */
 
-            var listhashes = new SortedList<short, object>();
-            for (var y = 0; y < dim; y++) {
-                for (var x = 0; x < dim; x++) {
-                    if (!listhashes.ContainsKey(colordescriptors[x, y].H)) {
-                        listhashes.Add(colordescriptors[x, y].H, null);
+            for (var y = 1; y < dim2 - 1; y++) {
+                for (var x = 1; x < dim2 - 1; x++) {
+                    var gx =
+                        -V[x - 1, y - 1] - 2.0 * V[x - 1, y] - V[x - 1, y + 1] +
+                         V[x + 1, y - 1] + 2.0 * V[x + 1, y] + V[x + 1, y + 1];
+
+                    var gy =
+                        -V[x - 1, y - 1] - 2.0 * V[x, y - 1] - V[x + 1, y - 1] +
+                         V[x + 1, y + 1] + 2.0 * V[x + 1, y + 1] + V[x + 1, y + 1];
+
+                    S[x, y] = Math.Sqrt((gx * gx) + (gy * gy));
+                    if (S[x, y] < 0.0) {
+                        S[x, y] = 0.0;
+                    }
+
+                    if (S[x, y] > 1.0) {
+                        S[x, y] = 1.0;
                     }
                 }
             }
 
-            const int MaxClusters = 4000;
-            descriptors = listhashes
-                .ToList()
-                .Take(MaxClusters)
-                .OrderBy(e => e.Key)
-                .Select(e => e.Key)
-                .ToArray();
+            /*
+            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
+                for (var y = 0; y < dim2; y++) {
+                    for (var x = 0; x < dim2; x++) {
+                        var l = (int)(S[x, y] * 255.0);
+                        Debug.Assert(l <= 255);
+                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
+                    }
+                }
+
+                bm.Save("bm-s.png", ImageFormat.Png);
+            }
+            */
+
+            for (var y = 1; y < dim2 - 1; y++) {
+                for (var x = 1; x < dim2 - 1; x++) {
+                    E[x, y] = (byte)(S[x, y] * 15.0);
+                }
+            }
+
+            /*
+            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
+                for (var y = 0; y < dim2; y++) {
+                    for (var x = 0; x < dim2; x++) {
+                        var l = (int)(E[x, y] * 16.0);
+                        Debug.Assert(l <= 255);
+                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
+                    }
+                }
+
+                bm.Save("bm-e.png", ImageFormat.Png);
+            }
+            */
+
+            var dx = new int[] { 1, 1, 0 };
+            var dy = new int[] { 0, 1, 1 };
+            var P0 = new int[54];
+            for (var x = 0; x < dim - 1; x++) {
+                for (var y = 0; y < dim - 1; y++) {
+                    for (var i = 0; i < 3; i++) {
+                        if (M[x, y] == M[x + dx[i], y + dy[i]]) {
+                            P0[M[x, y]]++;
+                        }
+                    }
+                }
+            }
+
+            var P1 = new int[16];
+            for (var x = 1; x < dim2 - 2; x++) {
+                for (var y = 1; y < dim2 - 2; y++) {
+                    for (var i = 0; i < 3; i++) {
+                        if (E[x, y] == E[x + dx[i], y + dy[i]]) {
+                            P1[E[x, y]]++;
+                        }
+                    }
+                }
+            }
+
+            histogram = new byte[54 + 16];
+            for (var i = 0; i < 54; i++) {
+                var log = Math.Log(P0[i]);
+                histogram[i] = log < 0.0 ? (byte)0 : (byte)log;
+            }
+
+            for (var i = 0; i < 16; i++) {
+                var log = Math.Log(P1[i]);
+                histogram[i + 54] = log < 0.0 ? (byte)0 : (byte)log;
+            }
 
             return true;
         }
 
-        public static short[] BufferToDescriptors(byte[] buffer)
+        public static float Distance(byte[] hx, byte[] hy)
         {
-            Contract.Requires(buffer != null);
-            var descriptors = new short[buffer.Length / sizeof(short)];
-            Buffer.BlockCopy(buffer, 0, descriptors, 0, buffer.Length);
-            return descriptors;
-        }
+            Contract.Requires(hx != null);
+            Contract.Requires(hy != null);
+            Contract.Requires(hx.Length > 0);
+            Contract.Requires(hy.Length > 0);
+            Contract.Requires(hx.Length == hy.Length);
 
-        public static byte[] DescriptorsToBuffer(short[] descriptors)
-        {
-            Contract.Requires(descriptors != null);
-            var buffer = new byte[descriptors.Length * sizeof(short)];
-            Buffer.BlockCopy(descriptors, 0, buffer, 0, buffer.Length);
-            return buffer;
+            var m = 0f;
+            var a = 0f;
+            var b = 0f;
+            for (var i = 0; i < hx.Length; i++) {
+                if (Math.Abs(hx[i]) > 0.0001) {
+                    m += hx[i] * hy[i];
+                    a += hx[i] * hx[i];
+                    b += hy[i] * hy[i];
+                }
+            }
+
+            var distance = (float)(Math.Acos(m / (Math.Sqrt(a) * Math.Sqrt(b))) / Math.PI);
+            return distance;
         }
     }
 }

@@ -48,7 +48,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeigth}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
-                    sb.Append($"{AppConsts.AttrColors}, ");
+                    sb.Append($"{AppConsts.AttrHistogram}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrLastAdded}, ");
                     sb.Append($"{AppConsts.AttrNextName}, ");
@@ -62,7 +62,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeigth}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
-                    sb.Append($"@{AppConsts.AttrColors}, ");
+                    sb.Append($"@{AppConsts.AttrHistogram}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrLastAdded}, ");
                     sb.Append($"@{AppConsts.AttrNextName}, ");
@@ -78,8 +78,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeigth}", img.Heigth);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
-                    var buffer = ImageHelper.DescriptorsToBuffer(img.GetDescriptors());
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColors}", buffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistogram}", img.GetHistogram());
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextName}", img.NextName);

@@ -1,1 +1,1 @@
-﻿UPDATE Images SET Family = ''
+﻿UPDATE Images SET Histogram = 0x

@@ -31,7 +31,7 @@
         public const string AttrWidth = "Width"; // int
         public const string AttrHeigth = "Heigth"; // int
         public const string AttrSize = "Size"; // int
-        public const string AttrColors = "Colors"; // 4 * 100 = 400 bytes
+        public const string AttrHistogram = "Histogram"; // 54 bytes
         public const string AttrNextName = "NextName"; // (string 10 length)
         public const string AttrLastCheck = "LastCheck"; // datetime
         public const string AttrFamily = "Family"; // (string 4 length)

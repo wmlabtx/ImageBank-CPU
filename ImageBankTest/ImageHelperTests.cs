@@ -18,7 +18,7 @@ namespace ImageBank.Tests
             }
         }
 
-        private short[] GetDescriptors(string filename)
+        private byte[] GetDescriptors(string filename)
         {
             var image = Image.FromFile(filename);
             if (!ImageHelper.ComputeDescriptors((Bitmap)image, out var descriptors)) {
@@ -37,19 +37,22 @@ namespace ImageBank.Tests
                 "org_resized.jpg",
                 "org_nologo.jpg", 
                 "org_r10.jpg", 
-                "org_r90.jpg", 
+                "org_r90.jpg",
+                "org_bwresized.jpg",
+                "org_compressed.jpg",
                 "org_sim1.jpg",
                 "org_sim2.jpg",
                 "org_crop.jpg",
                 "org_nosim1.jpg",
                 "org_nosim2.jpg",
-                "org_mirror.jpg"
+                "org_mirror.jpg",
+                "k1024.jpg"
             };
 
             var sb = new StringBuilder();
             foreach (var filename in files) {
                 var descriptors = GetDescriptors(filename);
-                var distance = ColorDescriptor.Distance(baseline, descriptors);
+                var distance = ImageHelper.Distance(baseline, descriptors);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }

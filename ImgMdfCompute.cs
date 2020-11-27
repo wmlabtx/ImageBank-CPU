@@ -32,8 +32,8 @@ namespace ImageBank
                     var scopewrong = _imgList
                         .Where(e => 
                             !_imgList.ContainsKey(e.Value.NextName) ||
-                            e.Value.GetDescriptors() == null ||
-                            e.Value.GetDescriptors().Length == 0)
+                            e.Value.GetHistogram() == null ||
+                            e.Value.GetHistogram().Length != 70)
                         .Select(e => e.Value)
                         .ToArray();
 
@@ -62,7 +62,7 @@ namespace ImageBank
                     return;
                 }
 
-                if (imgX.GetDescriptors() == null || imgX.GetDescriptors().Length == 0) {
+                if (imgX.GetHistogram() == null || imgX.GetHistogram().Length != 70) {
                     if (!ImageHelper.GetImageDataFromFile(
                         imgX.FileName,
                         out _,
@@ -76,19 +76,19 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var histogram)) {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
                     bitmap.Dispose();
-                    imgX.SetDescriptors(descriptors);
+                    imgX.SetHistogram(histogram);
                 }
 
                 candidates.Clear();
                 foreach (var img in _imgList) {
-                    if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
+                    if (img.Value.GetHistogram() == null || img.Value.GetHistogram().Length != 70) {
                         continue;
                     }
 
@@ -106,7 +106,7 @@ namespace ImageBank
 
                 if (candidates.Count == 0) {
                     foreach (var img in _imgList) {
-                        if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
+                        if (img.Value.GetHistogram() == null || img.Value.GetHistogram().Length != 70) {
                             continue;
                         }
 
@@ -121,17 +121,18 @@ namespace ImageBank
                 wc = candidates.Count;
             }
 
+            var nextname = imgX.NextName;
+            var distance = double.MaxValue;
+
             if (candidates.Count == 0) {
                 backgroundworker.ReportProgress(0, "no candidates");
                 return;
             }
 
-            var nextname = imgX.NextName;
-            var distance = double.MaxValue;
-            var xd = imgX.GetDescriptors();
+            var xd = imgX.GetHistogram();
             foreach (var candidate in candidates) {
-                var yd = candidate.GetDescriptors();
-                var imgdistance = ColorDescriptor.Distance(xd, yd);
+                var yd = candidate.GetHistogram();
+                var imgdistance = ImageHelper.Distance(xd, yd);
                 if (imgdistance < distance) {
                     nextname = candidate.Name;
                     distance = imgdistance;

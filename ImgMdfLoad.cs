@@ -28,7 +28,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrWidth}, "); // 4
             sb.Append($"{AppConsts.AttrHeigth}, "); // 5
             sb.Append($"{AppConsts.AttrSize}, "); // 6
-            sb.Append($"{AppConsts.AttrColors}, "); // 7
+            sb.Append($"{AppConsts.AttrHistogram}, "); // 7
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
             sb.Append($"{AppConsts.AttrLastAdded}, "); // 9
             sb.Append($"{AppConsts.AttrNextName}, "); // 10
@@ -49,8 +49,7 @@ namespace ImageBank
                             var width = reader.GetInt32(4);
                             var heigth = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
-                            var buffer = (byte[])reader[7];
-                            var descriptors = ImageHelper.BufferToDescriptors(buffer);
+                            var histogram = (byte[])reader[7];
                             var lastcheck = reader.GetDateTime(8);
                             var lastadded = reader.GetDateTime(9);
                             var nextname = reader.GetString(10);
@@ -62,7 +61,7 @@ namespace ImageBank
                                 width: width,
                                 heigth: heigth,
                                 size: size,
-                                descriptors: descriptors,
+                                histogram: histogram,
                                 folder: folder,
                                 lastview: lastview,
                                 lastcheck: lastcheck,

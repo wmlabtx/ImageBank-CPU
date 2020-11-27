@@ -7,6 +7,8 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        private Random _random = new Random();
+
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Contract.Requires(progress != null);
@@ -24,8 +26,6 @@ namespace ImageBank
                     if (string.IsNullOrEmpty(nameX)) {
                         var imglist = _imgList
                             .Where(e => _imgList.ContainsKey(e.Value.NextName))
-                            .Where(e => e.Value.GetDescriptors() != null && e.Value.GetDescriptors().Length > 0)
-                            .OrderBy(e => e.Value.LastView)
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -34,19 +34,15 @@ namespace ImageBank
                             return;
                         }
 
-                        var mf = imglist.Max(e => e.Folder);
-                        for (var f = mf; f >= 0; f--) {
-                            var scope = imglist
-                                .Where(e => e.Folder == f && DateTime.Now.Subtract(e.LastView).TotalDays > 30)
-                                .ToArray();
-                            if (scope.Length > 0) {
-                                nameX = scope
-                                    .OrderBy(e => e.Distance)
-                                    .FirstOrDefault()
-                                    .Name;
-                                break;
-                            }
-                        }
+                        var dtmin = imglist.Min(e => e.LastView.Date);
+                        imglist = imglist
+                            .Where(e => e.LastView.Date == dtmin)
+                            .OrderBy(e => e.LastView)
+                            .Take(100)
+                            .ToArray();
+
+                        var index = _random.Next(imglist.Length);
+                        nameX = imglist[index].Name;
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
@@ -96,9 +92,9 @@ namespace ImageBank
                     return;
                 }
 
-                var xcolors = imgX.GetDescriptors();
+                var xcolors = imgX.GetHistogram();
                 foreach (var img in _imgList) {
-                    if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
+                    if (img.Value.GetHistogram() == null || img.Value.GetHistogram().Length == 0) {
                         continue;
                     }
 
@@ -111,8 +107,8 @@ namespace ImageBank
                         continue;
                     }
 
-                    var ycolors = img.Value.GetDescriptors();
-                    var imgdistance = ColorDescriptor.Distance(xcolors, ycolors);
+                    var ycolors = img.Value.GetHistogram();
+                    var imgdistance = ImageHelper.Distance(xcolors, ycolors);
                     if (imgdistance < distance) {
                         nextname = img.Value.Name;
                         distance = imgdistance;

@@ -33,8 +33,8 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rdescriptors)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rhistogram)) {
+                        ((IProgress<string>)AppVars.Progress).Report($"Not enough histogram {img.Folder:D2}\\{name}");
                         return;
                     }
 
@@ -45,7 +45,7 @@ namespace ImageBank
                         width: bitmap.Width,
                         heigth: bitmap.Height,
                         size: rimagedata.Length,
-                        descriptors: rdescriptors,
+                        histogram: rhistogram,
                         folder: img.Folder,
                         lastview: img.LastView,
                         lastcheck: lastcheck,

@@ -138,7 +138,7 @@ namespace ImageBank
             EnableElements();
         }
 
-        private void ButtonRightNextMouseClick()
+        private static void ButtonRightNextMouseClick()
         {
         }
 
@@ -198,7 +198,7 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
+                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastAdded))} ago]");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
@@ -212,6 +212,14 @@ namespace ImageBank
                 }
 
                 pLabels[index].Background = scb;
+            }
+
+            if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
+                pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+            }
+
+            if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
+                pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
             }
 
             if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {

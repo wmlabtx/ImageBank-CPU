@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace ImageBank
 {
@@ -15,16 +14,15 @@ namespace ImageBank
 
         public int Size { get; }
 
-        private short[] _descriptors;
-        public short[] GetDescriptors()
+        private byte[] _histogram;
+        public byte[] GetHistogram()
         {
-            return _descriptors;
+            return _histogram;
         }
-        public void SetDescriptors(short[] descriptors)
+        public void SetHistogram(byte[] histogram)
         {
-            _descriptors = descriptors;
-            var buffer = ImageHelper.DescriptorsToBuffer(_descriptors);
-            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColors, buffer);
+            _histogram = histogram;
+            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistogram, _histogram);
         }
 
         private int _folder;
@@ -112,7 +110,7 @@ namespace ImageBank
             int width,
             int heigth,
             int size,
-            short[] descriptors,
+            byte[] histogram,
             int folder,
             DateTime lastview,
             DateTime lastcheck,
@@ -128,7 +126,7 @@ namespace ImageBank
             Heigth = heigth;
             Size = size;
 
-            _descriptors = descriptors;
+            _histogram = histogram;
             _folder = folder;
             _lastview = lastview;
             _lastcheck = lastcheck;
