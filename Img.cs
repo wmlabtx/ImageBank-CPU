@@ -6,23 +6,22 @@ namespace ImageBank
     {
         public string Name { get; }
 
-        public ulong Hash { get; }
-
         public int Width { get; }
 
         public int Heigth { get; }
 
         public int Size { get; }
 
-        private byte[] _histogram;
-        public byte[] GetHistogram()
+        private OrbDescriptor[] _descriptors;
+        public OrbDescriptor[] GetDescriptors()
         {
-            return _histogram;
+            return _descriptors;
         }
-        public void SetHistogram(byte[] histogram)
+        public void SetDescriptors(OrbDescriptor[] descriptors)
         {
-            _histogram = histogram;
-            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistogram, _histogram);
+            _descriptors = descriptors;
+            var array = ImageHelper.DescriptorsToArray(descriptors);
+            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDescriptors, array);
         }
 
         private int _folder;
@@ -49,16 +48,7 @@ namespace ImageBank
             }
         }
 
-        private DateTime _lastadded;
-        public DateTime LastAdded
-        {
-            get => _lastadded;
-            set
-            {
-                _lastadded = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastAdded, value);
-            }
-        }
+        public DateTime LastAdded { get; }
 
         private string _nextname;
         public string NextName
@@ -93,48 +83,59 @@ namespace ImageBank
             }
         }
 
-        private float _distance;
-        public float Distance
+        private float _sim;
+        public float Sim
         {
-            get => _distance;
+            get => _sim;
             set
             {
-                _distance = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDistance, value);
+                _sim = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSim, value);
+            }
+        }
+
+        private byte _counter;
+        public byte Counter
+        {
+            get => _counter;
+            set
+            {
+                _counter = value;
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
             }
         }
 
         public Img(
             string name,
-            ulong hash,
             int width,
             int heigth,
             int size,
-            byte[] histogram,
+            OrbDescriptor[] descriptors,
             int folder,
             DateTime lastview,
             DateTime lastcheck,
             DateTime lastadded,
             string nextname,
-            float distance,
-            string family
+            float sim,
+            string family,
+            byte counter
             )
         {
             Name = name;
-            Hash = hash;
             Width = width;
             Heigth = heigth;
             Size = size;
+            LastAdded = lastadded;
 
-            _histogram = histogram;
+            _descriptors = descriptors;
             _folder = folder;
             _lastview = lastview;
             _lastcheck = lastcheck;
-            _lastadded = lastadded;
             _nextname = nextname;
-            _distance = distance;
+            _sim = sim;
 
             _family = family;
+            _counter = counter;
         }
     }
 }

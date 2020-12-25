@@ -1,28 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
 
 namespace ImageBank
 {
     public static class ImageHelper
     {
-        public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
+        private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
-            Contract.Requires(data != null);
-
             try {
-                using (var ms = new MemoryStream(data)) {
-                    bitmap = (Bitmap)Image.FromStream(ms);
+                using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor))
+                {
+                    bitmap = mat.ToBitmap();
+                    return true;
                 }
-
-                return true;
             }
             catch (ArgumentException) {
                 bitmap = null;
@@ -30,22 +27,20 @@ namespace ImageBank
             }
         }
 
-        public static Bitmap RepixelBitmap(Bitmap bitmap)
+        private static Bitmap RepixelBitmap(Image bitmap)
         {
-            Contract.Requires(bitmap != null);
-            var bitmap24bppRgb = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var g = Graphics.FromImage(bitmap24bppRgb)) {
+            var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(bitmap24BppRgb)) {
                 g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }
 
-            return bitmap24bppRgb;
+            return bitmap24BppRgb;
         }
 
-        public static Bitmap ResizeBitmap(Bitmap bitmap, int width, int height)
+        private static Bitmap ResizeBitmap(Image bitmap, int width, int height)
         {
-            Contract.Requires(bitmap != null);
             var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            var destImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
             using (var graphics = Graphics.FromImage(destImage)) {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
                 graphics.CompositingQuality = CompositingQuality.HighQuality;
@@ -61,10 +56,9 @@ namespace ImageBank
             return destImage;
         }
 
-        public static MagicFormat GetMagicFormat(byte[] imagedata)
+        private static MagicFormat GetMagicFormat(IReadOnlyList<byte> imagedata)
         {
             // https://en.wikipedia.org/wiki/List_of_file_signatures
-            Contract.Requires(imagedata != null);
 
             if (imagedata[0] == 0xFF && imagedata[1] == 0xD8 && imagedata[2] == 0xFF) {
                 return MagicFormat.Jpeg;
@@ -96,16 +90,12 @@ namespace ImageBank
 
         public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
         {
-            Contract.Requires(bitmap != null);
-
             try {
-                using (var ms = new MemoryStream()) {
-                    bitmap.Save(ms, ImageFormat.Jpeg);
-                    imagedata = new byte[ms.Length];
-                    Buffer.BlockCopy(ms.GetBuffer(), 0, imagedata, 0, (int)ms.Length);
+                using (var mat = bitmap.ToMat()) {
+                    var iep = new ImageEncodingParam(ImwriteFlags.JpegQuality, 95);
+                    Cv2.ImEncode(AppConsts.JpgExtension, mat, out imagedata, iep);
+                    return true;
                 }
-
-                return true;
             }
             catch (ArgumentException) {
                 imagedata = null;
@@ -117,12 +107,10 @@ namespace ImageBank
             string filename,
             out byte[] imagedata,
             out Bitmap bitmap,
-            out ulong hash,
             out string message)
         {
             imagedata = null;
             bitmap = null;
-            hash = 0;
             message = null;
             if (!File.Exists(filename)) {
                 message = "missing file";
@@ -140,6 +128,7 @@ namespace ImageBank
                 !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.PngExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.BmpExtension, StringComparison.OrdinalIgnoreCase) &&
+                !extension.Equals(AppConsts.WebpExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.JpgExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.JpegExtension, StringComparison.OrdinalIgnoreCase)
                 ) {
@@ -197,186 +186,112 @@ namespace ImageBank
                 File.WriteAllBytes(filename, imagedata);
             }
 
-            hash = Helper.ComputeHash(imagedata);
             return true;
         }
 
-        public static bool ComputeDescriptors(Image image, out byte[] histogram)
+        public static bool ComputeDescriptors(Bitmap bitmap, out OrbDescriptor[] orbdescriptors)
         {
-            histogram = null;
-            Contract.Requires(image != null);
-            Contract.Requires(image.PixelFormat == PixelFormat.Format24bppRgb);
-
-            const int dim = 256;
-            byte[] brgs;
-            using (var bitmap = ResizeBitmap((Bitmap)image, dim, dim)) {
-                var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-                BitmapData bmpdata = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
-                IntPtr ptr = bmpdata.Scan0;
-                var bytes = bitmap.Width * bitmap.Height * 3;
-                brgs = new byte[bytes];
-                Marshal.Copy(ptr, brgs, 0, bytes);
-                bitmap.UnlockBits(bmpdata);
-            }
-
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-            var colorhistogram = new ColorDescriptor[dim, dim];
-            var M = new byte[dim, dim];
-            var dim2 = dim / 2;
-            var V = new double[dim2, dim2];
-            var S = new double[dim2, dim2];
-            var E = new byte[dim2, dim2];
-#pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
-
-            var offset = 0;
-            for (var y = 0; y < dim; y++) {
-                for (var x = 0; x < dim; x++) {
-                    var blue = brgs[offset++];
-                    var green = brgs[offset++];
-                    var red = brgs[offset++];
-                    colorhistogram[x, y] = new ColorDescriptor(red, green, blue);
-                    M[x, y] = colorhistogram[x, y].Index;
+            orbdescriptors = null;
+            using (var orb = ORB.Create(AppConsts.MaxDescriptorsInImage)) {
+                if (bitmap.Width >= bitmap.Height && bitmap.Height > AppConsts.MaxDim) {
+                    var k = bitmap.Height * 1.0 / AppConsts.MaxDim;
+                    var width = (int)(bitmap.Width / k);
+                    bitmap = ResizeBitmap(bitmap, width, AppConsts.MaxDim);
                 }
-            }
-
-            for (var y = 0; y < dim; y += 2) {
-                for (var x = 0; x < dim; x += 2) {
-                    V[x / 2, y / 2] = (
-                        colorhistogram[x, y].V +
-                        colorhistogram[x + 1, y].V +
-                        colorhistogram[x, y + 1].V +
-                        colorhistogram[x + 1, y + 1].V) / 4.0;
-                }
-            }
-
-            /*
-            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
-                for (var y = 0; y < dim2; y++) {
-                    for (var x = 0; x < dim2; x++) {
-                        var l = (int)(V[x, y] * 255.0);
-                        Debug.Assert(l <= 255);
-                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
+                else {
+                    if (bitmap.Width < bitmap.Height && bitmap.Width > AppConsts.MaxDim) {
+                        var k = bitmap.Width * 1.0 / AppConsts.MaxDim;
+                        var height = (int)(bitmap.Height / k);
+                        bitmap = ResizeBitmap(bitmap, AppConsts.MaxDim, height);
                     }
                 }
 
-                bm.Save("bm-v.png", ImageFormat.Png);
-            }
-            */
+                using (var matcolor = bitmap.ToMat()) {
+                    using (var mat = new Mat()) {
+                        Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
+                        using (var matdescriptors = new Mat()) {
+                            orb.DetectAndCompute(mat, null, out _, matdescriptors);
+                            if (matdescriptors.Rows == 0 || matdescriptors.Cols != 32) {
+                                return false;
+                            }
 
-            for (var y = 1; y < dim2 - 1; y++) {
-                for (var x = 1; x < dim2 - 1; x++) {
-                    var gx =
-                        -V[x - 1, y - 1] - 2.0 * V[x - 1, y] - V[x - 1, y + 1] +
-                         V[x + 1, y - 1] + 2.0 * V[x + 1, y] + V[x + 1, y + 1];
-
-                    var gy =
-                        -V[x - 1, y - 1] - 2.0 * V[x, y - 1] - V[x + 1, y - 1] +
-                         V[x + 1, y + 1] + 2.0 * V[x + 1, y + 1] + V[x + 1, y + 1];
-
-                    S[x, y] = Math.Sqrt((gx * gx) + (gy * gy));
-                    if (S[x, y] < 0.0) {
-                        S[x, y] = 0.0;
-                    }
-
-                    if (S[x, y] > 1.0) {
-                        S[x, y] = 1.0;
-                    }
-                }
-            }
-
-            /*
-            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
-                for (var y = 0; y < dim2; y++) {
-                    for (var x = 0; x < dim2; x++) {
-                        var l = (int)(S[x, y] * 255.0);
-                        Debug.Assert(l <= 255);
-                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
-                    }
-                }
-
-                bm.Save("bm-s.png", ImageFormat.Png);
-            }
-            */
-
-            for (var y = 1; y < dim2 - 1; y++) {
-                for (var x = 1; x < dim2 - 1; x++) {
-                    E[x, y] = (byte)(S[x, y] * 15.0);
-                }
-            }
-
-            /*
-            using (var bm = new Bitmap(dim2, dim2, PixelFormat.Format24bppRgb)) {
-                for (var y = 0; y < dim2; y++) {
-                    for (var x = 0; x < dim2; x++) {
-                        var l = (int)(E[x, y] * 16.0);
-                        Debug.Assert(l <= 255);
-                        bm.SetPixel(x, y, Color.FromArgb(l, l, l));
-                    }
-                }
-
-                bm.Save("bm-e.png", ImageFormat.Png);
-            }
-            */
-
-            var dx = new int[] { 1, 1, 0 };
-            var dy = new int[] { 0, 1, 1 };
-            var P0 = new int[54];
-            for (var x = 0; x < dim - 1; x++) {
-                for (var y = 0; y < dim - 1; y++) {
-                    for (var i = 0; i < 3; i++) {
-                        if (M[x, y] == M[x + dx[i], y + dy[i]]) {
-                            P0[M[x, y]]++;
+                            matdescriptors.GetArray(out byte[] array);
+                            orbdescriptors = ArrayToDescriptors(array);
                         }
                     }
                 }
             }
 
-            var P1 = new int[16];
-            for (var x = 1; x < dim2 - 2; x++) {
-                for (var y = 1; y < dim2 - 2; y++) {
-                    for (var i = 0; i < 3; i++) {
-                        if (E[x, y] == E[x + dx[i], y + dy[i]]) {
-                            P1[E[x, y]]++;
-                        }
-                    }
-                }
-            }
-
-            histogram = new byte[54 + 16];
-            for (var i = 0; i < 54; i++) {
-                var log = Math.Log(P0[i]);
-                histogram[i] = log < 0.0 ? (byte)0 : (byte)log;
-            }
-
-            for (var i = 0; i < 16; i++) {
-                var log = Math.Log(P1[i]);
-                histogram[i + 54] = log < 0.0 ? (byte)0 : (byte)log;
-            }
-
             return true;
         }
 
-        public static float Distance(byte[] hx, byte[] hy)
+        private static int GetSim(OrbDescriptor x, OrbDescriptor y)
         {
-            Contract.Requires(hx != null);
-            Contract.Requires(hy != null);
-            Contract.Requires(hx.Length > 0);
-            Contract.Requires(hy.Length > 0);
-            Contract.Requires(hx.Length == hy.Length);
+            if (Math.Abs(x.BitCount - y.BitCount) >= AppConsts.MaxSim) {
+                return 0;
+            }
 
-            var m = 0f;
-            var a = 0f;
-            var b = 0f;
-            for (var i = 0; i < hx.Length; i++) {
-                if (Math.Abs(hx[i]) > 0.0001) {
-                    m += hx[i] * hy[i];
-                    a += hx[i] * hx[i];
-                    b += hy[i] * hy[i];
+            var distance = 0;
+            for (var i = 0; i < 4; i++) {
+                distance += Intrinsic.PopCnt(x.Vector[i] ^ y.Vector[i]);
+                if (distance >= AppConsts.MaxSim) {
+                    return 0;
                 }
             }
 
-            var distance = (float)(Math.Acos(m / (Math.Sqrt(a) * Math.Sqrt(b))) / Math.PI);
-            return distance;
+            return AppConsts.MaxSim - distance;
+        }
+
+        public static float GetSim(OrbDescriptor[] x, OrbDescriptor[] y)
+        {
+            var list = new List<Tuple<int, int, int>>();
+            for (var i = 0; i < x.Length; i++) {
+                for (var j = 0; j < y.Length; j++) {
+                    var sim = GetSim(x[i], y[j]);
+                    if (sim > 0) {
+                        list.Add(new Tuple<int, int, int>(i, j, sim));
+                    }
+                }
+            }
+            
+            list = list.OrderByDescending(e => e.Item3).ToList();
+            var sum = 0;
+            while (list.Count > 0) {
+                var minx = list[0].Item1;
+                var miny = list[0].Item2;
+                var mins = list[0].Item3;
+                sum += mins;
+                list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
+            }
+
+            var result = sum * 1f / x.Length;
+            return result;
+        }
+
+        public static OrbDescriptor[] ArrayToDescriptors(byte[] array)
+        {
+            var maxdescriptors = Math.Min(AppConsts.MaxDescriptorsInImage, array.Length / 32);
+            var ld = new List<OrbDescriptor>();
+            for (var i = 0; i < maxdescriptors; i++) {
+                var orbdescriptor = new OrbDescriptor(array, i * 32);
+                ld.Add(orbdescriptor);
+            }
+
+            var orbdescriptors = ld
+                .OrderBy(e => e.BitCount)
+                .ToArray();
+
+            return orbdescriptors;
+        }
+
+        public static byte[] DescriptorsToArray(OrbDescriptor[] descriptors)
+        {
+            var array = new byte[descriptors.Length * 32];
+            for (var i = 0; i < descriptors.Length; i++) {
+                Buffer.BlockCopy(descriptors[i].Vector, 0, array, i*32, 32);
+            }
+
+            return array;
         }
     }
 }

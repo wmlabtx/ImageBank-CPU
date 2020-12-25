@@ -6,17 +6,17 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Confirm()
+        public void Confirm(int index)
         {
             lock (_imglock) {
                 AppVars.MoveMessage = string.Empty;
-                AppVars.ImgPanel[0].Img.LastView = DateTime.Now;
+                AppVars.ImgPanel[index].Img.LastView = DateTime.Now;
+                AppVars.ImgPanel[index].Img.Counter = 1;
             }
         }
 
         public void Pack()
         {
-            /*
             lock (_imglock) {
                 var c = new int[100];
                 foreach (var e in _imgList) {
@@ -25,22 +25,27 @@ namespace ImageBank
 
                 AppVars.MoveMessage = string.Empty;
                 var moved = 0;
-                for (var df = 0; df < 98; df++) {
-                    if (c[df] < AppConsts.MaxImagesInFolder && c[df + 1] > 0) {
-                        var maxlv = _imgList.Where(e => e.Value.Folder == df + 1).Max(e => e.Value.LastView);
-                        var img = _imgList.FirstOrDefault(e => e.Value.Folder == df + 1 && e.Value.LastView == maxlv).Value;
-                        c[df]++;
-                        c[df + 1]--;
+                for (var df = 1; df <= 99; df++) {
+                    if (c[df - 1] < AppConsts.MaxImagesInFolder && c[df] > 0)
+                    {
+                        var img = _imgList
+                            .Where(e => e.Value.Folder == df)
+                            .OrderBy(e => e.Value.LastAdded)
+                            .FirstOrDefault()
+                            .Value;
+                        
+                        c[df - 1]++;
+                        c[df]--;
                         moved++;
-                        AppVars.MoveMessage = $"{img.Folder} [{c[df + 1]}] -> {df} [{c[df]}] ({moved}) ";
+                        AppVars.MoveMessage = $"{df} [{c[df]}] -> {df - 1} [{c[df - 1]}] ({moved}) ";
                         var oldfile = img.FileName;
-                        img.Folder = df;
+                        img.Folder = df - 1;
                         File.Move(oldfile, img.FileName);
                     }
                 }
             }
-            */
             
+            /*
             lock (_imglock) {
                 var c = new int[100];
                 foreach (var e in _imgList) {
@@ -65,6 +70,7 @@ namespace ImageBank
                     }
                 }
             }
+            */
         }
     }
 }

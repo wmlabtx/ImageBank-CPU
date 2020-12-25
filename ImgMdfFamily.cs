@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 
@@ -9,7 +8,7 @@ namespace ImageBank
     {
         public int FamilySize(string family)
         {
-            if (family == null || family.Length == 0) {
+            if (string.IsNullOrEmpty(family)) {
                 return 0;
             }
 
@@ -19,13 +18,13 @@ namespace ImageBank
             }
         }
 
-        public void MoveFamily(string oldfamily, string newfamily)
+        private void MoveFamily(string oldfamily, string newfamily)
         {
-            if (oldfamily == null || oldfamily.Length == 0) {
+            if (string.IsNullOrEmpty(oldfamily)) {
                 return;
             }
 
-            if (newfamily == null || newfamily.Length == 0) {
+            if (string.IsNullOrEmpty(newfamily)) {
                 return;
             }
 
@@ -40,9 +39,6 @@ namespace ImageBank
 
         public void CombineFamilies(Img imgX, Img imgY)
         {
-            Contract.Requires(imgX != null);
-            Contract.Requires(imgY != null);
-
             if (!string.IsNullOrEmpty(imgX.Family) && imgX.Family.Equals(imgY.Family, StringComparison.OrdinalIgnoreCase)) {
                 imgY.Family = string.Empty;
                 return;
@@ -83,17 +79,12 @@ namespace ImageBank
 
         public void AssignFamily(Img imgX, string family)
         {
-            Contract.Requires(imgX != null);
             imgX.Family = family;
-            FastFindNext(imgX);
             AppVars.ImgPanel[1] = GetImgPanel(imgX.NextName);
         }
 
         public void CopyLeft(Img imgX, Img imgY)
         {
-            Contract.Requires(imgX != null);
-            Contract.Requires(imgY != null);
-
             var oldfile = imgX.FileName;
             imgX.Folder = imgY.Folder;
             File.Move(oldfile, imgX.FileName);

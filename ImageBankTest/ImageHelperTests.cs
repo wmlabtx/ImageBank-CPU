@@ -1,10 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
 using System.Text;
+using ImageBank;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ImageBank.Tests
+namespace ImageBankTest
 {
     [TestClass()]
     public class ImageHelperTests
@@ -16,9 +16,13 @@ namespace ImageBank.Tests
             if (!ImageHelper.ComputeDescriptors((Bitmap)image, out var descriptors)) {
                 Assert.Fail();
             }
+
+            var array = ImageHelper.DescriptorsToArray(descriptors);
+            var d2 = ImageHelper.ArrayToDescriptors(array);
+            Assert.AreEqual(descriptors[0].Vector[3], d2[0].Vector[3]);
         }
 
-        private byte[] GetDescriptors(string filename)
+        private OrbDescriptor[] GetDescriptors(string filename)
         {
             var image = Image.FromFile(filename);
             if (!ImageHelper.ComputeDescriptors((Bitmap)image, out var descriptors)) {
@@ -52,12 +56,12 @@ namespace ImageBank.Tests
             var sb = new StringBuilder();
             foreach (var filename in files) {
                 var descriptors = GetDescriptors(filename);
-                var distance = ImageHelper.Distance(baseline, descriptors);
+                var sim = ImageHelper.GetSim(baseline, descriptors);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: {distance:F4}");
+                sb.Append($"{filename}: {sim:F4}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

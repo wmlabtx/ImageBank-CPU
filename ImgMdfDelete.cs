@@ -11,7 +11,6 @@ namespace ImageBank
                 if (_imgList.TryGetValue(name, out var img)) {
                     Helper.DeleteToRecycleBin(img.FileName);
                     _imgList.Remove(name);
-                    _hashList.Remove(img.Hash);
                 }
             }
 
@@ -25,7 +24,6 @@ namespace ImageBank
                 var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                 foreach (var img in _imgList) {
                     if (img.Value.NextName.Equals(name, StringComparison.OrdinalIgnoreCase)) {
-                        img.Value.NextName = "0123456789";
                         img.Value.LastCheck = minlc;
                     }
                 }

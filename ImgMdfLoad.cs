@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data.SqlClient;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace ImageBank
@@ -9,8 +8,6 @@ namespace ImageBank
     {
         public void Load(IProgress<string> progress)
         {
-            Contract.Requires(progress != null);
-
             progress.Report("Loading model...");
 
             lock (_imglock) {
@@ -23,17 +20,17 @@ namespace ImageBank
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttrName}, "); // 0
             sb.Append($"{AppConsts.AttrFolder}, "); // 1
-            sb.Append($"{AppConsts.AttrHash}, "); // 2
-            sb.Append($"{AppConsts.AttrLastView}, "); // 3
-            sb.Append($"{AppConsts.AttrWidth}, "); // 4
-            sb.Append($"{AppConsts.AttrHeigth}, "); // 5
-            sb.Append($"{AppConsts.AttrSize}, "); // 6
-            sb.Append($"{AppConsts.AttrHistogram}, "); // 7
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
-            sb.Append($"{AppConsts.AttrLastAdded}, "); // 9
-            sb.Append($"{AppConsts.AttrNextName}, "); // 10
-            sb.Append($"{AppConsts.AttrDistance}, "); // 11
-            sb.Append($"{AppConsts.AttrFamily} "); // 12
+            sb.Append($"{AppConsts.AttrLastView}, "); // 2
+            sb.Append($"{AppConsts.AttrWidth}, "); // 3
+            sb.Append($"{AppConsts.AttrHeigth}, "); // 4
+            sb.Append($"{AppConsts.AttrSize}, "); // 5
+            sb.Append($"{AppConsts.AttrDescriptors}, "); // 6
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 7
+            sb.Append($"{AppConsts.AttrLastAdded}, "); // 8
+            sb.Append($"{AppConsts.AttrNextName}, "); // 9
+            sb.Append($"{AppConsts.AttrSim}, "); // 10
+            sb.Append($"{AppConsts.AttrFamily}, "); // 11
+            sb.Append($"{AppConsts.AttrCounter} "); // 12
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -43,32 +40,32 @@ namespace ImageBank
                         while (reader.Read()) {
                             var name = reader.GetString(0);
                             var folder = reader.GetInt32(1);
-                            var bhash = (byte[])reader[2];
-                            var hash = BitConverter.ToUInt64(bhash, 0);
-                            var lastview = reader.GetDateTime(3);
-                            var width = reader.GetInt32(4);
-                            var heigth = reader.GetInt32(5);
-                            var size = reader.GetInt32(6);
-                            var histogram = (byte[])reader[7];
-                            var lastcheck = reader.GetDateTime(8);
-                            var lastadded = reader.GetDateTime(9);
-                            var nextname = reader.GetString(10);
-                            var distance = reader.GetFloat(11);
-                            var family = reader.GetString(12);
+                            var lastview = reader.GetDateTime(2);
+                            var width = reader.GetInt32(3);
+                            var heigth = reader.GetInt32(4);
+                            var size = reader.GetInt32(5);
+                            var array = (byte[])reader[6];
+                            var descriptors = ImageHelper.ArrayToDescriptors(array);
+                            var lastcheck = reader.GetDateTime(7);
+                            var lastadded = reader.GetDateTime(8);
+                            var nextname = reader.GetString(9);
+                            var sim = reader.GetFloat(10);
+                            var family = reader.GetString(11);
+                            var counter = reader.GetByte(12);
                             var img = new Img(
                                 name: name,
-                                hash: hash,
                                 width: width,
                                 heigth: heigth,
                                 size: size,
-                                histogram: histogram,
+                                descriptors: descriptors,
                                 folder: folder,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
                                 lastadded: lastadded,
                                 nextname: nextname,
-                                distance: distance,
-                                family: family
+                                sim: sim,
+                                family: family,
+                                counter: counter
                                );
 
                             AddToMemory(img);

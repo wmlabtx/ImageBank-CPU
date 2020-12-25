@@ -13,7 +13,6 @@ namespace ImageBank
 
         private object _imglock = new object();
         private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
-        private readonly SortedDictionary<ulong, string> _hashList = new SortedDictionary<ulong, string>();
 
         public ImgMdf()
         {

@@ -131,7 +131,7 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Confirm(); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.Confirm(0); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
@@ -191,6 +191,10 @@ namespace ImageBank
                     sb.Append($" [{AppVars.ImgPanel[index].Img.Family}:{sizes[index]}]");
                 }
 
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                    sb.Append(" [*]");
+                }
+
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Length)} ");
@@ -215,11 +219,11 @@ namespace ImageBank
             }
 
             if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
-                pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 255));
             }
 
             if (AppVars.ImgPanel[0].Img.Size > AppVars.ImgPanel[1].Img.Size) {
-                pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 255));
             }
 
             if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -12,10 +13,7 @@ namespace ImageBank
                     if (!ImageHelper.GetImageDataFromFile(
                         img.FileName,
                         out _,
-#pragma warning disable CA2000 // Dispose objects before losing scope
-                        out Bitmap bitmap,
-#pragma warning restore CA2000 // Dispose objects before losing scope
-                        out _,
+                        out var bitmap,
                         out _)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {img.Folder:D2}\\{name}");
                         return;
@@ -27,32 +25,26 @@ namespace ImageBank
                         return;
                     }
 
-                    var rhash = Helper.ComputeHash(rimagedata);
-                    if (_hashList.ContainsKey(rhash)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Rotated image found: {img.Folder:D2}\\{name}");
-                        return;
-                    }
-
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rhistogram)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rdescriptors)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough histogram {img.Folder:D2}\\{name}");
                         return;
                     }
 
-                    var lastcheck = DateTime.Now.AddYears(-10);
+                    var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                     var rimg = new Img(
                         name: img.Name,
-                        hash: rhash,
                         width: bitmap.Width,
                         heigth: bitmap.Height,
                         size: rimagedata.Length,
-                        histogram: rhistogram,
+                        descriptors: rdescriptors,
                         folder: img.Folder,
                         lastview: img.LastView,
-                        lastcheck: lastcheck,
+                        lastcheck: minlc,
                         lastadded: img.LastAdded,
-                        nextname: "0123456789",
-                        distance: 0f,
-                        family: img.Family
+                        nextname: img.NextName,
+                        sim: 0f,
+                        family: img.Family,
+                        counter: img.Counter
                         );
 
                     bitmap.Dispose();

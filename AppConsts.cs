@@ -9,6 +9,9 @@
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
         public const int MaxImages = 200000;
         public const int MaxImagesInFolder = 2000;
+        public const int MaxDescriptorsInImage = 32;
+        public const int MaxDim = 512;
+        public const int MaxSim = 64;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -21,20 +24,19 @@
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
 
-        public const string TableVars = "Vars";
         public const string TableImages = "Images";
-        public const string AttrName = "Name"; // (string 10 length)
+        public const string AttrName = "Name"; // string 10 length
         public const string AttrFolder = "Folder"; // 0..99
-        public const string AttrHash = "Hash"; // (8 bytes)
         public const string AttrLastView = "LastView"; // datetime
         public const string AttrLastAdded = "LastAdded"; // datetime
         public const string AttrWidth = "Width"; // int
         public const string AttrHeigth = "Heigth"; // int
         public const string AttrSize = "Size"; // int
-        public const string AttrHistogram = "Histogram"; // 54 bytes
-        public const string AttrNextName = "NextName"; // (string 10 length)
+        public const string AttrDescriptors = "Descriptors"; // 32 * 32 = 1024 bytes
+        public const string AttrNextName = "NextName"; // string 10 length
         public const string AttrLastCheck = "LastCheck"; // datetime
-        public const string AttrFamily = "Family"; // (string 4 length)
-        public const string AttrDistance = "Distance"; // (float 4 bytes)
+        public const string AttrFamily = "Family"; // string 4 length
+        public const string AttrSim = "Sim"; // float 4 bytes
+        public const string AttrCounter = "Counter"; // byte
     }
 }
