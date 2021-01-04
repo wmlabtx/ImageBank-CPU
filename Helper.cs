@@ -17,8 +17,6 @@ namespace ImageBank
 {
     public static class Helper
     {
-        private static readonly RNGCryptoServiceProvider _random = new RNGCryptoServiceProvider();
-
         #region DeleteToRecycleBin
 
         public static void DeleteToRecycleBin(string filename)
@@ -37,74 +35,18 @@ namespace ImageBank
 
         #endregion
 
-        #region Random
-
-        /// <returns>xxx-xx-xxx</returns>
-        public static string RandomName()
-        {
-            var d0 = "bcdfghjklmnpqrstvwxyz".ToCharArray();
-            var d1 = "aeiou".ToCharArray();
-            var d2 = "0123456789".ToCharArray();
-            var sb = new StringBuilder("xxx-xx-xxx");
-            var br = new byte[32];
-            _random.GetBytes(br);
-            var bv = new byte[1];
-            _random.GetBytes(bv);
-            if ((bv[0] & 1) == 0) {
-                sb[0] = d0[BitConverter.ToUInt32(br, 0) % d0.Length];
-                sb[1] = d1[BitConverter.ToUInt32(br, 4) % d1.Length];
-                sb[2] = d0[BitConverter.ToUInt32(br, 8) % d0.Length];
-            }
-            else {
-                sb[0] = d1[BitConverter.ToUInt32(br, 0) % d1.Length];
-                sb[1] = d0[BitConverter.ToUInt32(br, 4) % d0.Length];
-                sb[2] = d1[BitConverter.ToUInt32(br, 8) % d1.Length];
-            }
-
-            sb[3] = '-';
-            sb[4] = d2[BitConverter.ToUInt32(br, 12) % d2.Length];
-            sb[5] = d2[BitConverter.ToUInt32(br, 16) % d2.Length];
-            sb[6] = '-';
-
-            if ((bv[0] & 2) == 0) {
-                sb[7] = d1[BitConverter.ToUInt32(br, 20) % d1.Length];
-                sb[8] = d0[BitConverter.ToUInt32(br, 24) % d0.Length];
-                sb[9] = d1[BitConverter.ToUInt32(br, 28) % d1.Length];
-            }
-            else {
-                sb[7] = d0[BitConverter.ToUInt32(br, 20) % d0.Length];
-                sb[8] = d1[BitConverter.ToUInt32(br, 24) % d1.Length];
-                sb[9] = d0[BitConverter.ToUInt32(br, 28) % d0.Length];
-            }
-
-            return sb.ToString();
-        }
-
-        public static string RandomFamily()
-        {
-            var d0 = "bcdfghjklmnpqrstvwxyz".ToCharArray();
-            var d1 = "aeiou".ToCharArray();
-            var sb = new StringBuilder("01234");
-            var br = new byte[20];
-            _random.GetBytes(br);
-            sb[0] = d0[BitConverter.ToUInt32(br, 0) % d0.Length];
-            sb[1] = d1[BitConverter.ToUInt32(br, 4) % d1.Length];
-            sb[2] = d0[BitConverter.ToUInt32(br, 8) % d0.Length];
-            sb[3] = d1[BitConverter.ToUInt32(br, 12) % d1.Length];
-            sb[4] = d0[BitConverter.ToUInt32(br, 16) % d0.Length];
-            return sb.ToString();
-        }
-
-        #endregion
-
         #region Hash
 
-        public static ulong ComputeHash(byte[] array)
+        public static string ComputeHash(byte[] array)
         {
-            using (var sha256 = SHA256.Create()) {
-                var hash256 = sha256.ComputeHash(array);
-                var hash64 = BitConverter.ToUInt64(hash256, 0);
-                return hash64;
+            using (var md5 = MD5.Create()) {
+                var hashmd5 = md5.ComputeHash(array);
+                var sb = new StringBuilder();
+                for (var i = 0; i < 16; i++) {
+                    sb.Append(hashmd5[i].ToString("x2"));
+                }
+
+                return sb.ToString();
             }
         }
 

@@ -45,14 +45,8 @@ namespace ImageBank
             }
 
             if (string.IsNullOrEmpty(imgX.Family) && string.IsNullOrEmpty(imgY.Family)) {
-                string family;
-                do {
-                    family = Helper.RandomFamily();
-                }
-                while (FamilySize(family) > 0);
-
-                imgX.Family = family;
-                imgY.Family = family;
+                imgX.Family = "";
+                imgY.Family = "";
                 return;
             }
 

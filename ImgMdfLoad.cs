@@ -30,7 +30,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrNextName}, "); // 9
             sb.Append($"{AppConsts.AttrSim}, "); // 10
             sb.Append($"{AppConsts.AttrFamily}, "); // 11
-            sb.Append($"{AppConsts.AttrCounter} "); // 12
+            sb.Append($"{AppConsts.AttrCounter}, "); // 12
+            sb.Append($"{AppConsts.AttrHash} "); // 13
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -52,8 +53,10 @@ namespace ImageBank
                             var sim = reader.GetFloat(10);
                             var family = reader.GetString(11);
                             var counter = reader.GetByte(12);
+                            var hash = reader.GetString(13);
                             var img = new Img(
                                 name: name,
+                                hash: hash,
                                 width: width,
                                 heigth: heigth,
                                 size: size,

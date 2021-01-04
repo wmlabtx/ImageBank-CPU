@@ -253,18 +253,25 @@ namespace ImageBank
                     }
                 }
             }
+
+            if (list.Count == 0) {
+                return 0f;
+            }
             
             list = list.OrderByDescending(e => e.Item3).ToList();
             var sum = 0;
-            while (list.Count > 0) {
+            var counter = 0;
+            var topcount = Math.Max(1, Math.Min(x.Length, y.Length) / 2);
+            while (list.Count > 0 && counter < topcount) {
                 var minx = list[0].Item1;
                 var miny = list[0].Item2;
                 var mins = list[0].Item3;
                 sum += mins;
+                counter++;
                 list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
             }
 
-            var result = sum * 1f / x.Length;
+            var result = sum * 1f / topcount;
             return result;
         }
 

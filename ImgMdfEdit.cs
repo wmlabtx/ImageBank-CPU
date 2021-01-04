@@ -30,29 +30,35 @@ namespace ImageBank
                         return;
                     }
 
-                    var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
-                    var rimg = new Img(
-                        name: img.Name,
-                        width: bitmap.Width,
-                        heigth: bitmap.Height,
-                        size: rimagedata.Length,
-                        descriptors: rdescriptors,
-                        folder: img.Folder,
-                        lastview: img.LastView,
-                        lastcheck: minlc,
-                        lastadded: img.LastAdded,
-                        nextname: img.NextName,
-                        sim: 0f,
-                        family: img.Family,
-                        counter: img.Counter
+                    var rhash = Helper.ComputeHash(rimagedata);
+                    if (_hashList.ContainsKey(rhash)) {
+                        Delete(img.Name);
+                    }
+                    else {
+                        var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                        var rimg = new Img(
+                            name: img.Name,
+                            hash: rhash,
+                            width: bitmap.Width,
+                            heigth: bitmap.Height,
+                            size: rimagedata.Length,
+                            descriptors: rdescriptors,
+                            folder: img.Folder,
+                            lastview: img.LastView,
+                            lastcheck: minlc,
+                            lastadded: img.LastAdded,
+                            nextname: img.NextName,
+                            sim: 0f,
+                            family: img.Family,
+                            counter: img.Counter
                         );
 
+                        Delete(img.Name);
+                        Add(rimg);
+                        Helper.WriteData(rimg.FileName, rimagedata);
+                    }
+
                     bitmap.Dispose();
-
-                    Delete(img.Name);
-                    Add(rimg);
-
-                    Helper.WriteData(rimg.FileName, rimagedata);
                 }
             }
         }

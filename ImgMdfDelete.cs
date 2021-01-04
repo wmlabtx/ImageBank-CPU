@@ -11,6 +11,9 @@ namespace ImageBank
                 if (_imgList.TryGetValue(name, out var img)) {
                     Helper.DeleteToRecycleBin(img.FileName);
                     _imgList.Remove(name);
+                    if (_hashList.ContainsKey(img.Hash)) {
+                        _hashList.Remove(img.Hash);
+                    }
                 }
             }
 

@@ -12,6 +12,8 @@ namespace ImageBank
 
         public int Size { get; }
 
+        public string Hash { get; }
+
         private OrbDescriptor[] _descriptors;
         public OrbDescriptor[] GetDescriptors()
         {
@@ -107,6 +109,7 @@ namespace ImageBank
 
         public Img(
             string name,
+            string hash,
             int width,
             int heigth,
             int size,
@@ -122,6 +125,7 @@ namespace ImageBank
             )
         {
             Name = name;
+            Hash = hash;
             Width = width;
             Heigth = heigth;
             Size = size;

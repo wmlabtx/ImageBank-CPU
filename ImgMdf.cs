@@ -8,11 +8,14 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private static object _sqllock = new object();
         private static SqlConnection _sqlConnection;
 
+        // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private object _imglock = new object();
         private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
+        private readonly SortedDictionary<string, string> _hashList = new SortedDictionary<string, string>();
 
         public ImgMdf()
         {

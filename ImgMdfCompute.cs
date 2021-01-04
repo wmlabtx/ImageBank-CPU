@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -31,6 +30,7 @@ namespace ImageBank
                             !_imgList.ContainsKey(e.Value.NextName) ||
                             e.Value.GetDescriptors() == null ||
                             e.Value.GetDescriptors().Length == 0 ||
+                            /*!e.Value.Name.StartsWith("mzx-") ||*/
                             e.Value.Name.Equals(e.Value.NextName))
                         .Value;
 
@@ -44,8 +44,6 @@ namespace ImageBank
                     else {
                         nameX = imgX.Name;
                     }
-
-
                 }
 
                 if (!_imgList.TryGetValue(nameX, out imgX)) {
@@ -59,25 +57,72 @@ namespace ImageBank
                     return;
                 }
 
-                if (imgX.GetDescriptors() == null || imgX.GetDescriptors().Length == 0) {
+                if (
+                    !imgX.Name.StartsWith("mzx-") || 
+                    string.IsNullOrEmpty(imgX.Hash) || 
+                    imgX.GetDescriptors() == null || 
+                    imgX.GetDescriptors().Length == 0) {
                     if (!ImageHelper.GetImageDataFromFile(
                         imgX.FileName,
-                        out _,
-                        out Bitmap bitmap,
+                        out var imagedata,
+                        out var bitmap,
                         out _)) {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var decriptors)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
+                    var lastmodified = File.GetLastWriteTime(imgX.FileName);
+                    if (lastmodified > DateTime.Now) {
+                        lastmodified = DateTime.Now;
+                    }
+
+                    Delete(nameX);
+
+                    var hash = Helper.ComputeHash(imagedata);
+                    nameX = $"mzx-{hash.Substring(0, 6)}";
+                    var imgfilename = Helper.GetFileName(nameX, imgX.Folder);
+                    Helper.WriteData(imgfilename, imagedata);
+                    File.SetLastWriteTime(imgfilename, lastmodified);
+                    var cloneX = new Img(
+                        name: nameX,
+                        hash: hash,
+                        width: bitmap.Width,
+                        heigth: bitmap.Height,
+                        size: imagedata.Length,
+                        descriptors: descriptors,
+                        folder: imgX.Folder,
+                        lastview: imgX.LastView,
+                        lastcheck: imgX.LastCheck,
+                        lastadded: imgX.LastAdded,
+                        nextname: imgX.NextName,
+                        sim: imgX.Sim,
+                        family: string.Empty,
+                        counter: imgX.Counter);
+
                     bitmap.Dispose();
-                    imgX.SetDescriptors(decriptors);
+                    if (_hashList.ContainsKey(hash)) {
+                        var nameF = _hashList[hash];
+                        var imgF = _imgList[nameF];
+                        if (cloneX.LastAdded > imgF.LastAdded) {
+                            Delete(nameF);
+                            Add(cloneX);
+                            imgX = cloneX;
+                        }
+                        else {
+                            imgX = imgF;
+                        }
+                    }
+                    else {
+                        Add(cloneX);
+                        imgX = cloneX;
+                    }
                 }
 
                 candidates.Clear();

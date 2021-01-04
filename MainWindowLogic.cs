@@ -132,7 +132,7 @@ namespace ImageBank
         {            
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Confirm(0); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
+            //await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -277,7 +277,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { AppVars.Collection.Delete(AppVars.ImgPanel[index].Img.Name); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
+            //await Task.Run(() => { AppVars.Collection.Pack(); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();

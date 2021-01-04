@@ -41,6 +41,7 @@ namespace ImageBank
                     var sb = new StringBuilder();
                     sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                     sb.Append($"{AppConsts.AttrName}, ");
+                    sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrFolder}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrWidth}, ");
@@ -55,6 +56,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrCounter}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrName}, ");
+                    sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrFolder}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrWidth}, ");
@@ -70,6 +72,7 @@ namespace ImageBank
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFolder}", img.Folder);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);

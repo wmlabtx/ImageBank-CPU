@@ -82,50 +82,72 @@ namespace ImageBank
                     continue;
                 }
 
-                var folder = 0;
+                var hash = Helper.ComputeHash(imagedata);
+                name = $"mzx-{hash.Substring(0, 6)}";
                 lock (_imglock) {
-                    do {
-                        name = Helper.RandomName();
-                    } while (_imgList.ContainsKey(name));
-
+                    var folder = 0;
                     if (_imgList.Count > 0) {
                         folder = _imgList.Max(e => e.Value.Folder);
                         var nfolder = _imgList.Count(e => e.Value.Folder == folder);
                         if (nfolder >= AppConsts.MaxImagesInFolder) {
                             folder++;
                         }
-                    } 
-                }
+                    }
 
-                var imgfilename = Helper.GetFileName(name, folder);
-                var lastmodified = File.GetLastWriteTime(filename);
-                if (lastmodified > DateTime.Now) {
-                    lastmodified = DateTime.Now;
-                }
+                    var imgfilename = Helper.GetFileName(name, folder);
+                    var lastmodified = File.GetLastWriteTime(filename);
+                    if (lastmodified > DateTime.Now) {
+                        lastmodified = DateTime.Now;
+                    }
 
-                Helper.WriteData(imgfilename, imagedata);
-                File.SetLastWriteTime(imgfilename, lastmodified);
-                Helper.DeleteToRecycleBin(filename);
+                    Helper.WriteData(imgfilename, imagedata);
+                    File.SetLastWriteTime(imgfilename, lastmodified);
+                    Helper.DeleteToRecycleBin(filename);
+                    var lastadded = DateTime.Now;
+                    if (_hashList.ContainsKey(hash))
+                    {
+                        var namefound = _hashList[hash];
+                        var imgfound = _imgList[namefound];
+                        Delete(namefound);
+                        var img = new Img(
+                            name: name,
+                            hash: hash,
+                            width: bitmap.Width,
+                            heigth: bitmap.Height,
+                            size: imagedata.Length,
+                            descriptors: descriptors,
+                            folder: folder,
+                            lastview: imgfound.LastView,
+                            lastcheck: imgfound.LastCheck,
+                            lastadded: lastadded,
+                            nextname: imgfound.NextName,
+                            sim: imgfound.Sim,
+                            family: family,
+                            counter: imgfound.Counter);
 
-                lock (_imglock) {
-                    var lastview = GetMinLastView();
-                    var lastcheck = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
-                    var img = new Img(
-                        name: name,
-                        width: bitmap.Width,
-                        heigth: bitmap.Height,
-                        size: imagedata.Length,
-                        descriptors: descriptors,
-                        folder: folder,
-                        lastview: lastview,
-                        lastcheck: lastcheck,
-                        lastadded: DateTime.Now,
-                        nextname: name,
-                        sim: 0f,
-                        family: family,
-                        counter: 0);
+                        Add(img);
+                    }
+                    else {
+                        var lastview = GetMinLastView();
+                        var lastcheck = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                        var img = new Img(
+                            name: name,
+                            hash: hash,
+                            width: bitmap.Width,
+                            heigth: bitmap.Height,
+                            size: imagedata.Length,
+                            descriptors: descriptors,
+                            folder: folder,
+                            lastview: lastview,
+                            lastcheck: lastcheck,
+                            lastadded: lastadded,
+                            nextname: name,
+                            sim: 0f,
+                            family: family,
+                            counter: 0);
 
-                    Add(img);
+                        Add(img);
+                    }
                 }
 
                 bitmap.Dispose();
@@ -139,8 +161,8 @@ namespace ImageBank
                 added++;
             }
 
-            //((IProgress<string>)AppVars.Progress).Report($"clean-up...");
-            //Helper.CleanupDirectories(path, AppVars.Progress);
+            ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
+            Helper.CleanupDirectories(path, AppVars.Progress);
 
             AppVars.SuspendEvent.Set();
         }
