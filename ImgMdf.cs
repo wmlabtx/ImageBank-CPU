@@ -14,8 +14,8 @@ namespace ImageBank
 
         // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private object _imglock = new object();
-        private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
-        private readonly SortedDictionary<string, string> _hashList = new SortedDictionary<string, string>();
+        private readonly SortedList<string, Img> _imgList = new SortedList<string, Img>();
+        private readonly SortedList<string, string> _hashList = new SortedList<string, string>();
 
         public ImgMdf()
         {

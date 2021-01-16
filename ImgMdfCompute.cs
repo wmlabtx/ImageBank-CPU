@@ -14,72 +14,79 @@ namespace ImageBank
         {
             AppVars.SuspendEvent.WaitOne(Timeout.Infinite);
 
-            int wc;
+            var wrongcount = 0;
             Img imgX;
             var candidates = new List<Img>();
-            lock (_imglock) {
-                if (_imgList.Count < 2) {
+            lock (_imglock)
+            {
+                if (_imgList.Count < 2)
+                {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
 
                 string nameX = null;
-                while (string.IsNullOrEmpty(nameX)) {
-                    imgX = _imgList
-                        .FirstOrDefault(e =>
+                while (string.IsNullOrEmpty(nameX))
+                {
+                    var scopewrong = _imgList
+                        .Where(e =>
                             !_imgList.ContainsKey(e.Value.NextName) ||
                             e.Value.GetDescriptors() == null ||
                             e.Value.GetDescriptors().Length == 0 ||
-                            /*!e.Value.Name.StartsWith("mzx-") ||*/
                             e.Value.Name.Equals(e.Value.NextName))
-                        .Value;
-
-                    if (imgX == null) {
+                        .ToArray();
+                    wrongcount = scopewrong.Length;
+                    if (wrongcount > 0) {
+                        nameX = scopewrong.First().Value.Name;
+                    }
+                    else {
                         nameX = _imgList
                             .OrderBy(e => e.Value.LastCheck)
                             .FirstOrDefault()
                             .Value
                             ?.Name;
                     }
-                    else {
-                        nameX = imgX.Name;
-                    }
                 }
 
-                if (!_imgList.TryGetValue(nameX, out imgX)) {
+                if (!_imgList.TryGetValue(nameX, out imgX))
+                {
                     backgroundworker.ReportProgress(0, $"error getting {nameX}");
                     return;
                 }
 
-                if (!File.Exists(imgX.FileName)) {
+                if (!File.Exists(imgX.FileName))
+                {
                     Delete(nameX);
                     backgroundworker.ReportProgress(0, $"{nameX} deleted");
                     return;
                 }
 
                 if (
-                    !imgX.Name.StartsWith("mzx-") || 
-                    string.IsNullOrEmpty(imgX.Hash) || 
-                    imgX.GetDescriptors() == null || 
-                    imgX.GetDescriptors().Length == 0) {
+                    string.IsNullOrEmpty(imgX.Hash) ||
+                    imgX.GetDescriptors() == null ||
+                    imgX.GetDescriptors().Length == 0)
+                {
                     if (!ImageHelper.GetImageDataFromFile(
                         imgX.FileName,
                         out var imagedata,
                         out var bitmap,
-                        out _)) {
+                        out _))
+                    {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors))
+                    {
                         Delete(nameX);
                         backgroundworker.ReportProgress(0, $"{nameX} deleted");
                         return;
                     }
 
                     var lastmodified = File.GetLastWriteTime(imgX.FileName);
-                    if (lastmodified > DateTime.Now) {
+                    if (lastmodified > DateTime.Now)
+                    {
                         lastmodified = DateTime.Now;
                     }
 
@@ -107,7 +114,8 @@ namespace ImageBank
                         counter: imgX.Counter);
 
                     bitmap.Dispose();
-                    if (_hashList.ContainsKey(hash)) {
+                    if (_hashList.ContainsKey(hash))
+                    {
                         var nameF = _hashList[hash];
                         var imgF = _imgList[nameF];
                         if (cloneX.LastAdded > imgF.LastAdded) {
@@ -125,62 +133,46 @@ namespace ImageBank
                     }
                 }
 
-                candidates.Clear();
-                foreach (var img in _imgList) {
-                    if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
+                foreach (var e in _imgList) {
+                    if (e.Value.GetDescriptors() == null && e.Value.GetDescriptors().Length == 0) {
                         continue;
                     }
 
-                    if (imgX.Name.Equals(img.Value.Name, StringComparison.OrdinalIgnoreCase)) {
+                    if (imgX.Name.Equals(e.Value.Name)) {
                         continue;
                     }
 
-                    if (!string.IsNullOrEmpty(imgX.Family) && 
-                        !imgX.Family.Equals(img.Value.Family, StringComparison.OrdinalIgnoreCase)) {
-                        continue;
-                    }
-
-                    candidates.Add(img.Value);
+                    e.Value.SimFast = 0f;
+                    candidates.Add(e.Value);
                 }
-
-                if (candidates.Count == 0) {
-                    foreach (var img in _imgList) {
-                        if (img.Value.GetDescriptors() == null || img.Value.GetDescriptors().Length == 0) {
-                            continue;
-                        }
-
-                        if (imgX.Name.Equals(img.Value.Name, StringComparison.OrdinalIgnoreCase)) {
-                            continue;
-                        }
-
-                        candidates.Add(img.Value);
-                    }
-                }
-
-                wc = candidates.Count;
             }
 
-            var nextname = imgX.NextName;
-            var sim = 0f;
-
-            if (candidates.Count == 0) {
-                backgroundworker.ReportProgress(0, "no candidates");
-                return;
-            }
-
-            var xd = imgX.GetDescriptors();
             foreach (var candidate in candidates) {
-                var imgsim = ImageHelper.GetSim(xd, candidate.GetDescriptors());
-                if (imgsim > sim) {
-                    nextname = candidate.Name;
-                    sim = imgsim;
+                candidate.SimFast = ImageHelper.GetSimFast(imgX.GetDescriptors(), candidate.GetDescriptors());
+            }
+
+            candidates = candidates
+                .ToList()
+                .OrderByDescending(e => e.SimFast)
+                .Take(10000)
+                .ToList();
+
+            var sim = 0f;
+            var nextname = imgX.Name;
+            lock (_imglock) {
+                foreach (var candidate in candidates) {
+                    var fsim = ImageHelper.GetSim(imgX.GetDescriptors(), candidate.GetDescriptors());
+                    if (fsim > sim) {
+                        nextname = candidate.Name;
+                        sim = fsim;
+                    }
                 }
             }
 
             var sb = new StringBuilder();
             if (Math.Abs(sim - imgX.Sim) >= 0.0001) {
-                if (wc > 0) {
-                    sb.Append($"{wc}: ");
+                if (wrongcount > 0) {
+                    sb.Append($"{wrongcount}: ");
                 }
 
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
@@ -188,16 +180,19 @@ namespace ImageBank
                 sb.Append($"{imgX.Sim:F4} ");
                 sb.Append($"{char.ConvertFromUtf32(sim > imgX.Sim ? 0x2192 : 0x2193)} ");
                 sb.Append($"{sim:F4} ");
-                imgX.Sim = sim;
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
                     imgX.NextName = nextname;
-                    imgX.Counter = 0;
+                    if (sim > imgX.Sim) {
+                        imgX.Counter = 0;
+                    }
                 }
+
+                imgX.Sim = sim;
             }
             else {
                 if (!nextname.Equals(imgX.NextName, StringComparison.OrdinalIgnoreCase)) {
-                    if (wc > 0) {
-                        sb.Append($"{wc}: ");
+                    if (wrongcount > 0) {
+                        sb.Append($"{wrongcount}: ");
                     }
 
                     sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
@@ -206,7 +201,6 @@ namespace ImageBank
                     sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
                     sb.Append($"{nextname}");
                     imgX.NextName = nextname;
-                    imgX.Counter = 0;
                 }
             }
 

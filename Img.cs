@@ -14,6 +14,8 @@ namespace ImageBank
 
         public string Hash { get; }
 
+        public float SimFast { get; set; }
+
         private OrbDescriptor[] _descriptors;
         public OrbDescriptor[] GetDescriptors()
         {

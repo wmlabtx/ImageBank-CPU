@@ -28,6 +28,7 @@ namespace ImageBank
                 foreach (var img in _imgList) {
                     if (img.Value.NextName.Equals(name, StringComparison.OrdinalIgnoreCase)) {
                         img.Value.LastCheck = minlc;
+                        img.Value.NextName = img.Value.Name;
                     }
                 }
             }

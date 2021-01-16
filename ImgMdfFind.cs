@@ -6,13 +6,12 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private int _flagfind;
-
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             var sb = new StringBuilder(GetPrompt());
             Img imgX;
             var dtn = DateTime.Now;
+            int scopesize;
             lock (_imglock) {
                 while (true) {
                     if (_imgList.Count < 2) {
@@ -22,33 +21,29 @@ namespace ImageBank
 
                     if (string.IsNullOrEmpty(nameX))
                     {
-                        var imglist = _imgList
-                            .Where(e => _imgList.ContainsKey(e.Value.NextName))
-                            .Where(e => e.Value.GetDescriptors() != null && e.Value.GetDescriptors().Length > 0)
+                        var scope = _imgList
+                            .Where(e =>
+                                _imgList.ContainsKey(e.Value.NextName) &&
+                                e.Value.GetDescriptors() != null &&
+                                e.Value.GetDescriptors().Length > 0 &&
+                                !e.Value.Name.Equals(e.Value.NextName))
                             .Select(e => e.Value)
                             .ToArray();
 
-                        if (imglist.Length < 2)
-                        {
+                        if (scope.Length < 2) {
                             progress.Report("No images to view");
                             return;
                         }
 
-                        if (_flagfind == 0) {
-                            nameX = imglist
-                                .OrderByDescending(e => e.LastAdded)
-                                .FirstOrDefault(e => e.Counter == 0 && !e.NextName.Equals(e.Name))
-                                ?.Name;
-
-                        }
-                        else {
-                            nameX = imglist
-                                .OrderByDescending(e => e.Sim)
-                                .FirstOrDefault(e => e.Counter == 0 && !e.NextName.Equals(e.Name))
-                                ?.Name;
-                        }
-
-                        _flagfind = 1 - _flagfind;
+                        var mincounter = scope.Min(e => e.Counter);
+                        scope = scope.Where(e => e.Counter == mincounter).ToArray();
+                        var maxfolder = scope.Max(e => e.Folder);
+                        scope = scope.Where(e => e.Folder == maxfolder).ToArray();
+                        scopesize = scope.Length;
+                        nameX = scope
+                            .OrderByDescending(e => e.Sim)
+                            .FirstOrDefault()
+                            ?.Name;
 
                         AppVars.ImgPanel[0] = GetImgPanel(nameX);
                         if (AppVars.ImgPanel[0] == null) {
@@ -82,6 +77,7 @@ namespace ImageBank
             var secs = DateTime.Now.Subtract(dtn).TotalSeconds;
             sb.Append($"{AppVars.MoveMessage} ");
             imgX = AppVars.ImgPanel[0].Img;
+            sb.Append($"({scopesize}) ");
             sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
             sb.Append($"{imgX.Sim:F4} ");
             sb.Append($"({secs:F4}s)");

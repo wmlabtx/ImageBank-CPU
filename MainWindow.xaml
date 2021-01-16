@@ -9,7 +9,6 @@
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
                 <MenuItem Header="Import Rw" Click="ImportRwClick" />
-                <MenuItem Header="Import Dt" Click="ImportDtClick" />
                 <MenuItem Header="Import Hp" Click="ImportHpClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />

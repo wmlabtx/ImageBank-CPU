@@ -7,7 +7,7 @@ using System.Windows.Input;
 
 namespace ImageBank
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public MainWindow()
         {
@@ -65,11 +65,6 @@ namespace ImageBank
             {
                 ButtonRightNextMouseClick();
             }
-        }
-
-        private void ImportDtClick(object sender, EventArgs e)
-        {
-            ImportDtClick();
         }
 
         private void ImportRwClick(object sender, EventArgs e)

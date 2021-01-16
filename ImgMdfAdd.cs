@@ -1,4 +1,6 @@
-﻿namespace ImageBank
+﻿using System.Collections.Generic;
+
+namespace ImageBank
 {
     public partial class ImgMdf
     {

@@ -275,6 +275,33 @@ namespace ImageBank
             return result;
         }
 
+        public static float GetSimFast(OrbDescriptor[] x, OrbDescriptor[] y)
+        {
+            var i = 0;
+            var j = 0;
+            var match = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i].BitCount == y[j].BitCount) {
+                    i++;
+                    j++;
+                    match++;
+                }
+                else
+                {
+                    if (x[i].BitCount < y[j].BitCount) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+
+                }
+            }
+
+            var simfast = match * 1f / x.Length;
+            return simfast;
+        }
+
         public static OrbDescriptor[] ArrayToDescriptors(byte[] array)
         {
             var maxdescriptors = Math.Min(AppConsts.MaxDescriptorsInImage, array.Length / 32);
