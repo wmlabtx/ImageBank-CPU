@@ -15,43 +15,39 @@ namespace ImageBank
                         out _,
                         out var bitmap,
                         out _)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {img.Folder:D2}\\{name}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {img.Folder}\\{name}");
                         return;
                     }
 
                     bitmap.RotateFlip(rft);
-                    if (!ImageHelper.GetImageDataFromBitmap(bitmap, out byte[] rimagedata)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Encode error: {img.Folder:D2}\\{name}");
+                    if (!ImageHelper.GetImageDataFromBitmap(bitmap, out var rimagedata)) {
+                        ((IProgress<string>)AppVars.Progress).Report($"Encode error: {img.Folder}\\{name}");
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rdescriptors)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Not enough histogram {img.Folder:D2}\\{name}");
+                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rblob)) {
+                        ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder}\\{name}");
                         return;
                     }
 
                     var rhash = Helper.ComputeHash(rimagedata);
                     if (_hashList.ContainsKey(rhash)) {
+                        ((IProgress<string>)AppVars.Progress).Report($"Dup found for {img.Folder}\\{name}");
                         Delete(img.Name);
                     }
                     else {
                         var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                         var rimg = new Img(
                             name: img.Name,
-                            hash: rhash,
-                            width: bitmap.Width,
-                            heigth: bitmap.Height,
-                            size: rimagedata.Length,
-                            descriptors: rdescriptors,
                             folder: img.Folder,
-                            lastview: img.LastView,
-                            lastcheck: minlc,
+                            hash: rhash,
+                            blob: rblob,
                             lastadded: img.LastAdded,
-                            nextname: img.NextName,
-                            sim: 0f,
-                            family: img.Family,
-                            counter: img.Counter
-                        );
+                            lastview: img.LastView,
+                            counter: img.Counter,
+                            lastcheck: minlc,
+                            nexthash: rhash,
+                            distance: 256f);
 
                         Delete(img.Name);
                         Add(rimg);

@@ -19,8 +19,22 @@
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
             <MenuItem Header="Family">
-                <MenuItem Header="Combine" Click="FamilyCombineClick" />
-                <MenuItem Header="Copy Left" Click="CopyLiftClick" />
+                <MenuItem Header="Bd" Tag="std\bd" Click="AssignFolderClick" />
+                <MenuItem Header="Root" Tag="root" Click="AssignFolderClick" />
+                <MenuItem Header="Adults">
+                    <MenuItem Header="Root" Tag="adults" Click="AssignFolderClick" />
+                </MenuItem>
+                <MenuItem Header="Art">
+                    <MenuItem Header="Root" Tag="art" Click="AssignFolderClick" />
+                </MenuItem>
+                <MenuItem Header="Kandid">
+                    <MenuItem Header="Root" Tag="kandid" Click="AssignFolderClick" />
+                </MenuItem>
+                <MenuItem Header="Studios">
+                    <MenuItem Header="Bd" Tag="std\bd" Click="AssignFolderClick" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Assign left" Click="AssignFolderLeftClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

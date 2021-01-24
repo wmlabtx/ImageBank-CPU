@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 namespace ImageBank
 {
@@ -11,27 +10,22 @@ namespace ImageBank
                 if (_imgList.TryGetValue(name, out var img)) {
                     Helper.DeleteToRecycleBin(img.FileName);
                     _imgList.Remove(name);
+
                     if (_hashList.ContainsKey(img.Hash)) {
                         _hashList.Remove(img.Hash);
+                    }
+
+                    var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                    foreach (var e in _imgList) {
+                        if (e.Value.NextHash.Equals(img.Hash)) {
+                            e.Value.LastCheck = minlc;
+                            e.Value.NextHash = e.Value.Hash;
+                        }
                     }
                 }
             }
 
             SqlDelete(name);
-            ResetRefers(name);
-        }
-
-        private void ResetRefers(string name)
-        {
-            lock (_imglock) {
-                var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
-                foreach (var img in _imgList) {
-                    if (img.Value.NextName.Equals(name, StringComparison.OrdinalIgnoreCase)) {
-                        img.Value.LastCheck = minlc;
-                        img.Value.NextName = img.Value.Name;
-                    }
-                }
-            }
         }
     }
 }

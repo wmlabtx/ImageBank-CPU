@@ -2,16 +2,15 @@
 {
     public static class AppConsts
     {
-        private const string PathRoot = @"D:\Users\Murad\Documents\SDb\";
-        public const string PathHp = PathRoot + @"Hp\";
-        public const string PathDt = PathRoot + @"Dt\";
-        public const string PathRw = PathRoot + @"Rw\";
+        private const string PathRoot = @"D:\Users\Murad\Documents\Sdb\";
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
+        public const string PathHp = PathRoot + @"Hp";
+        public const string PathRw = PathRoot + @"Rw";
+        
         public const int MaxImages = 200000;
-        public const int MaxImagesInFolder = 2000;
-        public const int MaxDescriptorsInImage = 64;
         public const int MaxDim = 512;
-        public const int MaxSim = 64;
+        public const int MaxOrbsInImage = 64;
+        public const string FolderDefault = "root";
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -25,19 +24,15 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
-        public const string AttrName = "Name"; // string 10 length
-        public const string AttrHash = "Hash"; // string 32 length
-        public const string AttrFolder = "Folder"; // 0..99
-        public const string AttrLastView = "LastView"; // datetime
-        public const string AttrLastAdded = "LastAdded"; // datetime
-        public const string AttrWidth = "Width"; // int
-        public const string AttrHeigth = "Heigth"; // int
-        public const string AttrSize = "Size"; // int
-        public const string AttrDescriptors = "Descriptors"; // 64 * 32 = 2K bytes
-        public const string AttrNextName = "NextName"; // string 10 length
-        public const string AttrLastCheck = "LastCheck"; // datetime
-        public const string AttrFamily = "Family"; // string 4 length
-        public const string AttrSim = "Sim"; // float 4 bytes
-        public const string AttrCounter = "Counter"; // byte
+        public const string AttrName = "Name";
+        public const string AttrFolder = "Folder";
+        public const string AttrHash = "Hash";
+        public const string AttrDescriptors = "Descriptors";
+        public const string AttrLastAdded = "LastAdded";
+        public const string AttrLastView = "LastView";
+        public const string AttrCounter = "Counter";
+        public const string AttrLastCheck = "LastCheck";
+        public const string AttrNextHash = "NextHash";
+        public const string AttrDistance = "Distance";
     }
 }

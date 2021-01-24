@@ -9,6 +9,7 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
+        /*
         [TestMethod()]
         public void ComputeDescriptorsTest()
         {
@@ -21,8 +22,10 @@ namespace ImageBankTest
             var d2 = ImageHelper.ArrayToDescriptors(array);
             Assert.AreEqual(descriptors[0].Vector[3], d2[0].Vector[3]);
         }
+        */
 
-        private OrbDescriptor[] GetDescriptors(string filename)
+        /*
+        private OrbDescriptorX[] GetDescriptors(string filename)
         {
             var image = Image.FromFile(filename);
             if (!ImageHelper.ComputeDescriptors((Bitmap)image, out var descriptors)) {
@@ -31,7 +34,9 @@ namespace ImageBankTest
 
             return descriptors;
         }
+        */
 
+        /*
         [TestMethod()]
         public void GetDistanceTest()
         {
@@ -66,5 +71,6 @@ namespace ImageBankTest
 
             File.WriteAllText("report.txt", sb.ToString());
         }
+        */
     }
 }

@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 
@@ -189,10 +188,10 @@ namespace ImageBank
             return true;
         }
 
-        public static bool ComputeDescriptors(Bitmap bitmap, out OrbDescriptor[] orbdescriptors)
+        public static bool ComputeDescriptors(Bitmap bitmap, out byte[] blob)
         {
-            orbdescriptors = null;
-            using (var orb = ORB.Create(AppConsts.MaxDescriptorsInImage)) {
+            blob = null;
+            using (var orb = ORB.Create(AppConsts.MaxOrbsInImage)) {
                 if (bitmap.Width >= bitmap.Height && bitmap.Height > AppConsts.MaxDim) {
                     var k = bitmap.Height * 1.0 / AppConsts.MaxDim;
                     var width = (int)(bitmap.Width / k);
@@ -216,116 +215,16 @@ namespace ImageBank
                             }
 
                             matdescriptors.GetArray(out byte[] array);
-                            orbdescriptors = ArrayToDescriptors(array);
+                            const int maxblobsize = AppConsts.MaxOrbsInImage * 32;
+                            var size = Math.Min(maxblobsize, array.Length);
+                            blob = new byte[size];
+                            Buffer.BlockCopy(array, 0, blob, 0, size);
                         }
                     }
                 }
             }
 
             return true;
-        }
-
-        private static int GetSim(OrbDescriptor x, OrbDescriptor y)
-        {
-            if (Math.Abs(x.BitCount - y.BitCount) >= AppConsts.MaxSim) {
-                return 0;
-            }
-
-            var distance = 0;
-            for (var i = 0; i < 4; i++) {
-                distance += Intrinsic.PopCnt(x.Vector[i] ^ y.Vector[i]);
-                if (distance >= AppConsts.MaxSim) {
-                    return 0;
-                }
-            }
-
-            return AppConsts.MaxSim - distance;
-        }
-
-        public static float GetSim(OrbDescriptor[] x, OrbDescriptor[] y)
-        {
-            var list = new List<Tuple<int, int, int>>();
-            for (var i = 0; i < x.Length; i++) {
-                for (var j = 0; j < y.Length; j++) {
-                    var sim = GetSim(x[i], y[j]);
-                    if (sim > 0) {
-                        list.Add(new Tuple<int, int, int>(i, j, sim));
-                    }
-                }
-            }
-
-            if (list.Count == 0) {
-                return 0f;
-            }
-            
-            list = list.OrderByDescending(e => e.Item3).ToList();
-            var sum = 0;
-            var counter = 0;
-            var topcount = Math.Max(1, Math.Min(x.Length, y.Length) / 2);
-            while (list.Count > 0 && counter < topcount) {
-                var minx = list[0].Item1;
-                var miny = list[0].Item2;
-                var mins = list[0].Item3;
-                sum += mins;
-                counter++;
-                list.RemoveAll(e => e.Item1 == minx || e.Item2 == miny);
-            }
-
-            var result = sum * 1f / topcount;
-            return result;
-        }
-
-        public static float GetSimFast(OrbDescriptor[] x, OrbDescriptor[] y)
-        {
-            var i = 0;
-            var j = 0;
-            var match = 0;
-            while (i < x.Length && j < y.Length) {
-                if (x[i].BitCount == y[j].BitCount) {
-                    i++;
-                    j++;
-                    match++;
-                }
-                else
-                {
-                    if (x[i].BitCount < y[j].BitCount) {
-                        i++;
-                    }
-                    else {
-                        j++;
-                    }
-
-                }
-            }
-
-            var simfast = match * 1f / x.Length;
-            return simfast;
-        }
-
-        public static OrbDescriptor[] ArrayToDescriptors(byte[] array)
-        {
-            var maxdescriptors = Math.Min(AppConsts.MaxDescriptorsInImage, array.Length / 32);
-            var ld = new List<OrbDescriptor>();
-            for (var i = 0; i < maxdescriptors; i++) {
-                var orbdescriptor = new OrbDescriptor(array, i * 32);
-                ld.Add(orbdescriptor);
-            }
-
-            var orbdescriptors = ld
-                .OrderBy(e => e.BitCount)
-                .ToArray();
-
-            return orbdescriptors;
-        }
-
-        public static byte[] DescriptorsToArray(OrbDescriptor[] descriptors)
-        {
-            var array = new byte[descriptors.Length * 32];
-            for (var i = 0; i < descriptors.Length; i++) {
-                Buffer.BlockCopy(descriptors[i].Vector, 0, array, i*32, 32);
-            }
-
-            return array;
         }
     }
 }

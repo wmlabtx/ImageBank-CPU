@@ -21,32 +21,29 @@ namespace ImageBank
                 directoryInfo.GetFiles("*.*", SearchOption.AllDirectories)
                     .OrderBy(e => e.FullName)
                     .ToArray();
-            foreach (var fileInfo in fileInfos)
-            {
-                if (added >= maxadd) {
-                    break;
+
+            foreach (var fileInfo in fileInfos) {
+                var filename = fileInfo.FullName;
+                var name = Path.GetFileNameWithoutExtension(filename);
+                var shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
+                var folder = Path.GetDirectoryName(shortfilename);
+                if (_imgList.TryGetValue(name, out var imgfound)) {
+                    if (!string.IsNullOrEmpty(folder) && folder.Equals(imgfound.Folder)) {
+                        continue;
+                    }
+
+                    if (File.Exists(imgfound.FileName)) {
+                        found++;
+                        Helper.DeleteToRecycleBin(filename);
+                        continue;
+                    }
+                    
+                    Delete(imgfound.Name);
                 }
 
-                var filename = fileInfo.FullName;
-                var shortfilename = filename.Substring(AppConsts.PathHp.Length);
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
                     ((IProgress<string>)AppVars.Progress).Report($"{shortfilename} (a:{added}/b:{bad}/f:{found})...");
-                }
-
-                var name = Path.GetFileNameWithoutExtension(filename);
-                lock (_imglock) {
-                    if (_imgList.TryGetValue(name, out var imgfound)) {
-                        var subpath = Path.GetDirectoryName(filename);
-                        if (subpath != null && subpath.StartsWith(AppConsts.PathHp, StringComparison.OrdinalIgnoreCase)) {
-                            var lastpart = subpath.Substring(AppConsts.PathHp.Length);
-                            if (int.TryParse(lastpart, out var ffolder)) {
-                                if (imgfound.Folder == ffolder) {
-                                    continue;
-                                }
-                            }
-                        }
-                    }
                 }
 
                 if (!ImageHelper.GetImageDataFromFile(
@@ -59,7 +56,7 @@ namespace ImageBank
                     continue;
                 }
 
-                if (!ImageHelper.ComputeDescriptors(bitmap, out var descriptors)) {
+                if (!ImageHelper.ComputeDescriptors(bitmap, out var blob)) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
@@ -68,15 +65,22 @@ namespace ImageBank
 
                 lock (_imglock) {
                     var hash = Helper.ComputeHash(imagedata);
-                    if (_hashList.ContainsKey(hash)) {
+                    if (_hashList.TryGetValue(hash, out imgfound)) {
                         found++;
-                        Helper.DeleteToRecycleBin(filename);
-                        continue;
+                        if (!File.Exists(imgfound.FileName)) {
+                            imgfound.LastView = _imgList.Min(e => e.Value.LastView).AddSeconds(-1);
+                            imgfound.Counter = 0;
+                            Helper.DeleteToRecycleBin(filename);
+                            continue;
+                            
+                        }
+
+                        Delete(imgfound.Name);
                     }
 
-                    var len = 4;
-                    while (len <= 12) {
-                        name = $"mzx-{hash.Substring(0, len)}";
+                    var len = 8;
+                    while (len <= 32) {
+                        name = hash.Substring(0, len);
                         if (!_imgList.ContainsKey(name)) {
                             break;
                         }
@@ -84,48 +88,31 @@ namespace ImageBank
                         len++;
                     }
                 
-                    var folder = 0;
-                    if (_imgList.Count > 0) {
-                        folder = _imgList.Max(e => e.Value.Folder);
-                        var nfolder = _imgList.Count(e => e.Value.Folder == folder);
-                        if (nfolder >= AppConsts.MaxImagesInFolder) {
-                            folder++;
-                        }
-                    }
+                    var lastadded = DateTime.Now;
+                    var lastview = _imgList.Min(e => e.Value.LastView).AddSeconds(-1);
+                    var lastcheck = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                    var img = new Img(
+                        name: name,
+                        folder: folder,
+                        hash: hash,
+                        blob: blob,
+                        lastadded: lastadded,
+                        lastview: lastview,
+                        counter: 0,
+                        lastcheck: lastcheck,
+                        nexthash: hash,
+                        distance: 256f);
 
-                    var imgfilename = Helper.GetFileName(name, folder);
                     var lastmodified = File.GetLastWriteTime(filename);
                     if (lastmodified > DateTime.Now) {
                         lastmodified = DateTime.Now;
                     }
 
-                    if (!filename.Equals(imgfilename)) {
-                        Helper.WriteData(imgfilename, imagedata);
-                        File.SetLastWriteTime(imgfilename, lastmodified);
+                    if (!filename.Equals(img.FileName)) {
+                        Helper.WriteData(img.FileName, imagedata);
+                        File.SetLastWriteTime(img.FileName, lastmodified);
                         Helper.DeleteToRecycleBin(filename);
                     }
-
-                    var lastadded = DateTime.Now;
-                    var lastview = GetMinLastView();
-                    var lastcheck = _imgList.Count == 0 ? 
-                        DateTime.Now : 
-                        _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
-
-                    var img = new Img(
-                        name: name,
-                        hash: hash,
-                        width: bitmap.Width,
-                        heigth: bitmap.Height,
-                        size: imagedata.Length,
-                        descriptors: descriptors,
-                        folder: folder,
-                        lastview: lastview,
-                        lastcheck: lastcheck,
-                        lastadded: lastadded,
-                        nextname: name,
-                        sim: 0f,
-                        family: string.Empty,
-                        counter: 0);
 
                     Add(img);
                     bitmap.Dispose();
@@ -133,9 +120,12 @@ namespace ImageBank
                     if (_imgList.Count >= AppConsts.MaxImages) {
                         break;
                     }
-                } 
-                
+                }
+
                 added++;
+                if (added >= maxadd) {
+                    break;
+                }
             }
 
             ((IProgress<string>)AppVars.Progress).Report($"clean-up...");

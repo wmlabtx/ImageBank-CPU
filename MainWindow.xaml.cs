@@ -7,7 +7,7 @@ using System.Windows.Input;
 
 namespace ImageBank
 {
-    public partial class MainWindow
+    public sealed partial class MainWindow
     {
         public MainWindow()
         {
@@ -77,12 +77,6 @@ namespace ImageBank
             ImportHpClick();
         }
 
-        private void MoveToClick(object sender, RoutedEventArgs e)
-        {
-            var tag = (string)((MenuItem)sender).Tag;
-            MoveTo(tag);
-        }
-
         private void Rotate90Click(object sender, EventArgs e)
         {
             Rotate90Click();
@@ -98,19 +92,20 @@ namespace ImageBank
             Rotate270Click();
         }
 
-        private void FamilyCombineClick(object sender, RoutedEventArgs e)
+        private void AssignFolderClick(object sender, RoutedEventArgs e)
         {
-            FamilyCombineClick();
+            var folder = ((MenuItem)sender).Tag as string;
+            AssignFolder(folder);
+        }
+
+        private void AssignFolderLeftClick(object sender, RoutedEventArgs e)
+        {
+            AssignFolderLeft();
         }
 
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
-        }
-
-        private void CopyLiftClick(object sender, RoutedEventArgs e)
-        {
-            CopyLiftClick();
         }
     }
 }

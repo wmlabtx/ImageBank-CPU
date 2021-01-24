@@ -1,88 +1,64 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public int FamilySize(string family)
+        public int FolderSize(string folder)
         {
-            if (string.IsNullOrEmpty(family)) {
-                return 0;
-            }
-
             lock (_imglock) {
-                var familysize = _imgList.Count(e => string.CompareOrdinal(e.Value.Family, family) == 0);
-                return familysize;
+                var foldersize = _imgList.Count(e => folder.Equals(e.Value.Folder));
+                return foldersize;
             }
         }
 
-        private void MoveFamily(string oldfamily, string newfamily)
+        public void AssignFolder(string folder)
         {
-            if (string.IsNullOrEmpty(oldfamily)) {
+            if (AppVars.ImgPanel[0].Img.Folder.Equals(folder)) {
                 return;
             }
 
-            if (string.IsNullOrEmpty(newfamily)) {
-                return;
+            AppVars.ImgPanel[0].Img.Folder = folder;
+            var candidates = new List<Img>();
+            DateTime lc;
+            lock (_imglock)
+            {
+                lc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                if (!AppVars.ImgPanel[0].Img.Folder.Equals(AppConsts.FolderDefault)) {
+                    foreach (var e in _imgList) {
+                        if (!AppVars.ImgPanel[0].Img.Name.Equals(e.Key) && AppVars.ImgPanel[0].Img.Folder.Equals(e.Value.Folder)) {
+                            candidates.Add(e.Value);
+                        }
+                    }
+                }
+
+                if (candidates.Count == 0) {
+                    foreach (var e in _imgList) {
+                        if (!AppVars.ImgPanel[0].Img.Name.Equals(e.Key)) {
+                            candidates.Add(e.Value);
+                        }
+                    }
+                }
             }
 
-            lock (_imglock) {
-                _imgList
-                .Where(e => e.Value.Family.Equals(oldfamily, StringComparison.OrdinalIgnoreCase))
-                .Select(e => e.Value)
-                .ToList()
-                .ForEach(e => e.Family = newfamily);
-            }
+            var index = Random.Next(candidates.Count);
+            var imgY = candidates[index];
+            AppVars.ImgPanel[0].Img.NextHash = imgY.Hash;
+            AppVars.ImgPanel[0].Img.Distance = OrbDescriptor.Distance(AppVars.ImgPanel[0].Img.GetDescriptors(), imgY.GetDescriptors());
+            AppVars.ImgPanel[0].Img.LastCheck = lc;
+            AppVars.ImgPanel[0].Img.Counter = 0;
+            AppVars.ImgPanel[1] = GetImgPanel(imgY.Name);
         }
 
-        public void CombineFamilies(Img imgX, Img imgY)
+        public static void AssignFolderLeft()
         {
-            if (!string.IsNullOrEmpty(imgX.Family) && imgX.Family.Equals(imgY.Family, StringComparison.OrdinalIgnoreCase)) {
-                imgY.Family = string.Empty;
+            if (AppVars.ImgPanel[0].Img.Folder.Equals(AppVars.ImgPanel[1].Img.Folder)) {
                 return;
             }
 
-            if (string.IsNullOrEmpty(imgX.Family) && string.IsNullOrEmpty(imgY.Family)) {
-                imgX.Family = "";
-                imgY.Family = "";
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(imgX.Family) && string.IsNullOrEmpty(imgY.Family)) {
-                imgY.Family = imgX.Family;
-                return;
-            }
-
-            if (string.IsNullOrEmpty(imgX.Family) && !string.IsNullOrEmpty(imgY.Family)) {
-                imgX.Family = imgY.Family;
-                return;
-            }
-
-            var sizeX = FamilySize(imgX.Family);
-            var sizeY = FamilySize(imgY.Family);
-
-            if (sizeX < sizeY) {
-                MoveFamily(imgX.Family, imgY.Family);
-            }
-            else {
-                MoveFamily(imgY.Family, imgX.Family);
-            }
-        }
-
-        public void AssignFamily(Img imgX, string family)
-        {
-            imgX.Family = family;
-            AppVars.ImgPanel[1] = GetImgPanel(imgX.NextName);
-        }
-
-        public void CopyLeft(Img imgX, Img imgY)
-        {
-            var oldfile = imgX.FileName;
-            imgX.Folder = imgY.Folder;
-            File.Move(oldfile, imgX.FileName);
-            Delete(imgY.Name);
+            AppVars.ImgPanel[0].Img.Folder = AppVars.ImgPanel[1].Img.Folder;
         }
     }
 }

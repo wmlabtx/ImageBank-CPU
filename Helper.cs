@@ -98,21 +98,6 @@ namespace ImageBank
 
         #endregion
 
-        #region Strings
-
-        public static string GetFileName(string name, int folder)
-        {
-            return $"{AppConsts.PathHp}{folder:D2}\\{name}{AppConsts.MzxExtension}";
-        }
-
-        public static string GetShortName(Img img)
-        {
-            Contract.Requires(img != null);
-            return $"{img.Folder:D2}\\{img.Name}";
-        }
-
-        #endregion
-
         #region Image
 
         public static Bitmap RepixelBitmap(Bitmap bitmap)

@@ -1,16 +1,11 @@
-﻿using System.Collections.Generic;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
         private void AddToMemory(Img img)
         {
-            lock (_imglock) {
-                if (!string.IsNullOrEmpty(img.Hash)) {
-                    _hashList.Add(img.Hash, img.Name);
-                }
-
+            lock (_imglock) { 
+                _hashList.Add(img.Hash, img);
                 _imgList.Add(img.Name, img);
             }
         }
