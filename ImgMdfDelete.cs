@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
@@ -15,11 +13,12 @@ namespace ImageBank
                         _hashList.Remove(img.Hash);
                     }
 
-                    var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
-                            e.Value.LastCheck = minlc;
+                            e.Value.LastCheck = GetMinLastCheck();
                             e.Value.NextHash = e.Value.Hash;
+                            e.Value.Distance = AppConsts.MaxDistance;
+                            e.Value.Counter = 0;
                         }
                     }
                 }

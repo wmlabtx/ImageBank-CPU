@@ -141,8 +141,6 @@
   <ItemGroup>
     <Compile Include="MainWindowLogic.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="OrbDescriptor.cs" />
-    <Compile Include="OrbDescriptorX.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

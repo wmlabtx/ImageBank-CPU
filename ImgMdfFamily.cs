@@ -22,10 +22,8 @@ namespace ImageBank
 
             AppVars.ImgPanel[0].Img.Folder = folder;
             var candidates = new List<Img>();
-            DateTime lc;
             lock (_imglock)
             {
-                lc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
                 if (!AppVars.ImgPanel[0].Img.Folder.Equals(AppConsts.FolderDefault)) {
                     foreach (var e in _imgList) {
                         if (!AppVars.ImgPanel[0].Img.Name.Equals(e.Key) && AppVars.ImgPanel[0].Img.Folder.Equals(e.Value.Folder)) {
@@ -45,10 +43,15 @@ namespace ImageBank
 
             var index = Random.Next(candidates.Count);
             var imgY = candidates[index];
+
             AppVars.ImgPanel[0].Img.NextHash = imgY.Hash;
-            AppVars.ImgPanel[0].Img.Distance = OrbDescriptor.Distance(AppVars.ImgPanel[0].Img.GetDescriptors(), imgY.GetDescriptors());
-            AppVars.ImgPanel[0].Img.LastCheck = lc;
-            AppVars.ImgPanel[0].Img.Counter = 0;
+            AppVars.ImgPanel[0].Img.Counter = 1;
+            AppVars.ImgPanel[0].Img.Distance = ImageHelper.GetDistance(
+                AppVars.ImgPanel[0].Img.GetDescriptors(), 
+                imgY.GetDescriptors(), 
+                AppVars.ImgPanel[0].Img.Counter);
+
+            AppVars.ImgPanel[0].Img.LastCheck = GetMinLastCheck();
             AppVars.ImgPanel[1] = GetImgPanel(imgY.Name);
         }
 

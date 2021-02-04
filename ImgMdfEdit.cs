@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -36,7 +35,7 @@ namespace ImageBank
                         Delete(img.Name);
                     }
                     else {
-                        var minlc = _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                        var minlc = GetMinLastCheck();
                         var rimg = new Img(
                             name: img.Name,
                             folder: img.Folder,
@@ -47,7 +46,7 @@ namespace ImageBank
                             counter: img.Counter,
                             lastcheck: minlc,
                             nexthash: rhash,
-                            distance: 256f);
+                            distance: AppConsts.MaxDistance);
 
                         Delete(img.Name);
                         Add(rimg);

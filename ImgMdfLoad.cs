@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Load(IProgress<string> progress)
+        public void LoadImgs(IProgress<string> progress)
         {
             progress.Report("Loading model...");
 
@@ -71,5 +71,31 @@ namespace ImageBank
 
             progress.Report("Database loaded");
         }
+
+        /*
+        public static byte[] LoadBlob(string name)
+        {
+            byte[] blob = null;
+            var sb = new StringBuilder();
+            sb.Append("SELECT ");
+            sb.Append($"{AppConsts.AttrDescriptors} ");
+            sb.Append($"FROM {AppConsts.TableImages} ");
+            sb.Append($"WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}");
+            var sqltext = sb.ToString();
+            lock (_sqllock) {
+                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
+                    using (var reader = sqlCommand.ExecuteReader()) {
+                        while (reader.Read()) {
+                            blob = (byte[])reader[0];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return blob;
+        }
+        */
     }
 }

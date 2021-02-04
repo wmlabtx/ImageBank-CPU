@@ -13,8 +13,8 @@ namespace ImageBank
             get => _folder;
             set
             {
-                if (string.IsNullOrEmpty(value) || value.Length > 32) {
-                    throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 24");
+                if (string.IsNullOrEmpty(value) || value.Length > 128) {
+                    throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 128");
                 }
 
                 var oldfilename = FileName; 
@@ -34,10 +34,10 @@ namespace ImageBank
 
         public string Hash { get; }
 
-        public byte[] Blob { get; }
+        public byte[] Blob { get; private set; }
 
-        private readonly OrbDescriptor[] _descriptors;
-        public OrbDescriptor[] GetDescriptors()
+        private ulong[] _descriptors;
+        public ulong[] GetDescriptors()
         {
             return _descriptors;
         }
@@ -95,27 +95,12 @@ namespace ImageBank
             set
             {
                 _distance = value;
-                if (_distance < 0f || _distance > 256f) {
-                    throw new ArgumentException("_distance < 0f || _distance > 256f");
+                if (_distance < 0f || _distance > AppConsts.MaxDistance) {
+                    throw new ArgumentException("_distance < 0f || _distance > AppConsts.MaxDistance");
                 }
 
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDistance, value);
             }
-        }
-
-        public static OrbDescriptor[] BlobToDescriptors(byte[] blob)
-        {
-            var maxdescriptors = blob.Length / 32;
-            if (maxdescriptors < 2 || maxdescriptors > AppConsts.MaxOrbsInImage) {
-                throw new ArgumentException("maxdescriptors < 2 || maxdescriptors > AppConsts.MaxOrbsInImage");
-            }
-
-            var descriptors = new OrbDescriptor[maxdescriptors];
-            for (var i = 0; i < maxdescriptors; i++) {
-                descriptors[i] = new OrbDescriptor(blob, i * 32);
-            }
-
-            return descriptors;
         }
 
         public Img(
@@ -137,8 +122,8 @@ namespace ImageBank
 
             Name = name;
 
-            if (string.IsNullOrEmpty(folder) || folder.Length > 32) {
-                throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 32");
+            if (string.IsNullOrEmpty(folder) || folder.Length > 128) {
+                throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 128");
             }
 
             _folder = folder;
@@ -149,12 +134,11 @@ namespace ImageBank
 
             Hash = hash;
 
-            if (blob == null || blob.Length == 0 || (blob.Length % 32) != 0) {
-                throw new ArgumentException("blob == null || blob.Length == 0 || (blob.Length % 32) != 0");
+            if (blob != null && blob.Length % 32 != 0) {
+                throw new ArgumentException("blob != null && blob.Length % 32 != 0");
             }
 
-            Blob = blob;
-            _descriptors = BlobToDescriptors(blob);
+            SetBlob(blob);
 
             LastAdded = lastadded;
             _lastview = lastview;
@@ -167,11 +151,19 @@ namespace ImageBank
 
             _nexthash = nexthash;
 
-            if (distance < 0f || distance > 256f) {
-                throw new ArgumentException("distance < 0f || distance > 256f");
+            if (distance < 0f || distance > AppConsts.MaxDistance) {
+                throw new ArgumentException("distance < 0f || distance > AppConsts.MaxDistance");
             }
 
             _distance = distance;
+        }
+
+        public void SetBlob(byte[] blob)
+        {
+            if (blob != null) {
+                Blob = blob;
+                _descriptors = ImageHelper.ComputeDescriptors(blob);
+            }
         }
     }
 }

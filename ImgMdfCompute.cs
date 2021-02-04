@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -15,11 +14,10 @@ namespace ImageBank
         public void Compute(BackgroundWorker backgroundworker)
         {
             AppVars.SuspendEvent.WaitOne(Timeout.Infinite);
-            
-            Img imgX = null;
+
+            Img img1 = null, img2 = null;
+            byte counter = 0;
             var candidates = new List<Img>();
-            var nexthash = string.Empty;
-            var distance = 256f;
             lock (_imglock)
             {
                 if (_imgList.Count < 2)
@@ -28,110 +26,110 @@ namespace ImageBank
                     return;
                 }
 
-                foreach (var e in _imgList)
+                var scopeview = _imgList.OrderBy(e => e.Value.LastView).Take(100).ToArray();
+                var i1 = Random.Next(scopeview.Length);
+                img1 = scopeview[i1].Value;
+
+                /*
+                var minc = scopeview.Min(e => e.Value.Counter);
+                scopeview = scopeview.Where(e => e.Value.Counter == minc).ToArray();
+                var minlc = scopeview.Min(e => e.Value.LastCheck);
+                img1 = scopeview.FirstOrDefault(e => e.Value.LastCheck == minlc).Value;
+                */
+
+                if (!_hashList.TryGetValue(img1.NextHash, out img2))
                 {
-                    var eX = e.Value;
-                    if (eX.Hash.Equals(eX.NextHash))
+                    img1.NextHash = img1.Hash;
+                    img1.Distance = AppConsts.MaxDistance;
+                    img1.Counter = 0;
+                }
+                else
+                {
+                    if (!img1.Folder.StartsWith(AppConsts.FolderDefault) && !img1.Folder.Equals(img2.Folder))
                     {
-                        imgX = eX;
-                        distance = 256f;
-                        break;
+                        img1.NextHash = img1.Hash;
+                        img1.Distance = AppConsts.MaxDistance;
+                        img1.Counter = 0;
                     }
-
-                    if (!_hashList.TryGetValue(eX.NextHash, out var eY)) {
-                        imgX = eX;
-                        nexthash = eX.Hash;
-                        distance = 256f;
-                        break;
-                    }
-
-                    if (!eX.Folder.StartsWith(AppConsts.FolderDefault) && !eX.Folder.Equals(eY.Folder) && FolderSize(eX.Folder) > 1) {
-                        imgX = eX;
-                        distance = 256f;
-                        break;
-                    }
-
-                    if (imgX != null && imgX.Counter == 0 && eX.Counter > 0) {
-                        continue;
-                    }
-
-                    if (imgX != null && imgX.Counter == eX.Counter && imgX.LastView <= eX.LastView) {
-                        continue;
-                    }
-
-                    imgX = eX;
-                    nexthash = imgX.NextHash;
-                    distance = imgX.Distance;
                 }
 
-                if (imgX == null) {
-                    throw new ArgumentException(nameof(imgX));
-                }
-
-                if (!File.Exists(imgX.FileName)) {
-                    backgroundworker.ReportProgress(0, $"{imgX.Name} deleted");
-                    Delete(imgX.Name);
-                    return;
-                }
-
-                if (!imgX.Folder.StartsWith(AppConsts.FolderDefault)) {
-                    foreach (var e in _imgList) {
-                        if (!imgX.Name.Equals(e.Key) && imgX.Folder.Equals(e.Value.Folder)) {
-                            candidates.Add(e.Value);
+                if (img1.Folder.StartsWith(AppConsts.FolderDefault))
+                {
+                    foreach (var e in _imgList)
+                    {
+                        if (e.Key.Equals(img1.Name))
+                        {
+                            continue;
                         }
+
+                        candidates.Add(e.Value);
                     }
                 }
+                else
+                {
+                    foreach (var e in _imgList)
+                    {
+                        if (e.Key.Equals(img1.Name))
+                        {
+                            continue;
+                        }
 
-                if (candidates.Count == 0) {
-                    foreach (var e in _imgList) {
-                        if (!imgX.Name.Equals(e.Key)) {
+                        if (!e.Value.Folder.Equals(img1.Folder))
+                        {
+                            continue;
+                        }
+
+                        candidates.Add(e.Value);
+                    }
+
+                    if (candidates.Count == 0)
+                    {
+                        foreach (var e in _imgList)
+                        {
+                            if (e.Key.Equals(img1.Name))
+                            {
+                                continue;
+                            }
+
                             candidates.Add(e.Value);
                         }
                     }
                 }
             }
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < 1000 && candidates.Count > 0) {
-                var index = Random.Next(candidates.Count);
-                var d = OrbDescriptor.Distance(imgX.GetDescriptors(), candidates[index].GetDescriptors());
-                if (d < distance) {
-                    nexthash = candidates[index].Hash;
-                    distance = d;
+            counter = (byte)Math.Min(AppConsts.MaxDescriptorsInImage, img1.Counter + 1);
+            var mindistance = float.MaxValue;
+            img2 = img1;
+            foreach (var e in candidates)
+            {
+                var distance = ImageHelper.GetDistance(img1.GetDescriptors(), e.GetDescriptors(), counter);
+                if (distance < mindistance)
+                {
+                    mindistance = distance;
+                    img2 = e;
                 }
-
-                candidates.RemoveAt(index);
             }
-
-            sw.Stop();
 
             var sb = new StringBuilder();
-            if (Math.Abs(distance - imgX.Distance) >= 0.01) {
-                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
-                sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-                sb.Append($"{imgX.Distance:F2} ");
-                sb.Append($"{char.ConvertFromUtf32(distance < imgX.Distance ? 0x2192 : 0x2193)} ");
-                sb.Append($"{distance:F2} ");
-                if (!nexthash.Equals(imgX.NextHash)) {
-                    imgX.NextHash = nexthash;
-                }
+            
+            if (!img1.NextHash.Equals(img2.Hash))
+            {
+                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
+                sb.Append($" ({counter}) ");
+                sb.Append($"{img1.Folder}\\{img1.Name}: ");
+                sb.Append($"{img1.Distance:F2} ");
+                sb.Append($"{char.ConvertFromUtf32(mindistance < img1.Distance ? 0x2192 : 0x2193)} ");
+                sb.Append($"{mindistance:F2} ");
+                img1.NextHash = img2.Hash;
+            }
 
-                imgX.Distance = distance;
-                imgX.Counter = 0;
+            if (mindistance != img1.Distance)
+            {
+                img1.Distance = mindistance;
             }
-            else {
-                if (!nexthash.Equals(imgX.NextHash, StringComparison.OrdinalIgnoreCase)) {
-                    sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck))} ago] ");
-                    sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-                    sb.Append($"{nexthash.Substring(0, 8)}...");
-                    imgX.NextHash = nexthash;
-                    imgX.Counter = 0;
-                }
-                else {
-                    imgX.LastCheck = DateTime.Now;
-                    imgX.Counter = 1;
-                }
-            }
+
+            img1.LastCheck = DateTime.Now;
+            img1.Counter = counter;
 
             if (sb.Length > 0) {
                 var message = sb.ToString();

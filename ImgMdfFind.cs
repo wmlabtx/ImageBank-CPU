@@ -28,15 +28,27 @@ namespace ImageBank
                                 continue;
                             }
 
+                            if (eX.Counter == 0)
+                            {
+                                continue;
+                            }
+
+                            /*
                             if (imgX != null &&
-                                imgX.Counter == 1 &&
-                                eX.Counter == 0) {
+                                imgX.Counter < eX.Counter) {
                                 continue;
                             }
 
                             if (imgX != null &&
                                 imgX.Counter == eX.Counter &&
                                 imgX.LastView <= eX.LastView) {
+                                continue;
+                            }
+                            */
+
+                            if (imgX != null &&
+                                imgX.LastView <= eX.LastView)
+                            {
                                 continue;
                             }
 
@@ -47,7 +59,13 @@ namespace ImageBank
                         }
                     }
 
-                    AppVars.ImgPanel[0] = GetImgPanel(nameX);
+                    if (string.IsNullOrEmpty(nameX))
+                    {
+                        progress.Report("No images to view");
+                        return;
+                    }
+
+                        AppVars.ImgPanel[0] = GetImgPanel(nameX);
                     if (AppVars.ImgPanel[0] == null) {
                         Delete(nameX);
                         progress.Report($"{nameX} deleted");

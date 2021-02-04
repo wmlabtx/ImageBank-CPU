@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -19,6 +21,20 @@ namespace ImageBank
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=60";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
+        }
+
+        public DateTime GetMinLastView()
+        {
+            lock (_imglock)
+            {
+                return _imgList.Count == 0 ? DateTime.Now : _imgList.Min(e => e.Value.LastView).AddSeconds(-1);
+            }
+        }
+        public DateTime GetMinLastCheck()
+        {
+            lock (_imglock) {
+                return _imgList.Count == 0 ? DateTime.Now : _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+            }
         }
     }
 }

@@ -8,8 +8,10 @@
         public const string PathRw = PathRoot + @"Rw";
         
         public const int MaxImages = 200000;
-        public const int MaxDim = 512;
-        public const int MaxOrbsInImage = 64;
+        public const int MaxDim = 1024;
+        public const int MaxDescriptorsInImage = 64;
+        public const float MaxDistance = 256f;
+
         public const string FolderDefault = "root";
 
         public const string MzxExtension = ".mzx";

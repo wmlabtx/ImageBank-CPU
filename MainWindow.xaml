@@ -9,7 +9,6 @@
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
                 <MenuItem Header="Import Rw" Click="ImportRwClick" />
-                <MenuItem Header="Import Hp" Click="ImportHpClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>
@@ -19,7 +18,8 @@
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
             <MenuItem Header="Family">
-                <MenuItem Header="Bd" Tag="std\bd" Click="AssignFolderClick" />
+                <MenuItem Header="Kandid" Tag="kandid" Click="AssignFolderClick" />
+                <Separator />
                 <MenuItem Header="Root" Tag="root" Click="AssignFolderClick" />
                 <MenuItem Header="Adults">
                     <MenuItem Header="Root" Tag="adults" Click="AssignFolderClick" />

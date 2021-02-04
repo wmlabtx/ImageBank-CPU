@@ -52,7 +52,7 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Load(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { AppVars.Collection.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
@@ -175,7 +175,7 @@ namespace ImageBank
                 }
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    sb.Append(" *");
+                    sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
                 }
 
                 sb.AppendLine();
