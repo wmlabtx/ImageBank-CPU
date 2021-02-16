@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
+using System;
 
 namespace ImageBank
 {
@@ -44,6 +45,8 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrFolder}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"{AppConsts.AttrMapDescriptors}, ");
+                    sb.Append($"{AppConsts.AttrPhash}, ");
                     sb.Append($"{AppConsts.AttrLastAdded}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
@@ -55,6 +58,8 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrFolder}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"@{AppConsts.AttrMapDescriptors}, ");
+                    sb.Append($"@{AppConsts.AttrPhash}, ");
                     sb.Append($"@{AppConsts.AttrLastAdded}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
@@ -67,6 +72,9 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFolder}", img.Folder);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", img.Blob);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMapDescriptors}", img.GetMapDescriptors());
+                    var phashbuffer = BitConverter.GetBytes(img.Phash);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPhash}", phashbuffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastAdded}", img.LastAdded);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);

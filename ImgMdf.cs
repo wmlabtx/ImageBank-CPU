@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 
 namespace ImageBank
@@ -14,7 +15,7 @@ namespace ImageBank
         // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private object _imglock = new object();
         private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
-        private readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
+        private readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();        
 
         public ImgMdf()
         {

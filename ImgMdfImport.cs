@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
@@ -63,12 +64,17 @@ namespace ImageBank
                     continue;
                 }
 
-                if (!ImageHelper.ComputeDescriptors(bitmap, out var blob)) {
+                ImageHelper.ComputeBlob(bitmap, out var phash, out var mapdescriptors, out var descriptors);
+                if (descriptors == null || descriptors.Length == 0) {
                     message = "not enough descriptors";
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
                     bad++;
+                    var badname = Path.Combine(AppConsts.PathRw, $"{name}.png");
+                    bitmap.Save(badname, ImageFormat.Png);
                     continue;
                 }
+
+                var blob = ImageHelper.ArrayFrom64(descriptors);
 
                 lock (_imglock) {
                     var hash = Helper.ComputeHash(imagedata);
@@ -104,6 +110,8 @@ namespace ImageBank
                         folder: folder,
                         hash: hash,
                         blob: blob,
+                        mapdescriptors: mapdescriptors,
+                        phash: phash,
                         lastadded: lastadded,
                         lastview: lastview,
                         counter: 0,
@@ -141,5 +149,6 @@ namespace ImageBank
 
             AppVars.SuspendEvent.Set();
         }
+
     }
 }

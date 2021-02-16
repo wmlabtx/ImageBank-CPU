@@ -42,6 +42,13 @@ namespace ImageBank
             return _descriptors;
         }
 
+        private byte[] _mapdescriptors;
+        public byte[] GetMapDescriptors()
+        {
+            return _mapdescriptors;
+        }
+        public ulong Phash { get; }
+
         public DateTime LastAdded { get; }
 
         private DateTime _lastview;
@@ -55,8 +62,8 @@ namespace ImageBank
             }
         }
 
-        private byte _counter;
-        public byte Counter
+        private int _counter;
+        public int Counter
         {
             get => _counter;
             set
@@ -95,8 +102,8 @@ namespace ImageBank
             set
             {
                 _distance = value;
-                if (_distance < 0f || _distance > AppConsts.MaxDistance) {
-                    throw new ArgumentException("_distance < 0f || _distance > AppConsts.MaxDistance");
+                if (_distance < 0 || _distance > AppConsts.MaxDistance) {
+                    throw new ArgumentException("_distance < 0 || _distance > AppConsts.MaxDistance");
                 }
 
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDistance, value);
@@ -108,9 +115,11 @@ namespace ImageBank
             string folder,
             string hash,
             byte[] blob,
+            byte[] mapdescriptors,
+            ulong phash,
             DateTime lastadded,
             DateTime lastview,
-            byte counter,
+            int counter,
             DateTime lastcheck,
             string nexthash,
             float distance
@@ -134,11 +143,16 @@ namespace ImageBank
 
             Hash = hash;
 
-            if (blob != null && blob.Length % 32 != 0) {
-                throw new ArgumentException("blob != null && blob.Length % 32 != 0");
+            if (blob == null) {
+                throw new ArgumentException("blob == null");
             }
 
-            SetBlob(blob);
+            Blob = blob;
+            _descriptors = ImageHelper.ArrayTo64(blob);
+
+            _mapdescriptors = mapdescriptors;
+
+            Phash = phash;
 
             LastAdded = lastadded;
             _lastview = lastview;
@@ -156,14 +170,6 @@ namespace ImageBank
             }
 
             _distance = distance;
-        }
-
-        public void SetBlob(byte[] blob)
-        {
-            if (blob != null) {
-                Blob = blob;
-                _descriptors = ImageHelper.ComputeDescriptors(blob);
-            }
         }
     }
 }

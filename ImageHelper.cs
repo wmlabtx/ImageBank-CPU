@@ -1,26 +1,33 @@
-﻿using System;
+﻿using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using OpenCvSharp.ImgHash;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using OpenCvSharp;
-using OpenCvSharp.Extensions;
 
 namespace ImageBank
 {
     public static class ImageHelper
     {
-        private static readonly ORB _orb = ORB.Create(AppConsts.MaxDescriptorsInImage);
+        const int MAXDIM = 768;
+        const int MAXDESCRIPTORS = 250;
+        const int PIESES = 4;
+        private static readonly FastFeatureDetector _fast = FastFeatureDetector.Create();
+        private static readonly ORB _orb = ORB.Create();
+
         private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
+            bitmap = null;
+            
             try
             {
                 using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor))
                 {
-                    bitmap = mat.ToBitmap();
-                    return true;
+                    bitmap = BitmapConverter.ToBitmap(mat);
                 }
             }
             catch (ArgumentException)
@@ -28,6 +35,8 @@ namespace ImageBank
                 bitmap = null;
                 return false;
             }
+
+            return true;
         }
 
         private static Bitmap RepixelBitmap(Image bitmap)
@@ -41,7 +50,7 @@ namespace ImageBank
             return bitmap24BppRgb;
         }
 
-        private static Bitmap ResizeBitmap(Image bitmap, int width, int height)
+        public static Bitmap ResizeBitmap(Image bitmap, int width, int height)
         {
             var destRect = new Rectangle(0, 0, width, height);
             var destImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
@@ -60,15 +69,6 @@ namespace ImageBank
             }
 
             return destImage;
-        }
-
-        public static byte[] GetMatrixFromBitmap(Bitmap bitmap)
-        {
-            using (var mat = BitmapConverter.ToMat(bitmap))
-            {
-                mat.GetArray(out byte[] array);
-                return array;
-            }
         }
 
         private static MagicFormat GetMagicFormat(IReadOnlyList<byte> imagedata)
@@ -226,132 +226,152 @@ namespace ImageBank
             return true;
         }
 
-        public static bool ComputeDescriptors(Bitmap bitmap, out byte[] blob)
+        public static ulong[] ArrayTo64(byte[] array)
         {
-            blob = null;
+            var buffer = new ulong[array.Length / sizeof(ulong)];
+            Buffer.BlockCopy(array, 0, buffer, 0, array.Length);
+            return buffer;
+        }
 
-            if (bitmap.Width >= bitmap.Height && bitmap.Height > AppConsts.MaxDim)
-            {
-                var k = bitmap.Height * 1.0 / AppConsts.MaxDim;
-                var width = (int)(bitmap.Width / k);
-                bitmap = ResizeBitmap(bitmap, width, AppConsts.MaxDim);
-            }
-            else
-            {
-                if (bitmap.Width < bitmap.Height && bitmap.Width > AppConsts.MaxDim)
-                {
-                    var k = bitmap.Width * 1.0 / AppConsts.MaxDim;
-                    var height = (int)(bitmap.Height / k);
-                    bitmap = ResizeBitmap(bitmap, AppConsts.MaxDim, height);
-                }
-            }
+        public static byte[] ArrayFrom64(ulong[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(ulong)];
+            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
+            return buffer;
+        }
 
-            using (var matcolor = bitmap.ToMat())
+        public static void ComputeBlob(Bitmap bitmap, out ulong phash, out byte[] map, out ulong[] descriptors)
+        {
+            descriptors = null;
+            map = null;
+            using (var matsource = bitmap.ToMat())
+            using (var matcolor = new Mat())
             {
+                var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
+                Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
                 using (var mat = new Mat())
                 {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    var keypoints = _orb.Detect(mat);
-                    using (var matdescriptors = new Mat())
+                    using (var phashcalculator = PHash.Create())
+                    using (var matphash = new Mat())
                     {
-                        if (keypoints.Length > AppConsts.MaxDescriptorsInImage)
-                        {
-                            keypoints = keypoints.ToList().Take(AppConsts.MaxDescriptorsInImage).ToArray();
-                        }
+                        phashcalculator.Compute(mat, matphash);
+                        matphash.GetArray(out byte[] phashbuffer);
+                        phash = BitConverter.ToUInt64(phashbuffer, 0);
+                    }
 
-                        _orb.Compute(mat, ref keypoints, matdescriptors);
-                        if (matdescriptors.Rows == 0)
+                    var keypoints = _fast.Detect(mat);
+                    if (keypoints.Length > 0)
+                    {
+                        keypoints = keypoints.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+                        using (var matdescriptors = new Mat())
                         {
-                            return false;
-                        }
+                            _orb.Compute(mat, ref keypoints, matdescriptors);
+                            if (matdescriptors.Rows > 0 && keypoints.Length > 0)
+                            {
+                                using (var matkeypoints = new Mat())
+                                {
+                                    Cv2.DrawKeypoints(matcolor, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                                    matkeypoints.SaveImage("matkeypoints.png");
+                                }
 
-                        matdescriptors.GetArray(out byte[] array);
-                        var maxblobsize = AppConsts.MaxDescriptorsInImage * _orb.DescriptorSize;
-                        var size = Math.Min(maxblobsize, array.Length);
-                        blob = new byte[size];
-                        Buffer.BlockCopy(array, 0, blob, 0, size);
+                                matdescriptors.GetArray(out byte[] array);
+                                descriptors = ImageHelper.ArrayTo64(array);
+                                map = new byte[keypoints.Length];
+                                for (var i = 0; i < keypoints.Length; i++)
+                                {
+                                    var ix = (int)(keypoints[i].Pt.X * PIESES / mat.Width);
+                                    var iy = (int)(keypoints[i].Pt.Y * PIESES / mat.Height);
+                                    map[i] = (byte)(iy * PIESES + ix);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static float CompareBlob(byte[] m1, ulong[] d1, byte[] m2, ulong[] d2)
+        {
+            const int MAXDISTANCE = 256;
+            var minhamming = new int[PIESES * PIESES];
+            for (var i = 0; i < minhamming.Length; i++)
+            {
+                minhamming[i] = MAXDISTANCE;
+            }
+
+            for (var i = 0; i < m1.Length; i++)
+            {
+                for (var j = 0; j < m2.Length; j++)
+                {
+                    if (m1[i] != m2[j])
+                    {
+                        continue;
+                    }
+
+                    var hamming = 0;
+                    for (var b = 0; b < 4; b++)
+                    {
+                        hamming += Intrinsic.PopCnt(d1[i * 4 + b] ^ d2[j * 4 + b]);
+                    }
+
+                    if (hamming < minhamming[m1[i]])
+                    {
+                        minhamming[m1[i]] = hamming;
                     }
                 }
             }
 
-            return true;
-        }
-
-        public static ulong[] ComputeDescriptors(byte[] blob)
-        {
-            var length = blob.Length * 4 / _orb.DescriptorSize;
-            var descriptors = new ulong[length];
-            Buffer.BlockCopy(blob, 0, descriptors, 0, blob.Length);
-            return descriptors;
-        }
-
-        public static float GetDistance(ulong[] x, ulong[] y, int count = int.MaxValue / 4)
-        {
-            float distance;
-            var m = new List<Tuple<int, int, int>>();
-            var xl = Math.Min(x.Length, count * 4);
-            var yl = Math.Min(y.Length, count * 4);
-            for (var i = 0; i < xl; i += 4)
+            var distances = minhamming.Where(e => e != MAXDISTANCE).OrderBy(e => e).ToArray();
+            if (distances.Length == 0)
             {
-                for (var j = 0; j < yl; j += 4)
-                {
-                    var d =
-                        Intrinsic.PopCnt(x[i + 0] ^ y[j + 0]) +
-                        Intrinsic.PopCnt(x[i + 1] ^ y[j + 1]) +
-                        Intrinsic.PopCnt(x[i + 2] ^ y[j + 2]) +
-                        Intrinsic.PopCnt(x[i + 3] ^ y[j + 3]);
-
-                    m.Add(new Tuple<int, int, int>(i, j, d));
-                }
+                return AppConsts.MaxDistance;
             }
 
-            m.Sort((a1, a2) => a1.Item3.CompareTo(a2.Item3));
-
-            var isum = 0;
-            var icount = 0;
-            var top = Math.Max(1, count / 4);
-            while (icount < top && m.Count > 0)
+            var bestcount = Math.Max(1, distances.Length / 4);
+            var p = 0;
+            var sum1 = 0f;
+            var cnt1 = 0;
+            while(p < bestcount)
             {
-                isum += m[0].Item3;
-                var ix = m[0].Item1;
-                var iy = m[0].Item2;
-                icount++;
-                m.RemoveAll(e => e.Item1 == ix || e.Item2 == iy);
+                sum1 += distances[p];
+                cnt1++;
+                p++;
             }
 
-            distance = (float)isum / icount;
+            var sum2 = 0f;
+            var cnt2 = 0;
+            while(p < distances.Length)
+            {
+                sum2 += distances[p];
+                cnt2++;
+                p++;
+            }
+
+            var distance = 0f;
+            if (cnt2 == 0)
+            {
+                distance = sum1 / cnt1;
+                
+            }
+            else
+            {
+                distance = ((sum1 * 9f / cnt1) + (sum2 / cnt2)) / 10f;
+            }
+            
             return distance;
         }
 
-        /*
-        public static int GetMatch(ushort[] x, ushort[] y)
+        public static int CompareGray(byte[] g1, byte[] g2)
         {
-            var i = 0;
-            var j = 0;
-            var m = 0;
-            while (i < x.Length && j < y.Length)
+            var diff = new int[16];
+            for (var i = 0; i < 16; i++)
             {
-                if (x[i] == y[j])
-                {
-                    i++;
-                    j++;
-                    m++;
-                }
-                else
-                {
-                    if (x[i] < y[j])
-                    {
-                        i++;
-                    }
-                    else
-                    {
-                        j++;
-                    }
-                }
+                diff[i] = Math.Abs((g1[i] >> 6) - (g2[i] >> 6));
             }
 
-            return m;
+            var sum = diff.OrderBy(e => e).Take(4).Sum();
+            return sum;
         }
-        */
     }
 }

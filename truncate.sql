@@ -1,12 +1,12 @@
-﻿--TRUNCATE TABLE Images;
---DBCC SHRINKDATABASE(N'D:\Users\Murad\Documents\Sdb\Db\IMAGES.MDF')
---GO
+﻿TRUNCATE TABLE Images;
+DBCC SHRINKDATABASE(N'D:\Users\Murad\Documents\Sdb\Db\IMAGES.MDF')
+GO
 
 --TRUNCATE TABLE Vars;
 --INSERT INTO Vars (Id) VALUES (0);
 
-UPDATE Images SET Counter = 0;
-UPDATE Images SET Distance = 256;
+--UPDATE Images SET Counter = 0;
+--UPDATE Images SET Distance = 256;
 
 --UPDATE Images SET Id = 0;
 --UPDATE Images SET LastCheck = '20200101';

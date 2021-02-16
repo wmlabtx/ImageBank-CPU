@@ -22,7 +22,9 @@ namespace ImageBankTest
         public Point(byte[] blob)
         {
             Blob = blob;
-            _descriptors = ImageHelper.ComputeDescriptors(blob);
+            var length = blob.Length * 4 / 32;
+            _descriptors = new ulong[length];
+            Buffer.BlockCopy(blob, 0, _descriptors, 0, blob.Length);
         }
 
         public int GetDistance(Point other)
@@ -43,6 +45,7 @@ namespace ImageBankTest
         [TestMethod()]
         public void Execute()
         {
+            /*
             var br1 = new byte[32];
             var p1 = new Point(br1);
             var br2 = new byte[32];
@@ -57,70 +60,51 @@ namespace ImageBankTest
             var d2 = p1.GetDistance(p2);
             Assert.AreEqual(d2, 256);
 
-            const int mindistance = 74;
+            const int mindistance = 80;
             var list = new List<Point>();
             var counter = 0;
             var images = 0;
             using (var writer = new BinaryWriter(File.Open("clusters.dat", FileMode.Create)))
             {
-                var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=60";
-                var _sqlConnection = new SqlConnection(connectionString);
-                _sqlConnection.Open();
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrDescriptors} "); // 0
-                sb.Append($"FROM {AppConsts.TableImages}");
-                var sqltext = sb.ToString();
+
+                var descriptor = new byte[32];
+                Buffer.BlockCopy(blob, offset, descriptor, 0, 32);
+                var point = new Point(descriptor);
+                counter++;
+                if (list.Count == 0)
                 {
-                    using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection))
+                    list.Add(point);
+                }
+                else
+                {
+                    var mind = 256;
+                    foreach (var e in list)
                     {
-                        using (var reader = sqlCommand.ExecuteReader())
+                        var d = e.GetDistance(point);
+                        mind = Math.Min(mind, d);
+                        if (mind < mindistance)
                         {
-                            while (reader.Read())
-                            {
-                                images++;
-                                var blob = (byte[])reader[0];
-                                var offset = 0;
-                                while (offset < blob.Length)
-                                {
-                                    var descriptor = new byte[32];
-                                    Buffer.BlockCopy(blob, offset, descriptor, 0, 32);
-                                    var point = new Point(descriptor);
-                                    counter++;
-                                    if (list.Count == 0)
-                                    {
-                                        list.Add(point);
-                                    }
-                                    else
-                                    {
-                                        var mind = 256;
-                                        foreach (var e in list)
-                                        {
-                                            var d = e.GetDistance(point);
-                                            mind = Math.Min(mind, d);
-                                            if (mind < mindistance)
-                                            {
-                                                break;
-                                            }
-                                        }
+                            break;
+                        }
+                    }
 
-                                        if (mind >= mindistance)
-                                        {
-                                            if (list.Count < 0x10000)
-                                            {
-                                                list.Add(point);
-                                                writer.Write(descriptor, 0, 32);
-                                            }
-                                            else
-                                            {
-                                                Debug.WriteLine($"{mindistance} | {images} | {list.Count} | {counter}");
-                                                return;
-                                            }
-                                        }
-                                    }
+                    if (mind >= mindistance)
+                    {
+                        if (list.Count < 0x4000)
+                        {
+                            list.Add(point);
+                            writer.Write(descriptor, 0, 32);
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"{mindistance} | {images} | {list.Count} | {counter}");
+                            return;
+                        }
+                    }
+                }
 
-                                    offset += 32;
-                                }
+                offset += 32;
+            }
                             }
                         }
                     }
@@ -130,6 +114,7 @@ namespace ImageBankTest
             }
 
             Debug.WriteLine($"{mindistance} | {images} | {list.Count} | {counter}");
+            */
         }
     }
 }

@@ -4,12 +4,12 @@
     {
         private const string PathRoot = @"D:\Users\Murad\Documents\Sdb\";
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
+
         public const string PathHp = PathRoot + @"Hp";
         public const string PathRw = PathRoot + @"Rw";
         
         public const int MaxImages = 200000;
-        public const int MaxDim = 1024;
-        public const int MaxDescriptorsInImage = 64;
+
         public const float MaxDistance = 256f;
 
         public const string FolderDefault = "root";
@@ -30,6 +30,8 @@
         public const string AttrFolder = "Folder";
         public const string AttrHash = "Hash";
         public const string AttrDescriptors = "Descriptors";
+        public const string AttrMapDescriptors = "MapDescriptors";
+        public const string AttrPhash = "Phash";
         public const string AttrLastAdded = "LastAdded";
         public const string AttrLastView = "LastView";
         public const string AttrCounter = "Counter";

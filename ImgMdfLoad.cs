@@ -22,12 +22,14 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrFolder}, "); // 1
             sb.Append($"{AppConsts.AttrHash}, "); // 2
             sb.Append($"{AppConsts.AttrDescriptors}, "); // 3
-            sb.Append($"{AppConsts.AttrLastAdded}, "); // 4
-            sb.Append($"{AppConsts.AttrLastView}, "); // 5
-            sb.Append($"{AppConsts.AttrCounter}, "); // 6
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 7
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 8
-            sb.Append($"{AppConsts.AttrDistance} "); // 9
+            sb.Append($"{AppConsts.AttrMapDescriptors}, "); // 4
+            sb.Append($"{AppConsts.AttrPhash}, "); // 5
+            sb.Append($"{AppConsts.AttrLastAdded}, "); // 6
+            sb.Append($"{AppConsts.AttrLastView}, "); // 7
+            sb.Append($"{AppConsts.AttrCounter}, "); // 8
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 9
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 10
+            sb.Append($"{AppConsts.AttrDistance} "); // 11
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -39,17 +41,22 @@ namespace ImageBank
                             var folder = reader.GetString(1);
                             var hash = reader.GetString(2);
                             var blob = (byte[])reader[3];
-                            var lastadded = reader.GetDateTime(4);
-                            var lastview = reader.GetDateTime(5);
-                            var counter = reader.GetByte(6);
-                            var lastcheck = reader.GetDateTime(7);
-                            var nexthash = reader.GetString(8);
-                            var distance = reader.GetFloat(9);
+                            var mapdescriptors = (byte[])reader[4];
+                            var phashbuffer = (byte[])reader[5];
+                            var phash = BitConverter.ToUInt64(phashbuffer, 0);
+                            var lastadded = reader.GetDateTime(6);
+                            var lastview = reader.GetDateTime(7);
+                            var counter = reader.GetInt32(8);
+                            var lastcheck = reader.GetDateTime(9);
+                            var nexthash = reader.GetString(10);
+                            var distance = reader.GetFloat(11);
                             var img = new Img(
                                 name: name,
                                 folder: folder,
                                 hash: hash,
                                 blob: blob,
+                                mapdescriptors: mapdescriptors,
+                                phash: phash,
                                 lastadded: lastadded,
                                 lastview: lastview,
                                 counter: counter,
@@ -71,31 +78,5 @@ namespace ImageBank
 
             progress.Report("Database loaded");
         }
-
-        /*
-        public static byte[] LoadBlob(string name)
-        {
-            byte[] blob = null;
-            var sb = new StringBuilder();
-            sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrDescriptors} ");
-            sb.Append($"FROM {AppConsts.TableImages} ");
-            sb.Append($"WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}");
-            var sqltext = sb.ToString();
-            lock (_sqllock) {
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        while (reader.Read()) {
-                            blob = (byte[])reader[0];
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return blob;
-        }
-        */
     }
 }

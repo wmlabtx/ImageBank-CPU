@@ -197,9 +197,11 @@ namespace ImageBank
                     }
                 }
 
+                /*
                 if (AppVars.ImgPanel[index].Img.LastView.Year < 2021) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
+                */
 
                 if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
@@ -339,6 +341,16 @@ namespace ImageBank
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
+        }
+
+        public void CollectDescriptors()
+        {
+            //await Task.Run(() => { DescriptorFactory.CollectDescriptors(); }).ConfigureAwait(true);
+        }
+
+        public void FindWords()
+        {
+            //await Task.Run(() => { DescriptorFactory.FindWords(); }).ConfigureAwait(true);
         }
     }
 }

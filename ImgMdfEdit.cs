@@ -24,11 +24,13 @@ namespace ImageBank
                         return;
                     }
 
-                    if (!ImageHelper.ComputeDescriptors(bitmap, out var rblob)) {
+                    ImageHelper.ComputeBlob(bitmap, out var rphash, out var rmapdescriptors, out var rdescriptors);
+                    if (rdescriptors == null || rdescriptors.Length == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder}\\{name}");
                         return;
                     }
 
+                    var rblob = ImageHelper.ArrayFrom64(rdescriptors);
                     var rhash = Helper.ComputeHash(rimagedata);
                     if (_hashList.ContainsKey(rhash)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Dup found for {img.Folder}\\{name}");
@@ -41,6 +43,8 @@ namespace ImageBank
                             folder: img.Folder,
                             hash: rhash,
                             blob: rblob,
+                            mapdescriptors: rmapdescriptors,
+                            phash: rphash,
                             lastadded: img.LastAdded,
                             lastview: img.LastView,
                             counter: img.Counter,

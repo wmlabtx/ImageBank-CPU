@@ -28,12 +28,6 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (eX.Counter == 0)
-                            {
-                                continue;
-                            }
-
-                            /*
                             if (imgX != null &&
                                 imgX.Counter < eX.Counter) {
                                 continue;
@@ -42,13 +36,6 @@ namespace ImageBank
                             if (imgX != null &&
                                 imgX.Counter == eX.Counter &&
                                 imgX.LastView <= eX.LastView) {
-                                continue;
-                            }
-                            */
-
-                            if (imgX != null &&
-                                imgX.LastView <= eX.LastView)
-                            {
                                 continue;
                             }
 
@@ -65,7 +52,7 @@ namespace ImageBank
                         return;
                     }
 
-                        AppVars.ImgPanel[0] = GetImgPanel(nameX);
+                    AppVars.ImgPanel[0] = GetImgPanel(nameX);
                     if (AppVars.ImgPanel[0] == null) {
                         Delete(nameX);
                         progress.Report($"{nameX} deleted");
@@ -89,7 +76,7 @@ namespace ImageBank
             var sb = new StringBuilder();
             sb.Append($"{_imgList.Count}: ");
             sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-            sb.Append($"{imgX.Distance:F2} ");
+            sb.Append($"{imgX.Distance:F1} ");
             progress.Report(sb.ToString());
         }
     }

@@ -103,6 +103,16 @@ namespace ImageBank
             AssignFolderLeft();
         }
 
+        private void CollectDescriptorsClick(object sender, RoutedEventArgs e)
+        {
+            CollectDescriptors();
+        }
+
+        private void FindWordsClick(object sender, RoutedEventArgs e)
+        {
+            FindWords();
+        }
+
         private void ExitClick(object sender, EventArgs e)
         {
             Close();
