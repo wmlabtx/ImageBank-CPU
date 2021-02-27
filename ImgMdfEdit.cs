@@ -24,7 +24,7 @@ namespace ImageBank
                         return;
                     }
 
-                    ImageHelper.ComputeBlob(bitmap, out var rphash, out var rmapdescriptors, out var rdescriptors);
+                    ImageHelper.ComputeBlob(bitmap, out var rphash, out var rdescriptors);
                     if (rdescriptors == null || rdescriptors.Length == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder}\\{name}");
                         return;
@@ -43,11 +43,10 @@ namespace ImageBank
                             folder: img.Folder,
                             hash: rhash,
                             blob: rblob,
-                            mapdescriptors: rmapdescriptors,
                             phash: rphash,
                             lastadded: img.LastAdded,
                             lastview: img.LastView,
-                            counter: img.Counter,
+                            history: img.History,
                             lastcheck: minlc,
                             nexthash: rhash,
                             distance: AppConsts.MaxDistance);

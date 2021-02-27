@@ -18,24 +18,8 @@
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
             <MenuItem Header="Family">
-                <MenuItem Header="kandid" Tag="nn\kandid" Click="AssignFolderClick" />
-                <MenuItem Header="skirt" Tag="nn\skirt" Click="AssignFolderClick" />
-                <Separator />
                 <MenuItem Header="root" Tag="root" Click="AssignFolderClick" />
-                <MenuItem Header="nn">
-                    <MenuItem Header="kandid" Tag="nn\kandid" Click="AssignFolderClick" />
-                    <MenuItem Header="skirt" Tag="nn\skirt" Click="AssignFolderClick" />
-                    <MenuItem Header="camel" Tag="nn\camel" Click="AssignFolderClick" />
-                    <MenuItem Header="kiss" Tag="nn\kiss" Click="AssignFolderClick" />
-                </MenuItem>
-                <MenuItem Header="hc">
-                    <MenuItem Header="hand" Tag="hc\hand" Click="AssignFolderClick" />
-                    <MenuItem Header="cunni" Tag="hc\cunni" Click="AssignFolderClick" />
-                    <MenuItem Header="oral" Tag="hc\oral" Click="AssignFolderClick" />
-                    <MenuItem Header="fuck" Tag="hc\fuck" Click="AssignFolderClick" />
-                    <MenuItem Header="anal" Tag="hc\anal" Click="AssignFolderClick" />
-                    <MenuItem Header="cum" Tag="hc\cum" Click="AssignFolderClick" />
-                </MenuItem>
+                <MenuItem Header="Kandid" Tag="Kandid" Click="AssignFolderClick" />
                 <Separator />
                 <MenuItem Header="Assign left" Click="AssignFolderLeftClick" />
             </MenuItem>

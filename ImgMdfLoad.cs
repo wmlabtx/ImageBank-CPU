@@ -22,14 +22,13 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrFolder}, "); // 1
             sb.Append($"{AppConsts.AttrHash}, "); // 2
             sb.Append($"{AppConsts.AttrDescriptors}, "); // 3
-            sb.Append($"{AppConsts.AttrMapDescriptors}, "); // 4
-            sb.Append($"{AppConsts.AttrPhash}, "); // 5
-            sb.Append($"{AppConsts.AttrLastAdded}, "); // 6
-            sb.Append($"{AppConsts.AttrLastView}, "); // 7
-            sb.Append($"{AppConsts.AttrCounter}, "); // 8
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 9
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 10
-            sb.Append($"{AppConsts.AttrDistance} "); // 11
+            sb.Append($"{AppConsts.AttrPhash}, "); // 4
+            sb.Append($"{AppConsts.AttrLastAdded}, "); // 5
+            sb.Append($"{AppConsts.AttrLastView}, "); // 6
+            sb.Append($"{AppConsts.AttrHistory}, "); // 7
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 9
+            sb.Append($"{AppConsts.AttrDistance} "); // 10
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -41,25 +40,23 @@ namespace ImageBank
                             var folder = reader.GetString(1);
                             var hash = reader.GetString(2);
                             var blob = (byte[])reader[3];
-                            var mapdescriptors = (byte[])reader[4];
-                            var phashbuffer = (byte[])reader[5];
+                            var phashbuffer = (byte[])reader[4];
                             var phash = BitConverter.ToUInt64(phashbuffer, 0);
-                            var lastadded = reader.GetDateTime(6);
-                            var lastview = reader.GetDateTime(7);
-                            var counter = reader.GetInt32(8);
-                            var lastcheck = reader.GetDateTime(9);
-                            var nexthash = reader.GetString(10);
-                            var distance = reader.GetFloat(11);
+                            var lastadded = reader.GetDateTime(5);
+                            var lastview = reader.GetDateTime(6);
+                            var history = reader.GetString(7);
+                            var lastcheck = reader.GetDateTime(8);
+                            var nexthash = reader.GetString(9);
+                            var distance = reader.GetFloat(10);
                             var img = new Img(
                                 name: name,
                                 folder: folder,
                                 hash: hash,
                                 blob: blob,
-                                mapdescriptors: mapdescriptors,
                                 phash: phash,
                                 lastadded: lastadded,
                                 lastview: lastview,
-                                counter: counter,
+                                history: history,
                                 lastcheck: lastcheck,
                                 nexthash: nexthash,
                                 distance: distance

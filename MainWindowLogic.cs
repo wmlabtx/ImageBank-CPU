@@ -188,7 +188,7 @@ namespace ImageBank
                 sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
 
                 pLabels[index].Text = sb.ToString();
-                var scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
+                var scb = System.Windows.Media.Brushes.White;
 
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
@@ -197,16 +197,25 @@ namespace ImageBank
                     }
                 }
 
-                /*
-                if (AppVars.ImgPanel[index].Img.LastView.Year < 2021) {
+                if (AppVars.ImgPanel[index].Img.Counter > 0) 
+                {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
-                */
-
-                if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
-                    AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
-                    AppVars.ImgPanel[index].Bitmap.Height == 2888 || AppVars.ImgPanel[index].Bitmap.Width == 2888) {
-                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                else
+                {
+                    if (!AppVars.ImgPanel[index].Img.Folder.StartsWith(AppConsts.FolderDefault))
+                    {
+                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x70, 0xCE, 0x70));
+                    }
+                    else
+                    {
+                        if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
+                            AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
+                            AppVars.ImgPanel[index].Bitmap.Height == 2888 || AppVars.ImgPanel[index].Bitmap.Width == 2888)
+                        {
+                            scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                        }
+                    }
                 }
 
                 pLabels[index].Background = scb;

@@ -29,15 +29,37 @@ namespace ImageBank
                             }
 
                             if (imgX != null &&
+                                imgX.LastView <= eX.LastView)
+                            {
+                                continue;
+                            }
+
+                            /*
+
+                            if (imgX != null &&
                                 imgX.Counter < eX.Counter) {
                                 continue;
                             }
 
-                            if (imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                imgX.LastView <= eX.LastView) {
-                                continue;
+                            if (_imgList.Count <= AppConsts.MaxImagesSort)
+                            {
+                                if (imgX != null &&
+                                    imgX.Counter == eX.Counter &&
+                                    imgX.LastView <= eX.LastView)
+                                {
+                                    continue;
+                                }
                             }
+                            else
+                            {
+                                if (imgX != null &&
+                                    imgX.Counter == eX.Counter &&
+                                    imgX.Distance <= eX.Distance)
+                                {
+                                    continue;
+                                }
+                            }
+                            */
 
                             imgX = eX;
                             var imgY = eY;

@@ -15,10 +15,9 @@
 
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
-                            e.Value.LastCheck = GetMinLastCheck();
                             e.Value.NextHash = e.Value.Hash;
                             e.Value.Distance = AppConsts.MaxDistance;
-                            e.Value.Counter = 0;
+                            e.Value.RemoveFromHistory(img.Hash);
                         }
                     }
                 }

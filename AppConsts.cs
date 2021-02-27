@@ -7,15 +7,17 @@
 
         public const string PathHp = PathRoot + @"Hp";
         public const string PathRw = PathRoot + @"Rw";
-        
-        public const int MaxImages = 200000;
-
-        public const float MaxDistance = 256f;
-
         public const string FolderDefault = "root";
+
+        public const int MaxImages = 200000;
+        public const int MaxImagesSort = 150000;
+
+        public const int HashLength = 32;
+        public const float MaxDistance = 256f;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
+        public const string DbxExtension = ".dbx";
         public const string WebpExtension = ".webp";
         public const string JpgExtension = ".jpg";
         public const string JpegExtension = ".jpeg";
@@ -34,9 +36,9 @@
         public const string AttrPhash = "Phash";
         public const string AttrLastAdded = "LastAdded";
         public const string AttrLastView = "LastView";
-        public const string AttrCounter = "Counter";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrNextHash = "NextHash";
         public const string AttrDistance = "Distance";
+        public const string AttrHistory = "History";
     }
 }

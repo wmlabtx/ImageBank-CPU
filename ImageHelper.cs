@@ -14,10 +14,8 @@ namespace ImageBank
     public static class ImageHelper
     {
         const int MAXDIM = 768;
-        const int MAXDESCRIPTORS = 250;
-        const int PIESES = 4;
-        private static readonly FastFeatureDetector _fast = FastFeatureDetector.Create();
-        private static readonly ORB _orb = ORB.Create();
+        const int MAXDESCRIPTORS = 100;
+        private static readonly ORB _orb = ORB.Create(1000);
 
         private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
@@ -151,6 +149,7 @@ namespace ImageBank
 
             if (
                 !extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
+                !extension.Equals(AppConsts.DbxExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.PngExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.BmpExtension, StringComparison.OrdinalIgnoreCase) &&
@@ -240,10 +239,9 @@ namespace ImageBank
             return buffer;
         }
 
-        public static void ComputeBlob(Bitmap bitmap, out ulong phash, out byte[] map, out ulong[] descriptors)
+        public static void ComputeBlob(Bitmap bitmap, out ulong phash, out ulong[] descriptors)
         {
             descriptors = null;
-            map = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat())
             {
@@ -260,30 +258,59 @@ namespace ImageBank
                         phash = BitConverter.ToUInt64(phashbuffer, 0);
                     }
 
-                    var keypoints = _fast.Detect(mat);
+                    var keypoints = _orb.Detect(mat);
                     if (keypoints.Length > 0)
                     {
-                        keypoints = keypoints.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+                        /*
+                        using (var matkeypoints = new Mat())
+                        {
+                            Cv2.DrawKeypoints(matcolor, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                            matkeypoints.SaveImage($"matkeypoints_{keypoints.Length}.png");
+                        }
+                        */
+
+                        var grid = new List<KeyPoint>[100];
+                        foreach (var e in keypoints)
+                        {
+                            var xbin = (int)(e.Pt.X * 10f / mat.Width);
+                            var ybin = (int)(e.Pt.Y * 10f / mat.Height);
+                            var bin = ybin * 10 + xbin;
+                            if (grid[bin] == null)
+                            {
+                                grid[bin] = new List<KeyPoint>();
+                            }
+
+                            grid[bin].Add(e);
+                        }
+
+                        var lkeypoints = new List<KeyPoint>();
+                        foreach (var g in grid)
+                        {
+                            if (g != null && g.Count > 0)
+                            {
+                                var keypoint = g.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).FirstOrDefault();
+                                lkeypoints.Add(keypoint);
+                            }
+                        }
+
+                        keypoints = lkeypoints.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+                        //keypoints = keypoints.OrderByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+
                         using (var matdescriptors = new Mat())
                         {
                             _orb.Compute(mat, ref keypoints, matdescriptors);
                             if (matdescriptors.Rows > 0 && keypoints.Length > 0)
                             {
+                                /*
                                 using (var matkeypoints = new Mat())
                                 {
                                     Cv2.DrawKeypoints(matcolor, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
                                     matkeypoints.SaveImage("matkeypoints.png");
                                 }
+                                */
 
                                 matdescriptors.GetArray(out byte[] array);
-                                descriptors = ImageHelper.ArrayTo64(array);
-                                map = new byte[keypoints.Length];
-                                for (var i = 0; i < keypoints.Length; i++)
-                                {
-                                    var ix = (int)(keypoints[i].Pt.X * PIESES / mat.Width);
-                                    var iy = (int)(keypoints[i].Pt.Y * PIESES / mat.Height);
-                                    map[i] = (byte)(iy * PIESES + ix);
-                                }
+                                descriptors = ArrayTo64(array);
                             }
                         }
                     }
@@ -291,87 +318,40 @@ namespace ImageBank
             }
         }
 
-        public static float CompareBlob(byte[] m1, ulong[] d1, byte[] m2, ulong[] d2)
+        public static float CompareBlob(ulong[] x, ulong[] y)
         {
-            const int MAXDISTANCE = 256;
-            var minhamming = new int[PIESES * PIESES];
-            for (var i = 0; i < minhamming.Length; i++)
+            var m = new List<Tuple<int, int, int>>();
+            for (var i = 0; i < x.Length; i += 4)
             {
-                minhamming[i] = MAXDISTANCE;
-            }
-
-            for (var i = 0; i < m1.Length; i++)
-            {
-                for (var j = 0; j < m2.Length; j++)
+                for (var j = 0; j < y.Length; j += 4)
                 {
-                    if (m1[i] != m2[j])
-                    {
-                        continue;
-                    }
+                    var d =
+                        Intrinsic.PopCnt(x[i + 0] ^ y[j + 0]) +
+                        Intrinsic.PopCnt(x[i + 1] ^ y[j + 1]) +
+                        Intrinsic.PopCnt(x[i + 2] ^ y[j + 2]) +
+                        Intrinsic.PopCnt(x[i + 3] ^ y[j + 3]);
 
-                    var hamming = 0;
-                    for (var b = 0; b < 4; b++)
-                    {
-                        hamming += Intrinsic.PopCnt(d1[i * 4 + b] ^ d2[j * 4 + b]);
-                    }
-
-                    if (hamming < minhamming[m1[i]])
-                    {
-                        minhamming[m1[i]] = hamming;
-                    }
+                    m.Add(new Tuple<int, int, int>(i, j, d));
                 }
             }
 
-            var distances = minhamming.Where(e => e != MAXDISTANCE).OrderBy(e => e).ToArray();
-            if (distances.Length == 0)
+            m.Sort((a1, a2) => a1.Item3.CompareTo(a2.Item3));
+            var sum = 0f;
+            var w = 1f;
+            var sumw = 0f;
+            while (m.Count > 0)
             {
-                return AppConsts.MaxDistance;
+                sum += m[0].Item3 * w;
+                sumw += w;
+                w /= 2f;
+
+                var ix = m[0].Item1;
+                var iy = m[0].Item2;
+                m.RemoveAll(e => e.Item1 == ix || e.Item2 == iy);
             }
 
-            var bestcount = Math.Max(1, distances.Length / 4);
-            var p = 0;
-            var sum1 = 0f;
-            var cnt1 = 0;
-            while(p < bestcount)
-            {
-                sum1 += distances[p];
-                cnt1++;
-                p++;
-            }
-
-            var sum2 = 0f;
-            var cnt2 = 0;
-            while(p < distances.Length)
-            {
-                sum2 += distances[p];
-                cnt2++;
-                p++;
-            }
-
-            var distance = 0f;
-            if (cnt2 == 0)
-            {
-                distance = sum1 / cnt1;
-                
-            }
-            else
-            {
-                distance = ((sum1 * 9f / cnt1) + (sum2 / cnt2)) / 10f;
-            }
-            
-            return distance;
-        }
-
-        public static int CompareGray(byte[] g1, byte[] g2)
-        {
-            var diff = new int[16];
-            for (var i = 0; i < 16; i++)
-            {
-                diff[i] = Math.Abs((g1[i] >> 6) - (g2[i] >> 6));
-            }
-
-            var sum = diff.OrderBy(e => e).Take(4).Sum();
-            return sum;
+            var f = (float)sum / sumw;
+            return f;
         }
     }
 }

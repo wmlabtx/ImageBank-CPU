@@ -14,7 +14,9 @@ namespace ImageBank
             var added = 0;
             var bad = 0;
             var found = 0;
+            var moved = 0;
             var dt = DateTime.Now;
+            var folder = string.Empty;
 
             ((IProgress<string>)AppVars.Progress).Report("importing...");
             var directoryInfo = new DirectoryInfo(path);
@@ -26,7 +28,6 @@ namespace ImageBank
             foreach (var fileInfo in fileInfos) {
                 var filename = fileInfo.FullName;
                 var name = Path.GetFileNameWithoutExtension(filename);
-                var folder = string.Empty;
                 if (path.Equals(AppConsts.PathHp))
                 {
                     var shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
@@ -51,7 +52,7 @@ namespace ImageBank
 
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
-                    ((IProgress<string>)AppVars.Progress).Report($"{name} (a:{added}/b:{bad}/f:{found})...");
+                    ((IProgress<string>)AppVars.Progress).Report($"{name} (a:{added}/b:{bad}/f:{found}/m:{moved})...");
                 }
 
                 if (!ImageHelper.GetImageDataFromFile(
@@ -64,29 +65,75 @@ namespace ImageBank
                     continue;
                 }
 
-                ImageHelper.ComputeBlob(bitmap, out var phash, out var mapdescriptors, out var descriptors);
-                if (descriptors == null || descriptors.Length == 0) {
-                    message = "not enough descriptors";
-                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
-                    bad++;
-                    var badname = Path.Combine(AppConsts.PathRw, $"{name}.png");
-                    bitmap.Save(badname, ImageFormat.Png);
-                    continue;
-                }
-
-                var blob = ImageHelper.ArrayFrom64(descriptors);
-
                 lock (_imglock) {
+                    var lastadded = DateTime.Now;
+                    var lastview = GetMinLastView();
+                    var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
-                    if (_hashList.TryGetValue(hash, out var imgfound)) {
-                        if (File.Exists(imgfound.FileName)) {
-                            found++;
-                            Helper.DeleteToRecycleBin(filename);
-                            continue;
-                        }
+                    folder = path.Equals(AppConsts.PathRw) ?
+                        $"root\\{hash.Substring(0, 1)}" :
+                        Path.GetDirectoryName(filename).Substring(path.Length + 1);
 
-                        Delete(imgfound.Name);
+                    if (_hashList.TryGetValue(hash, out var imgfound)) {
+                        lastadded = imgfound.LastAdded;
+                        lastview = imgfound.LastView;
+                        lastcheck = imgfound.LastCheck;
+                        if (File.Exists(imgfound.FileName))
+                        {
+                            if (imgfound.Folder.StartsWith(AppConsts.FolderDefault))
+                            {
+                                // new file will replace existing root file
+                                var imgreplace = new Img(
+                                    name: imgfound.Name,
+                                    folder: folder,
+                                    hash: imgfound.Hash,
+                                    blob: imgfound.Blob,
+                                    phash: imgfound.Phash,
+                                    lastadded: lastadded,
+                                    lastview: lastview,
+                                    history: imgfound.History,
+                                    lastcheck: lastcheck,
+                                    nexthash: imgfound.NextHash,
+                                    distance: imgfound.Distance);
+
+                                var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
+                                Helper.WriteData(imgreplace.FileName, imagedata);
+                                File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
+                                Helper.DeleteToRecycleBin(filename);
+
+                                Delete(imgfound.Name);
+                                Add(imgreplace);
+                                bitmap.Dispose();
+
+                                moved++;
+                                continue;
+                            }
+                            else
+                            {
+                                found++;
+                                Helper.DeleteToRecycleBin(filename);
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            moved++;
+                            Delete(imgfound.Name);
+                        }
                     }
+
+                    ImageHelper.ComputeBlob(bitmap, out var phash, out var descriptors);
+                    if (descriptors == null || descriptors.Length == 0)
+                    {
+                        message = "not enough descriptors";
+                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
+                        bad++;
+                        var badname = Path.Combine(AppConsts.PathRw, $"{name}.png");
+                        bitmap.Save(badname, ImageFormat.Png);
+                        continue;
+                    }
+
+                    var blob = ImageHelper.ArrayFrom64(descriptors);
 
                     var len = 8;
                     while (len <= 32) {
@@ -98,23 +145,15 @@ namespace ImageBank
                         len++;
                     }
                 
-                    var lastadded = DateTime.Now;
-                    var lastview = GetMinLastView();
-                    var lastcheck = GetMinLastCheck();
-                    if (path.Equals(AppConsts.PathRw)) {
-                        folder = $"root\\{hash.Substring(0, 1)}";
-                    }
-
                     var img = new Img(
                         name: name,
                         folder: folder,
                         hash: hash,
                         blob: blob,
-                        mapdescriptors: mapdescriptors,
                         phash: phash,
                         lastadded: lastadded,
                         lastview: lastview,
-                        counter: 0,
+                        history: string.Empty,
                         lastcheck: lastcheck,
                         nexthash: hash,
                         distance: AppConsts.MaxDistance);

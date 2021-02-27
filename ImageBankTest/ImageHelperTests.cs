@@ -13,26 +13,26 @@ namespace ImageBankTest
         public void ComputeBlobTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeBlob((Bitmap)image, out var g1, out var m1, out var d1);
+            ImageHelper.ComputeBlob((Bitmap)image, out var h, out var d);
         }
 
         [TestMethod()]
         public void CompareBlobTest()
         {
             var image1 = Image.FromFile("arianna-048-001.jpg");
-            OrbHepler.ComputeBlob((Bitmap)image1, out var m1, out var d1);
+            ImageHelper.ComputeBlob((Bitmap)image1, out var h1, out var d1);
 
             var image2 = Image.FromFile("arianna-048-009.jpg");
-            OrbHepler.ComputeBlob((Bitmap)image2, out var m2, out var d2);
+            ImageHelper.ComputeBlob((Bitmap)image2, out var h2, out var d2);
 
-            var result = OrbHepler.CompareBlob(m1, d1, m2, d2);
+            var result = ImageHelper.CompareBlob(d1, d2);
         }
 
         [TestMethod()]
         public void GetDistanceBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            OrbHepler.ComputeBlob((Bitmap)image1, out var m1, out var d1);
+            ImageHelper.ComputeBlob((Bitmap)image1, out var h1, out var d1);
             var files = new[] {
                 "org_png.jpg",
                 "org_resized.jpg",
@@ -54,8 +54,8 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                OrbHepler.ComputeBlob((Bitmap)image2, out var m2, out var d2);
-                var result = OrbHepler.CompareBlob(m1, d1, m2, d2);
+                ImageHelper.ComputeBlob((Bitmap)image2, out var h2, out var d2);
+                var result = ImageHelper.CompareBlob(d1, d2);
                 if (sb.Length > 0)
                 {
                     sb.AppendLine();
@@ -67,7 +67,7 @@ namespace ImageBankTest
             sb.AppendLine();
 
             image1 = Image.FromFile("arianna-048-001.jpg");
-            OrbHepler.ComputeBlob((Bitmap)image1, out m1, out d1);
+            ImageHelper.ComputeBlob((Bitmap)image1, out h1, out d1);
 
             files = new[] {
                 "arianna-048-009.jpg",
@@ -80,8 +80,8 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                OrbHepler.ComputeBlob((Bitmap)image2, out var m2, out var d2);
-                var result = OrbHepler.CompareBlob(m1, d1, m2, d2);
+                ImageHelper.ComputeBlob((Bitmap)image2, out var h2, out var d2);
+                var result = ImageHelper.CompareBlob(d1, d2);
                 if (sb.Length > 0)
                 {
                     sb.AppendLine();

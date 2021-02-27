@@ -166,25 +166,27 @@ namespace ImageBank
 
         #endregion
 
-        #region EncryptedData
+        #region FileData
 
         public static byte[] ReadData(string filename)
         {
-            try {
-                var encdata = File.ReadAllBytes(filename);
-                var password = Path.GetFileNameWithoutExtension(filename);
-                var imgdata = Decrypt(encdata, password);
+            try
+            {
+                var imgdata = File.ReadAllBytes(filename);
                 return imgdata;
             }
-            catch (DirectoryNotFoundException ex) {
+            catch (DirectoryNotFoundException ex)
+            {
                 Trace.WriteLine(ex);
                 return null;
             }
-            catch (FileNotFoundException ex) {
+            catch (FileNotFoundException ex)
+            {
                 Trace.WriteLine(ex);
                 return null;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Trace.WriteLine(ex);
                 throw;
             }
@@ -193,7 +195,46 @@ namespace ImageBank
         public static void WriteData(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
-            if (!Directory.Exists(directory)) {
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllBytes(filename, imgdata);
+        }
+
+        /*
+        public static byte[] ReadData(string filename)
+        {
+            try
+            {
+                var encdata = File.ReadAllBytes(filename);
+                var password = Path.GetFileNameWithoutExtension(filename);
+                var imgdata = Decrypt(encdata, password);
+                return imgdata;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                Trace.WriteLine(ex);
+                return null;
+            }
+            catch (FileNotFoundException ex)
+            {
+                Trace.WriteLine(ex);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex);
+                throw;
+            }
+        }
+
+        public static void WriteData(string filename, byte[] imgdata)
+        {
+            var directory = Path.GetDirectoryName(filename);
+            if (!Directory.Exists(directory))
+            {
                 Directory.CreateDirectory(directory);
             }
 
@@ -201,6 +242,7 @@ namespace ImageBank
             var encdata = Encrypt(imgdata, password);
             File.WriteAllBytes(filename, encdata);
         }
+        */
 
         #endregion
 
@@ -313,20 +355,5 @@ namespace ImageBank
         }
 
         #endregion
-
-        public static int IntPow(int x, int pow)
-        {
-            int ret = 1;
-            while (pow != 0) {
-                if ((pow & 1) == 1) {
-                    ret *= x;
-                }
-
-                x *= x;
-                pow >>= 1;
-            }
-
-            return ret;
-        }
     }
 }
