@@ -51,7 +51,10 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
-                    sb.Append($"{AppConsts.AttrDistance}");
+                    sb.Append($"{AppConsts.AttrDistance}, ");
+                    sb.Append($"{AppConsts.AttrWidth}, ");
+                    sb.Append($"{AppConsts.AttrHeight}, ");
+                    sb.Append($"{AppConsts.AttrSize}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrFolder}, ");
@@ -63,7 +66,10 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
-                    sb.Append($"@{AppConsts.AttrDistance}");
+                    sb.Append($"@{AppConsts.AttrDistance}, ");
+                    sb.Append($"@{AppConsts.AttrWidth}, ");
+                    sb.Append($"@{AppConsts.AttrHeight}, ");
+                    sb.Append($"@{AppConsts.AttrSize}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
@@ -78,6 +84,9 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDistance}", img.Distance);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.ExecuteNonQuery();
                 }
             }

@@ -14,26 +14,26 @@ namespace ImageBank
                         out _,
                         out var bitmap,
                         out _)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {img.Folder}\\{name}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {img.Folder:D2}\\{name}");
                         return;
                     }
 
                     bitmap.RotateFlip(rft);
                     if (!ImageHelper.GetImageDataFromBitmap(bitmap, out var rimagedata)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Encode error: {img.Folder}\\{name}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Encode error: {img.Folder:D2}\\{name}");
                         return;
                     }
 
                     ImageHelper.ComputeBlob(bitmap, out var rphash, out var rdescriptors);
                     if (rdescriptors == null || rdescriptors.Length == 0) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder}\\{name}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder:D2}\\{name}");
                         return;
                     }
 
                     var rblob = ImageHelper.ArrayFrom64(rdescriptors);
                     var rhash = Helper.ComputeHash(rimagedata);
                     if (_hashList.ContainsKey(rhash)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Dup found for {img.Folder}\\{name}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Dup found for {img.Folder:D2}\\{name}");
                         Delete(img.Name);
                     }
                     else {
@@ -49,7 +49,10 @@ namespace ImageBank
                             history: img.History,
                             lastcheck: minlc,
                             nexthash: rhash,
-                            distance: AppConsts.MaxDistance);
+                            distance: AppConsts.MaxDistance,
+                            width: bitmap.Width,
+                            height: bitmap.Height,
+                            size: rimagedata.Length);
 
                         Delete(img.Name);
                         Add(rimg);

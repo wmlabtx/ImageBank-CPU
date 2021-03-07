@@ -114,7 +114,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ColorCube.cs" />
-    <Compile Include="DctHelper.cs" />
     <Compile Include="DescriptorFactory.cs" />
     <Compile Include="HcHelper.cs" />
     <Compile Include="HsHelper.cs" />
@@ -138,14 +137,12 @@
     <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
-    <Compile Include="ImgMdfFamily.cs" />
+    <Compile Include="ImgMdfFolder.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />
     <Compile Include="ImgMdfConfirm.cs" />
     <Compile Include="ImgMdfSql.cs" />
     <Compile Include="ImgPanel.cs" />
-    <Compile Include="M7c.cs" />
-    <Compile Include="M7e.cs" />
     <Compile Include="MagicFormat.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

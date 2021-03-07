@@ -10,7 +10,8 @@ namespace ImageBank
         {
             progress.Report("Loading model...");
 
-            lock (_imglock) {
+            lock (_imglock)
+            {
                 _imgList.Clear();
             }
 
@@ -28,16 +29,24 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrHistory}, "); // 7
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
             sb.Append($"{AppConsts.AttrNextHash}, "); // 9
-            sb.Append($"{AppConsts.AttrDistance} "); // 10
+            sb.Append($"{AppConsts.AttrDistance}, "); // 10
+            sb.Append($"{AppConsts.AttrWidth}, "); // 11
+            sb.Append($"{AppConsts.AttrHeight}, "); // 12
+            sb.Append($"{AppConsts.AttrSize} "); // 13
+
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
-            lock (_sqllock) {
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    using (var reader = sqlCommand.ExecuteReader()) {
+            lock (_sqllock)
+            {
+                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection))
+                {
+                    using (var reader = sqlCommand.ExecuteReader())
+                    {
                         var dtn = DateTime.Now;
-                        while (reader.Read()) {
+                        while (reader.Read())
+                        {
                             var name = reader.GetString(0);
-                            var folder = reader.GetString(1);
+                            var folder = reader.GetInt32(1);
                             var hash = reader.GetString(2);
                             var blob = (byte[])reader[3];
                             var phashbuffer = (byte[])reader[4];
@@ -48,6 +57,9 @@ namespace ImageBank
                             var lastcheck = reader.GetDateTime(8);
                             var nexthash = reader.GetString(9);
                             var distance = reader.GetFloat(10);
+                            var width = reader.GetInt32(11);
+                            var height = reader.GetInt32(12);
+                            var size = reader.GetInt32(13);
                             var img = new Img(
                                 name: name,
                                 folder: folder,
@@ -59,12 +71,16 @@ namespace ImageBank
                                 history: history,
                                 lastcheck: lastcheck,
                                 nexthash: nexthash,
-                                distance: distance
+                                distance: distance,
+                                width: width,
+                                height: height,
+                                size: size
                                );
 
                             AddToMemory(img);
 
-                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
+                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse)
+                            {
                                 dtn = DateTime.Now;
                                 progress.Report($"Loading images ({_imgList.Count})...");
                             }
@@ -74,6 +90,39 @@ namespace ImageBank
             }
 
             progress.Report("Database loaded");
+
+            /*
+            lock (_sqllock)
+            {
+                var dt = DateTime.Now;
+                var counter = 0;
+                foreach (var name in _imgList.Keys)
+                {
+                    counter++;
+                    if (_imgList.TryGetValue(name, out var img))
+                    {
+                        if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse)
+                        {
+                            dt = DateTime.Now;
+                            progress.Report($"{counter}: {img.Folder:D2}\\{img.Name}");
+                        }
+
+                        if (img.Width == 0 || img.Height == 0 || img.Size == 0)
+                        {
+                            if (ImageHelper.GetImageDataFromFile(img.FileName,
+                                out byte[] imagedata,
+                                out var bitmap,
+                                out _))
+                            {
+                                img.Width = bitmap.Width;
+                                img.Height = bitmap.Height;
+                                img.Size = imagedata.Length;
+                            }
+                        }
+                    }
+                }
+            }
+            */
         }
     }
 }

@@ -82,7 +82,7 @@ namespace ImageBank
 
         private void ImportRwClick()
         {
-            Import(AppConsts.PathRw, AppConsts.MaxImages);
+            Import(AppConsts.PathRw, AppConsts.MaxAdd);
         }
 
         private void ImportHpClick()
@@ -158,7 +158,6 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
-            var foldersize = new int[2];
             for (var index = 0; index < 2; index++) {
                 var name = AppVars.ImgPanel[index].Img.Name;
                 pBoxes[index].Tag = name;
@@ -167,12 +166,7 @@ namespace ImageBank
                 pBoxes[index].Source = Helper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Folder}\\{name}");
-
-                foldersize[index] = AppVars.Collection.FolderSize(AppVars.ImgPanel[index].Img.Folder);
-                if (foldersize[index]  > 0) {
-                    sb.Append($" [{foldersize[index]}]");
-                }
+                sb.Append($"{AppVars.ImgPanel[index].Img.Folder:D2}\\{name}");
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
@@ -203,29 +197,15 @@ namespace ImageBank
                 }
                 else
                 {
-                    if (!AppVars.ImgPanel[index].Img.Folder.StartsWith(AppConsts.FolderDefault))
+                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
+                        AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
+                        AppVars.ImgPanel[index].Bitmap.Height == 2888 || AppVars.ImgPanel[index].Bitmap.Width == 2888)
                     {
-                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x70, 0xCE, 0x70));
-                    }
-                    else
-                    {
-                        if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
-                            AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
-                            AppVars.ImgPanel[index].Bitmap.Height == 2888 || AppVars.ImgPanel[index].Bitmap.Width == 2888)
-                        {
-                            scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                        }
+                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
                 }
 
                 pLabels[index].Background = scb;
-            }
-
-            if (
-                !AppVars.ImgPanel[0].Img.Folder.StartsWith(AppConsts.FolderDefault) && 
-                AppVars.ImgPanel[0].Img.Folder.Equals(AppVars.ImgPanel[1].Img.Folder)) {
-                pLabels[0].Background = System.Windows.Media.Brushes.LightGreen;
-                pLabels[1].Background = System.Windows.Media.Brushes.LightGreen;
             }
 
             RedrawCanvas();
@@ -297,22 +277,6 @@ namespace ImageBank
             Rotate(RotateFlipType.Rotate270FlipNone);
         }
 
-        private async void AssignFolder(string folder)
-        {
-            DisableElements();
-            await Task.Run(() => { AppVars.Collection.AssignFolder(folder); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void AssignFolderLeft()
-        {
-            DisableElements();
-            await Task.Run(ImgMdf.AssignFolderLeft).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
         private void WindowClosing()
         {
             DisableElements();
@@ -350,16 +314,6 @@ namespace ImageBank
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
-        }
-
-        public void CollectDescriptors()
-        {
-            //await Task.Run(() => { DescriptorFactory.CollectDescriptors(); }).ConfigureAwait(true);
-        }
-
-        public void FindWords()
-        {
-            //await Task.Run(() => { DescriptorFactory.FindWords(); }).ConfigureAwait(true);
         }
     }
 }

@@ -9,8 +9,9 @@
         public const string PathRw = PathRoot + @"Rw";
         public const string FolderDefault = "root";
 
-        public const int MaxImages = 200000;
-        public const int MaxImagesSort = 150000;
+        public const int MaxImages = 100000;
+        public const int MaxImagesInFolder = 2000;
+        public const int MaxAdd = 100;
 
         public const int HashLength = 32;
         public const float MaxDistance = 256f;
@@ -40,5 +41,8 @@
         public const string AttrNextHash = "NextHash";
         public const string AttrDistance = "Distance";
         public const string AttrHistory = "History";
+        public const string AttrWidth = "Width";
+        public const string AttrHeight = "Height";
+        public const string AttrSize = "Size";
     }
 }

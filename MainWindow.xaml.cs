@@ -92,27 +92,6 @@ namespace ImageBank
             Rotate270Click();
         }
 
-        private void AssignFolderClick(object sender, RoutedEventArgs e)
-        {
-            var folder = ((MenuItem)sender).Tag as string;
-            AssignFolder(folder);
-        }
-
-        private void AssignFolderLeftClick(object sender, RoutedEventArgs e)
-        {
-            AssignFolderLeft();
-        }
-
-        private void CollectDescriptorsClick(object sender, RoutedEventArgs e)
-        {
-            CollectDescriptors();
-        }
-
-        private void FindWordsClick(object sender, RoutedEventArgs e)
-        {
-            FindWords();
-        }
-
         private void ExitClick(object sender, EventArgs e)
         {
             Close();

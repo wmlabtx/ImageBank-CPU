@@ -12,92 +12,57 @@ namespace ImageBank
     {
         private readonly Random _random = new Random();
 
-        public void FindCandidates(Img img1, out List<Tuple<string, ulong, ulong[]>> candidates)
+        public void FindCandidates(Img img1, out List<Img> candidates)
         {
-            candidates = new List<Tuple<string, ulong, ulong[]>>();
+            candidates = new List<Img>();
             lock (_imglock)
             {
-                if (img1.Folder.StartsWith(AppConsts.FolderDefault))
+                foreach (var e in _imgList)
                 {
-                    foreach (var e in _imgList)
+                    if (e.Key.Equals(img1.Name))
                     {
-                        if (e.Key.Equals(img1.Name))
-                        {
-                            continue;
-                        }
-
-                        if (img1.IsInHistory(e.Value.Hash))
-                        {
-                            continue;
-                        }
-
-                        candidates.Add(new Tuple<string, ulong, ulong[]>(
-                            e.Value.Name,
-                            e.Value.Phash,
-                            e.Value.GetDescriptors()));
-                    }
-                }
-                else
-                {
-                    foreach (var e in _imgList)
-                    {
-                        if (e.Key.Equals(img1.Name))
-                        {
-                            continue;
-                        }
-
-                        if (!e.Value.Folder.Equals(img1.Folder))
-                        {
-                            continue;
-                        }
-
-                        if (img1.IsInHistory(e.Value.Hash))
-                        {
-                            continue;
-                        }
-
-                        candidates.Add(new Tuple<string, ulong, ulong[]>(
-                            e.Value.Name,
-                            e.Value.Phash,
-                            e.Value.GetDescriptors()));
+                        continue;
                     }
 
-                    if (candidates.Count < 2)
+                    if (img1.IsInHistory(e.Value.Hash))
                     {
-                        foreach (var e in _imgList)
-                        {
-                            if (e.Key.Equals(img1.Name))
-                            {
-                                continue;
-                            }
-
-                            if (img1.IsInHistory(e.Value.Hash))
-                            {
-                                continue;
-                            }
-
-                            candidates.Add(new Tuple<string, ulong, ulong[]>(
-                                e.Value.Name,
-                                e.Value.Phash,
-                                e.Value.GetDescriptors()));
-                        }
+                        continue;
                     }
+
+                    candidates.Add(e.Value);
                 }
             }
         }
 
-        public static void FindCandidate(Img img1, List<Tuple<string, ulong, ulong[]>> candidates, bool fast, out string name2)
+        /*
+        public static void FindCandidate(Img img1, List<Tuple<string, ulong, ulong[]>> candidates, out string name2)
         {
             var mindistance = AppConsts.MaxDistance;
             var x = img1.GetDescriptors();
             name2 = img1.Name;
             foreach (var e in candidates)
             {
-                var distance = fast ? Intrinsic.PopCnt(img1.Phash ^ e.Item2) : ImageHelper.CompareBlob(x, e.Item3);
+                var distance = ImageHelper.CompareBlob(x, e.Item3);
                 if (distance < mindistance)
                 {
                     mindistance = distance;
                     name2 = e.Item1;
+                }
+            }
+        }
+        */
+
+        public static void FindCandidateByPhash(Img img1, List<Img> candidates, out string name2)
+        {
+            var mindistance = AppConsts.MaxDistance;
+            name2 = img1.Name;
+            foreach (var e in candidates)
+            {
+                var distance = Intrinsic.PopCnt(img1.Phash ^ e.Phash);
+                if (distance < mindistance)
+                {
+                    mindistance = distance;
+                    name2 = e.Name;
                 }
             }
         }
@@ -116,43 +81,28 @@ namespace ImageBank
                 }
 
                 img1 = _imgList
-                    .OrderBy(e => e.Value.LastView)
-                    .Take(1000)
+                    //.OrderBy(e => e.Value.LastView)
+                    //.Take(1000)
                     .OrderBy(e => e.Value.LastCheck)
                     .FirstOrDefault()
                     .Value;
-
-                /*
-                var array = _imgList.ToArray();
-                var index = _random.Next(array.Length);
-                img1 = array[index].Value;
-                */
-
-                /*
-                foreach (var e in _imgList)
-                {
-                    var eX = e.Value;
-                    if (img1 != null &&
-                        img1.LastCheck <= eX.LastCheck)
-                    {
-                        continue;
-                    }
-
-                    img1 = eX;
-                }
-                */
 
                 if (!_hashList.TryGetValue(img1.NextHash, out img2))
                 {
                     img1.NextHash = img1.Hash;
                     img1.Distance = AppConsts.MaxDistance;
                 }
-                else
+
+                if (img1.Width == 0 || img1.Height == 0 || img1.Size == 0)
                 {
-                    if (!img1.Folder.StartsWith(AppConsts.FolderDefault) && !img1.Folder.Equals(img2.Folder))
+                    if (ImageHelper.GetImageDataFromFile(img1.FileName,
+                        out byte[] imagedata,
+                        out var bitmap,
+                        out _))
                     {
-                        img1.NextHash = img1.Hash;
-                        img1.Distance = AppConsts.MaxDistance;
+                        img1.Width = bitmap.Width;
+                        img1.Height = bitmap.Height;
+                        img1.Size = imagedata.Length;
                     }
                 }
 
@@ -171,12 +121,11 @@ namespace ImageBank
             }
 
             var sb = new StringBuilder();
-            FindCandidates(img1, out List<Tuple<string, ulong, ulong[]>> candidates);
+            FindCandidates(img1, out List<Img> candidates);
             if (candidates.Count > 0)
             {
                 Img img2s;
-                var fast = img1.Folder.StartsWith(AppConsts.FolderDefault);
-                FindCandidate(img1, candidates, fast, out string name2s);
+                FindCandidateByPhash(img1, candidates, out string name2s);
                 lock (_imglock)
                 {
                     if (!_imgList.TryGetValue(name2s, out img2s))
@@ -186,19 +135,41 @@ namespace ImageBank
                 }
 
                 var distances = ImageHelper.CompareBlob(img1.GetDescriptors(), img2s.GetDescriptors());
+                
                 Img img2r = null;
                 var distancer = float.MaxValue;
+                var index = candidates.Count - 1;
+                var dim1 = img1.Width * img1.Height;
+                var rw1 = img1.Width * 100 / img1.Height;
+                var rh1 = img1.Height * 100 / img1.Width;
+                while (index >= 0)
+                {
+                    var img2rt = candidates[index];
+                    if (img2rt.Width > 0 && img2rt.Height > 0 && img2rt.Size > 0)
+                    {
+                        var dim2 = img2rt.Width * img2rt.Height;
+                        var r2 = img2rt.Width * 100 / img2rt.Height;
+                        if ((dim1 == dim2) || (rw1 == r2) || (rh1 == r2))
+                        {
+                            candidates.RemoveAt(index);
+                            var distancert = ImageHelper.CompareBlob(img1.GetDescriptors(), img2rt.GetDescriptors());
+                            if (distancert < distancer)
+                            {
+                                distancer = distancert;
+                                img2r = img2rt;
+                            }
+                        }
+                    }
+
+                    index--;
+                }
+
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < 1000 && candidates.Count > 0)
                 {
-                    var index = _random.Next(candidates.Count);
-                    var name2rt = candidates[index].Item1;
+                    index = _random.Next(candidates.Count);
+                    var img2rt = candidates[index];
                     candidates.RemoveAt(index);
-                    if (!_imgList.TryGetValue(name2rt, out var img2rt))
-                    {
-                        continue;
-                    }
-
                     var distancert = ImageHelper.CompareBlob(img1.GetDescriptors(), img2rt.GetDescriptors());
                     if (distancert < distancer)
                     {
@@ -227,7 +198,7 @@ namespace ImageBank
                         if (!img1.NextHash.Equals(img2.Hash))
                         {
                             sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                            sb.Append($"{img1.Folder}\\{img1.Name}: ");
+                            sb.Append($"{img1.Folder:D2}\\{img1.Name}: ");
                             sb.Append($"{img1.Distance:F1} ");
                             sb.Append($"{char.ConvertFromUtf32(distance < img1.Distance ? 0x2192 : 0x2193)} ");
                             sb.Append($"{distance:F1} ");
@@ -237,18 +208,23 @@ namespace ImageBank
                         if (distance < img1.Distance)
                         {
                             img1.History = string.Empty;
+                            //if (img1.Distance < AppConsts.MaxDistance)
+                            //{
+                                //img1.LastView = GetMinLastView();
+                            //}
                         }
 
                         if (distance != img1.Distance)
                         {
                             img1.Distance = distance;
+                            img1.LastView = GetMinLastView();
                         }
                     }
 
                     img1.LastCheck = DateTime.Now;
                 }
             }
-            
+
             if (sb.Length > 0) {
                 var message = sb.ToString();
                 backgroundworker.ReportProgress(0, message);

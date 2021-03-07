@@ -17,18 +17,6 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <MenuItem Header="Family">
-                <MenuItem Header="root" Tag="root" Click="AssignFolderClick" />
-                <MenuItem Header="Kandid" Tag="Kandid" Click="AssignFolderClick" />
-                <Separator />
-                <MenuItem Header="Assign left" Click="AssignFolderLeftClick" />
-            </MenuItem>
-            <!--
-            <MenuItem Header="Descriptors">
-                <MenuItem Header="Collect descriptors" Click="CollectDescriptorsClick" />
-                <MenuItem Header="Find words" Click="FindWordsClick" />
-            </MenuItem>
-            -->
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

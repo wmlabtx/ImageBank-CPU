@@ -5,18 +5,16 @@ namespace ImageBank
 {
     public class Img
     {
-        
-
         public string Name { get; }
 
-        private string _folder;
-        public string Folder
+        private int _folder;
+        public int Folder
         {
             get => _folder;
             set
             {
-                if (string.IsNullOrEmpty(value) || value.Length > 128) {
-                    throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 128");
+                if (value < 1 || value > 99) {
+                    throw new ArgumentException(@"value < 0 || value > 99");
                 }
 
                 var oldfilename = FileName; 
@@ -32,7 +30,7 @@ namespace ImageBank
             }
         }
 
-        public string FileName => $"{AppConsts.PathHp}\\{Folder}\\{Name}{AppConsts.DbxExtension}";
+        public string FileName => $"{AppConsts.PathHp}\\{Folder:D2}\\{Name}{AppConsts.MzxExtension}";
 
         public string Hash { get; }
 
@@ -173,10 +171,61 @@ namespace ImageBank
             }
         }
 
+        private int _width;
+        public int Width
+        {
+            get => _width;
+            set
+            {
+                _width = value;
+                if (_width <= 0)
+                {
+                    throw new ArgumentException("_width <= 0");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrWidth, value);
+            }
+        }
+
+        private int _height;
+        public int Height
+        {
+            get => _height;
+            set
+            {
+                _height = value;
+                if (_height <= 0)
+                {
+                    throw new ArgumentException("_height <= 0");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHeight, value);
+            }
+        }
+
+        private int _size;
+        public int Size
+        {
+            get => _size;
+            set
+            {
+                _size = value;
+                if (_size <= 0)
+                {
+                    throw new ArgumentException("_size <= 0");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSize, value);
+            }
+        }
+
         public Img(
             string name,
-            string folder,
+            int folder,
             string hash,
+            int width,
+            int height,
+            int size,
             byte[] blob,
             ulong phash,
             DateTime lastadded,
@@ -193,8 +242,8 @@ namespace ImageBank
 
             Name = name;
 
-            if (string.IsNullOrEmpty(folder) || folder.Length > 128) {
-                throw new ArgumentException(@"string.IsNullOrEmpty(_folder) || _folder.Length > 128");
+            if (folder < 1 || folder > 99) {
+                throw new ArgumentException(@"folder < 1 || folder > 99");
             }
 
             _folder = folder;
@@ -204,6 +253,11 @@ namespace ImageBank
             }
 
             Hash = hash;
+
+            _width = width;
+            _height = height;
+            _size = size;
+
             Blob = blob ?? throw new ArgumentException("blob == null");
             _descriptors = ImageHelper.ArrayTo64(blob);
 
