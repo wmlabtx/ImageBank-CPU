@@ -113,10 +113,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ColorCube.cs" />
-    <Compile Include="DescriptorFactory.cs" />
-    <Compile Include="HcHelper.cs" />
-    <Compile Include="HsHelper.cs" />
     <Compile Include="ImageHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Page Include="MainWindow.xaml">
@@ -152,7 +148,6 @@
   <ItemGroup>
     <Compile Include="MainWindowLogic.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="OrbHepler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

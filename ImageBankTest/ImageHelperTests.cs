@@ -92,5 +92,12 @@ namespace ImageBankTest
 
             File.WriteAllText("report.txt", sb.ToString());
         }
+
+        [TestMethod()]
+        public void ComputeFolderTest()
+        {
+            //var image = Image.FromFile("arianna-048-113.jpg");
+            //var foldername = Helper.ComputeFolder((Bitmap)image);
+        }
     }
 }

@@ -10,8 +10,7 @@
         public const string FolderDefault = "root";
 
         public const int MaxImages = 100000;
-        public const int MaxImagesInFolder = 2000;
-        public const int MaxAdd = 100;
+        public const int MaxAdd = 1000;
 
         public const int HashLength = 32;
         public const float MaxDistance = 256f;
@@ -24,6 +23,7 @@
         public const string JpegExtension = ".jpeg";
         public const string PngExtension = ".png";
         public const string BmpExtension = ".bmp";
+        public const string CorruptedExtension = ".corrupted";
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
@@ -40,7 +40,7 @@
         public const string AttrLastCheck = "LastCheck";
         public const string AttrNextHash = "NextHash";
         public const string AttrDistance = "Distance";
-        public const string AttrHistory = "History";
+        public const string AttrCounter = "Counter";
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";

@@ -4,11 +4,10 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public int FolderSize(int folder)
+        public static int FolderSize(string folder)
         {
             lock (_imglock) {
-                var foldersize = _imgList.Count(e => folder == e.Value.Folder);
-
+                var foldersize = _imgList.Count(e => folder.Equals(e.Value.Folder));
                 return foldersize;
             }
         }

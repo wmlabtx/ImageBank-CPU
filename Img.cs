@@ -7,14 +7,14 @@ namespace ImageBank
     {
         public string Name { get; }
 
-        private int _folder;
-        public int Folder
+        private string _folder;
+        public string Folder
         {
             get => _folder;
             set
             {
-                if (value < 1 || value > 99) {
-                    throw new ArgumentException(@"value < 0 || value > 99");
+                if (string.IsNullOrEmpty(value)) {
+                    throw new ArgumentException(@"string.IsNullOrEmpty(value)");
                 }
 
                 var oldfilename = FileName; 
@@ -30,7 +30,7 @@ namespace ImageBank
             }
         }
 
-        public string FileName => $"{AppConsts.PathHp}\\{Folder:D2}\\{Name}{AppConsts.MzxExtension}";
+        public string FileName => $"{AppConsts.PathHp}\\{Folder}\\{Name}{AppConsts.MzxExtension}";
 
         public string Hash { get; }
 
@@ -94,80 +94,18 @@ namespace ImageBank
             }
         }
 
-        private string _history;
-        public string History
-        {
-            get => _history;
-            set
-            {
-                _history = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, value);
-            }
-        }
-
-        public bool IsInHistory(string hash)
-        {
-            if (string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength)
-            {
-                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength");
-            }
-
-            var offset = 0;
-            while (offset + AppConsts.HashLength <= _history.Length)
-            {
-                if (string.CompareOrdinal(_history, offset, hash, 0, AppConsts.HashLength) == 0)
-                {
-                    return true;
-                }
-
-                offset += AppConsts.HashLength;
-            }
-
-            return false;
-        }
-
-        public void AddToHistory(string hash)
-        {
-            if (string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength)
-            {
-                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength");
-            }
-
-            if (IsInHistory(hash))
-            {
-                return;
-            }
-
-            _history = string.Concat(_history, hash);
-            ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, _history);
-        }
-
-        public void RemoveFromHistory(string hash)
-        {
-            if (string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength)
-            {
-                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength");
-            }
-
-            var offset = 0;
-            while (offset + AppConsts.HashLength <= _history.Length)
-            {
-                if (string.CompareOrdinal(_history, offset, hash, 0, AppConsts.HashLength) == 0)
-                {
-                    _history = _history.Remove(offset, AppConsts.HashLength);
-                    ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrHistory, _history);
-                    return;
-                }
-
-                offset += AppConsts.HashLength;
-            }
-        }
-
+        private int _counter;
         public int Counter
         {
-            get
+            get => _counter;
+            set
             {
-                return _history.Length / AppConsts.HashLength;
+                _counter = value;
+                if (_counter < 0) {
+                    throw new ArgumentException("_counter < 0");
+                }
+                
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
             }
         }
 
@@ -219,9 +157,23 @@ namespace ImageBank
             }
         }
 
+        public int Ratio
+        {
+            get {
+                    if (Width >= Height)
+                    {
+                        return Height * 100 / Width;
+                    }
+                    else
+                    {
+                        return Width * 100 / Height;
+                    }
+                }
+        } 
+
         public Img(
             string name,
-            int folder,
+            string folder,
             string hash,
             int width,
             int height,
@@ -230,7 +182,7 @@ namespace ImageBank
             ulong phash,
             DateTime lastadded,
             DateTime lastview,
-            string history,
+            int counter,
             DateTime lastcheck,
             string nexthash,
             float distance
@@ -242,8 +194,8 @@ namespace ImageBank
 
             Name = name;
 
-            if (folder < 1 || folder > 99) {
-                throw new ArgumentException(@"folder < 1 || folder > 99");
+            if (string.IsNullOrEmpty(folder)) {
+                throw new ArgumentException(@"string.IsNullOrEmpty(folder)");
             }
 
             _folder = folder;
@@ -265,8 +217,9 @@ namespace ImageBank
 
             LastAdded = lastadded;
             _lastview = lastview;
-            _history = history;
             _lastcheck = lastcheck;
+
+            _counter = counter;
 
             if (string.IsNullOrEmpty(nexthash) || nexthash.Length != AppConsts.HashLength) {
                 throw new ArgumentException("string.IsNullOrEmpty(nexthash) || nexthash.Length != AppConsts.HashLength");

@@ -17,7 +17,7 @@
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
                             e.Value.Distance = AppConsts.MaxDistance;
-                            e.Value.RemoveFromHistory(img.Hash);
+                            e.Value.LastCheck = GetMinLastCheck();
                         }
                     }
                 }

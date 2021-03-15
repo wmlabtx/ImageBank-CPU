@@ -12,9 +12,12 @@ namespace ImageBank
         private static SqlConnection _sqlConnection;
 
         // ReSharper disable once FieldCanBeMadeReadOnly.Local
-        private object _imglock = new object();
-        private readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
-        private readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();        
+        private static object _imglock = new object();
+        private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
+        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
+
+        private static readonly DateTime _viewnow = new DateTime(2020, 1, 1);
+        private readonly Random _random = new Random();
 
         public ImgMdf()
         {
@@ -23,17 +26,32 @@ namespace ImageBank
             _sqlConnection.Open();
         }
 
-        public DateTime GetMinLastView()
+        public static DateTime GetMinLastView()
         {
             lock (_imglock)
             {
-                return _imgList.Count == 0 ? DateTime.Now : _imgList.Min(e => e.Value.LastView).AddSeconds(-1);
+                if (_imgList.Count == 0)
+                {
+                    return DateTime.Now;
+                }
+
+                var scope = _imgList.Where(e => e.Value.LastView != _viewnow).ToArray();
+                if (scope.Length == 0)
+                {
+                    return DateTime.Now;
+                }
+
+                return scope 
+                    .Min(e => e.Value.LastView)
+                    .AddSeconds(-1);
             }
         }
-        public DateTime GetMinLastCheck()
+        public static DateTime GetMinLastCheck()
         {
             lock (_imglock) {
-                return _imgList.Count == 0 ? DateTime.Now : _imgList.Min(e => e.Value.LastCheck).AddSeconds(-1);
+                return _imgList.Count == 0 ? DateTime.Now : _imgList
+                    .Min(e => e.Value.LastCheck)
+                    .AddSeconds(-1);
             }
         }
     }

@@ -353,5 +353,119 @@ namespace ImageBank
             var f = (float)sum / sumw;
             return f;
         }
+
+        /*
+        public static string ComputeFolder(Bitmap bitmap)
+        {
+            using (var matsource = bitmap.ToMat())
+            using (var matcolor = new Mat()) {
+                Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(256, 256), 0, 0, InterpolationFlags.Area);
+                using (var matcolumn = matcolor.Reshape(3, matcolor.Rows * matcolor.Cols))
+                using (var mat = new Mat()) {
+                    matcolumn.ConvertTo(mat, MatType.CV_32FC3);
+                    using (var matbestlabels = new Mat())
+                    using (Mat matcenters = new Mat()) {
+                        
+                        Cv2.Kmeans(
+                            mat,
+                            8,
+                            matbestlabels,
+                            new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.MaxIter, 10, 1.0),
+                            3,
+                            KMeansFlags.PpCenters,
+                            matcenters);
+
+                        matbestlabels.GetArray(out int[] bestlabels);
+                        matcenters.GetArray(out float[] centers);
+                        var hl = new int[8];
+                        foreach (var l in bestlabels) {
+                            hl[l]++;
+                        }
+
+                        using (var pbitmap = new Bitmap(64 * 8, 64, PixelFormat.Format24bppRgb))
+                        using (var graphics = Graphics.FromImage(pbitmap))
+                        {
+                            for (var i = 0; i < 8; i++) {
+                                using (var myBrush = new SolidBrush(Color.FromArgb((int)centers[i * 3 + 2], (int)centers[i * 3 + 1], (int)centers[i * 3 + 0])))
+                                {
+                                    graphics.FillRectangle(myBrush, new Rectangle(i * 64, 0, 64, 64));
+                                }
+                            }
+
+                            pbitmap.Save("palette8.png", ImageFormat.Png);
+                        }
+
+                        var bc = 0;
+                        var bcv = 0;
+                        for (var i = 0; i < hl.Length; i++) {
+                            if (hl[i] > bcv) {
+                                bc = i;
+                                bcv = hl[i];
+                            }
+                        }
+
+                        var rcolor = (int)Math.Floor(centers[2]);
+                        var gcolor = (int)Math.Floor(centers[1]);
+                        var bcolor = (int)Math.Floor(centers[0]);
+
+                        ///
+
+                        Cv2.Kmeans(
+                            mat,
+                            1,
+                            matbestlabels,
+                            new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.MaxIter, 10, 1.0),
+                            3,
+                            KMeansFlags.PpCenters,
+                            matcenters);
+
+                        matbestlabels.GetArray(out int[] bestlabels);
+                        matcenters.GetArray(out float[] centers);
+                        
+
+                        var rcolor = (int)Math.Floor(centers[2]);
+                        var gcolor = (int)Math.Floor(centers[1]);
+                        var bcolor = (int)Math.Floor(centers[0]);
+
+                        ///
+                        
+                        using (var pbitmap = new Bitmap(256, 256, PixelFormat.Format24bppRgb))
+                        using (var graphics = Graphics.FromImage(pbitmap))
+                        using (var myBrush = new SolidBrush(Color.FromArgb(rcolor, gcolor, bcolor))) {
+                            graphics.FillRectangle(myBrush, new Rectangle(0, 0, 256, 256));
+                            pbitmap.Save("palette.png", ImageFormat.Png);
+                        }
+
+                        var r = rcolor / 255.0;
+                        var g = gcolor / 255.0;
+                        var b = bcolor / 255.0;
+                        var r2 = rcolor >> 6;
+                        var g2 = gcolor >> 6;
+                        var b2 = bcolor >> 6;
+                        var irgb = (byte)((r2 << 4) | (g2 << 2) | b2);
+
+                        r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+                        g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+                        b = (b > 0.04045) ? Math.Pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+                        var x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+                        var y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+                        var z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+                        x = (x > 0.008856) ? Math.Pow(x, 1.0 / 3.0) : (7.787 * x) + 16.0 / 116.0;
+                        y = (y > 0.008856) ? Math.Pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
+                        z = (z > 0.008856) ? Math.Pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
+
+                        var lfloat = (float)((116.0 * y) - 16.0);
+                        var afloat = (float)(500.0 * (x - y));
+                        var bfloat = (float)(200.0 * (y - z));
+                    }
+                }
+
+            }
+            
+            return null;
+        }
+        */
     }
 }

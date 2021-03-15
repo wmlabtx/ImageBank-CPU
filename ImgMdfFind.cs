@@ -31,15 +31,13 @@ namespace ImageBank
                             }
 
                             if (imgX != null &&
-                                imgX.Counter < eX.Counter)
-                            {
+                                imgX.Counter < eX.Counter) {
                                 continue;
                             }
 
                             if (imgX != null &&
                                 imgX.Counter == eX.Counter &&
-                                imgX.LastView <= eX.LastView)
-                            {
+                                imgX.Distance <= eX.Distance) {
                                 continue;
                             }
 
@@ -50,8 +48,7 @@ namespace ImageBank
                         }
                     }
 
-                    if (string.IsNullOrEmpty(nameX))
-                    {
+                    if (string.IsNullOrEmpty(nameX)) {
                         progress.Report("No images to view");
                         return;
                     }
@@ -93,6 +90,7 @@ namespace ImageBank
                     }
                     */
 
+                    /*
                     var folderX = AppVars.ImgPanel[0].Img.Folder;
                     var folderY = AppVars.ImgPanel[1].Img.Folder;
                     if (folderX != folderY) {
@@ -105,19 +103,26 @@ namespace ImageBank
                             AppVars.ImgPanel[1].Img.Folder = folderX;
                         }
                     }
+                    */
 
                     break;
                 }
 
+                /*
                 var mincounter = _imgList.Min(e => e.Value.Counter);
-                var z = _imgList.Count(e => e.Value.Width == 0);
                 var scope = _imgList.Where(e => e.Value.Counter == mincounter).ToArray();
                 var mindistance = scope.Min(e => (int)(e.Value.Distance * 10f));
                 scope = scope.Where(e => (int)(e.Value.Distance * 10f) == mindistance).ToArray();
-                sb.Append($"{mindistance / 10f:F1}:{scope.Length}/{z}/{_imgList.Count}: ");
-                sb.Append($"{imgX.Folder:D2}\\{imgX.Name}: ");
+                sb.Append($"{mindistance / 10f:F1}:{scope.Length}/{_imgList.Count}: ");
+                */
+
+                var mincounter = _imgList.Min(e => e.Value.Counter);
+                var scope = _imgList.Where(e => e.Value.Counter == mincounter).ToArray();
+                sb.Append($"{scope.Length}/{_imgList.Count}: ");
+                sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
                 sb.Append($"{imgX.Distance:F1} ");
 
+                /*
                 var moves = 0;
                 var movemessage = string.Empty;
                 var c = new int[100];
@@ -148,6 +153,7 @@ namespace ImageBank
                 if (moves > 0) {
                     sb.Append($"{movemessage} ({moves} moves)");
                 }
+                */
             }
 
             progress.Report(sb.ToString());

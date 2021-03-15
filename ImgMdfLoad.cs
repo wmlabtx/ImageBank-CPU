@@ -26,7 +26,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrPhash}, "); // 4
             sb.Append($"{AppConsts.AttrLastAdded}, "); // 5
             sb.Append($"{AppConsts.AttrLastView}, "); // 6
-            sb.Append($"{AppConsts.AttrHistory}, "); // 7
+            sb.Append($"{AppConsts.AttrCounter}, "); // 7
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 8
             sb.Append($"{AppConsts.AttrNextHash}, "); // 9
             sb.Append($"{AppConsts.AttrDistance}, "); // 10
@@ -38,7 +38,9 @@ namespace ImageBank
             var sqltext = sb.ToString();
             lock (_sqllock)
             {
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                 using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection))
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
                 {
                     using (var reader = sqlCommand.ExecuteReader())
                     {
@@ -46,14 +48,14 @@ namespace ImageBank
                         while (reader.Read())
                         {
                             var name = reader.GetString(0);
-                            var folder = reader.GetInt32(1);
+                            var folder = reader.GetString(1);
                             var hash = reader.GetString(2);
                             var blob = (byte[])reader[3];
                             var phashbuffer = (byte[])reader[4];
                             var phash = BitConverter.ToUInt64(phashbuffer, 0);
                             var lastadded = reader.GetDateTime(5);
                             var lastview = reader.GetDateTime(6);
-                            var history = reader.GetString(7);
+                            var counter = reader.GetInt32(7);
                             var lastcheck = reader.GetDateTime(8);
                             var nexthash = reader.GetString(9);
                             var distance = reader.GetFloat(10);
@@ -68,7 +70,7 @@ namespace ImageBank
                                 phash: phash,
                                 lastadded: lastadded,
                                 lastview: lastview,
-                                history: history,
+                                counter: counter,
                                 lastcheck: lastcheck,
                                 nexthash: nexthash,
                                 distance: distance,
@@ -90,7 +92,6 @@ namespace ImageBank
             }
 
             progress.Report("Database loaded");
-
             /*
             lock (_sqllock)
             {
@@ -121,6 +122,51 @@ namespace ImageBank
                         }
                     }
                 }
+            }
+            */
+            /*
+            lock (_sqllock)
+            {
+                var dt = DateTime.Now;
+                var counter = 0;
+                var h = new int[100];
+                foreach (var name in _imgList.Keys)
+                {
+                    counter++;
+                    if (_imgList.TryGetValue(name, out var img))
+                    {
+                        if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse)
+                        {
+                            dt = DateTime.Now;
+                            progress.Report($"{counter}: {img.Folder:D2}\\{img.Name}");
+                        }
+
+                        if (img.Width != 0 && img.Height != 0 && img.Size != 0)
+                        {
+                            var r = 0;
+                            if (img.Width >= img.Height)
+                            {
+                                r = img.Height * 99 / img.Width;
+                            }
+                            else
+                            {
+                                r = img.Width * 99 / img.Height;
+                            }
+
+                            h[r]++;
+                        }
+                    }
+                }
+
+
+                var sbs = new StringBuilder();
+                for (var i = 0; i < h.Length; i++)
+                {
+                    sbs.AppendLine($"{i}:{h[i]}, ");
+                }
+
+                var s = sbs.ToString();
+            
             }
             */
         }

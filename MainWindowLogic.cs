@@ -166,7 +166,12 @@ namespace ImageBank
                 pBoxes[index].Source = Helper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Folder:D2}\\{name}");
+                sb.Append($"{AppVars.ImgPanel[index].Img.Folder}\\{name}");
+
+                var sf = ImgMdf.FolderSize(AppVars.ImgPanel[index].Img.Folder);
+                if (sf > 1) {
+                    sb.Append($" [{sf}]");
+                }
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
@@ -191,21 +196,36 @@ namespace ImageBank
                     }
                 }
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0) 
+                if (AppVars.ImgPanel[index].Img.Counter > 0)
                 {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
                 else
                 {
-                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
-                        AppVars.ImgPanel[index].Bitmap.Height == 2880 || AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
-                        AppVars.ImgPanel[index].Bitmap.Height == 2888 || AppVars.ImgPanel[index].Bitmap.Width == 2888)
+                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160)
                     {
                         scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
+
                 }
 
                 pLabels[index].Background = scb;
+            }
+
+            if (AppVars.ImgPanel[0].Img.Distance < 1f)
+            {
+                if (AppVars.ImgPanel[0].Img.Width == AppVars.ImgPanel[1].Img.Width &&
+                    AppVars.ImgPanel[0].Img.Height == AppVars.ImgPanel[1].Img.Height)
+                {
+                    if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size)
+                    {
+                        pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                    }
+                    else
+                    {
+                        pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                    }
+                }
             }
 
             RedrawCanvas();

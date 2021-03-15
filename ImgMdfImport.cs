@@ -16,7 +16,7 @@ namespace ImageBank
             var found = 0;
             var moved = 0;
             var dt = DateTime.Now;
-            var folder = 0;
+            var folder = string.Empty;
 
             ((IProgress<string>)AppVars.Progress).Report("importing...");
             var directoryInfo = new DirectoryInfo(path);
@@ -26,18 +26,24 @@ namespace ImageBank
                     .ToArray();
 
             foreach (var fileInfo in fileInfos) {
+                //if (fileInfo.Length > 1024 * 104)
+                //{
+                //    break;
+                //}
+
                 var filename = fileInfo.FullName;
                 var name = Path.GetFileNameWithoutExtension(filename);
+                var extension = Path.GetExtension(filename);
+                if (extension.Equals(AppConsts.CorruptedExtension)) {
+                    continue;
+                }
+
                 if (path.Equals(AppConsts.PathHp))
                 {
                     var shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
-                    var pfolder = Path.GetDirectoryName(shortfilename);
-                    if (!int.TryParse(pfolder, out folder)) {
-                        folder = 1;
-                    }
-
+                    folder = Path.GetDirectoryName(shortfilename);
                     if (_imgList.TryGetValue(name, out var imgfound)) {
-                        if (folder == imgfound.Folder) {
+                        if (folder.Equals(imgfound.Folder)) {
                             continue;
                         }
 
@@ -63,15 +69,26 @@ namespace ImageBank
                     out var message)) {
                     ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
                     bad++;
+                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                     continue;
                 }
 
                 lock (_imglock) {
                     var lastadded = DateTime.Now;
                     var lastview = GetMinLastView();
+                    if (
+                        !extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
+                        !extension.Equals(AppConsts.DbxExtension, StringComparison.OrdinalIgnoreCase) &&
+                        !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)
+                        ){
+                        lastview = _viewnow;
+                    }
+
                     var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
                     if (path.Equals(AppConsts.PathRw)) {
+                        folder = Helper.ComputeFolder(imagedata);
+                        /*
                         folder = 1;
                         if (_imgList.Count > 0) {
                             folder = _imgList.Max(e => e.Value.Folder);
@@ -80,12 +97,7 @@ namespace ImageBank
                                 folder++;
                             }
                         }
-                    }
-                    else {
-                        var pfolder = Path.GetDirectoryName(filename).Substring(path.Length + 1);
-                        if (!int.TryParse(pfolder, out folder)) {
-                            folder = 1;
-                        }
+                        */
                     }
 
                     if (_hashList.TryGetValue(hash, out var imgfound)) {
@@ -105,7 +117,7 @@ namespace ImageBank
                                 phash: imgfound.Phash,
                                 lastadded: lastadded,
                                 lastview: lastview,
-                                history: imgfound.History,
+                                counter: imgfound.Counter,
                                 lastcheck: lastcheck,
                                 nexthash: imgfound.NextHash,
                                 distance: imgfound.Distance,
@@ -134,8 +146,7 @@ namespace ImageBank
                         message = "not enough descriptors";
                         ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
                         bad++;
-                        var badname = Path.Combine(AppConsts.PathRw, $"{name}.png");
-                        bitmap.Save(badname, ImageFormat.Png);
+                        File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                         continue;
                     }
 
@@ -159,7 +170,7 @@ namespace ImageBank
                         phash: phash,
                         lastadded: lastadded,
                         lastview: lastview,
-                        history: string.Empty,
+                        counter: 0,
                         lastcheck: lastcheck,
                         nexthash: hash,
                         distance: AppConsts.MaxDistance,
