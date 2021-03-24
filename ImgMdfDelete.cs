@@ -16,7 +16,8 @@
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
-                            e.Value.Distance = AppConsts.MaxDistance;
+                            e.Value.LastId = 0;
+                            e.Value.Diff = new byte[1] { 0xFF };
                             e.Value.LastCheck = GetMinLastCheck();
                         }
                     }

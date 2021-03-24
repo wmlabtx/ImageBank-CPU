@@ -8,6 +8,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ImageBank
 {
@@ -239,7 +240,7 @@ namespace ImageBank
             return buffer;
         }
 
-        public static void ComputeBlob(Bitmap bitmap, out ulong phash, out ulong[] descriptors)
+        public static void ComputeBlob(Bitmap bitmap, out ulong[] descriptors)
         {
             descriptors = null;
             using (var matsource = bitmap.ToMat())
@@ -250,14 +251,6 @@ namespace ImageBank
                 using (var mat = new Mat())
                 {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    using (var phashcalculator = PHash.Create())
-                    using (var matphash = new Mat())
-                    {
-                        phashcalculator.Compute(mat, matphash);
-                        matphash.GetArray(out byte[] phashbuffer);
-                        phash = BitConverter.ToUInt64(phashbuffer, 0);
-                    }
-
                     var keypoints = _orb.Detect(mat);
                     if (keypoints.Length > 0)
                     {
@@ -294,13 +287,10 @@ namespace ImageBank
                         }
 
                         keypoints = lkeypoints.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
-                        //keypoints = keypoints.OrderByDescending(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
-
                         using (var matdescriptors = new Mat())
                         {
                             _orb.Compute(mat, ref keypoints, matdescriptors);
-                            if (matdescriptors.Rows > 0 && keypoints.Length > 0)
-                            {
+                            if (matdescriptors.Rows > 0 && keypoints.Length > 0) {
                                 /*
                                 using (var matkeypoints = new Mat())
                                 {
@@ -318,7 +308,128 @@ namespace ImageBank
             }
         }
 
-        public static float CompareBlob(ulong[] x, ulong[] y)
+        private static void ConvertToLAB(int ir, int ig, int ib, out double dl, out double da, out double db)
+        {
+            var r = ir / 255.0;
+            var g = ig / 255.0;
+            var b = ib / 255.0;
+
+            r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+            g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+            b = (b > 0.04045) ? Math.Pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+            var x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+            var y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+            var z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+            x = (x > 0.008856) ? Math.Pow(x, 1.0 / 3.0) : (7.787 * x) + 16.0 / 116.0;
+            y = (y > 0.008856) ? Math.Pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
+            z = (z > 0.008856) ? Math.Pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
+
+            dl = (116.0 * y) - 16.0;
+            da = 500.0 * (x - y);
+            db = 200.0 * (y - z);
+        }
+
+        public static void ComputeHist(Bitmap bitmap, out byte[] hist)
+        {           
+            byte[] brgs;
+            using (var bitmap256x256 = ResizeBitmap(bitmap, 256, 256)) {
+                var rect = new Rectangle(0, 0, 256, 256);
+                BitmapData bmpdata = bitmap256x256.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
+                IntPtr ptr = bmpdata.Scan0;
+                var bytes = 256 * 256 * 3;
+                brgs = new byte[bytes];
+                Marshal.Copy(ptr, brgs, 0, bytes);
+                bitmap256x256.UnlockBits(bmpdata);
+            }
+
+            var inthist = new int[1024];
+            var offset = 0;
+            while (offset < 256 * 256 * 3) {
+                var blue = brgs[offset++];
+                var green = brgs[offset++];
+                var red = brgs[offset++];
+                ConvertToLAB(red, green, blue, out var dl, out var da, out var db);
+                
+                // L 0.0 100.0 = 100.0
+                // A -86.18 98.25 = 184.43
+                // B -107.86 94.48 = 202.34
+
+                var ol = (int)(dl / 25.06); // [0..100] -> 0..3 // 2 bit
+                var oa = (int)((da + 87.0) / 11.57); // [-86..98] +87 [0..185]  -> 0..15 // 4 bit
+                var ob = (int)((db + 108.0) / 12.63); // [-108..94] +108 [0..202] -> 0..15 // 4 bit
+                var bin = (short)((oa << 6) | (ob << 2) | ol);
+                inthist[bin]++;
+            }
+
+            hist = new byte[1024];
+            offset = 0;
+            while (offset < 1024) {
+                hist[offset] = (byte)Math.Sqrt(inthist[offset]);
+                offset++;
+            }
+        }
+
+        public static float ComputeDistance(byte[] hx, byte[] hy)
+        {
+            var sum = 0f;
+            var offset = 0;
+            while (offset < 1024) {
+                sum += (hx[offset] - hy[offset]) * (hx[offset] - hy[offset]);
+                offset++;
+            }
+
+            sum /= 1024f;
+            return sum;
+        }
+
+        private static ulong ComputeHashRotate(Bitmap bitmap, RotateFlipType rft)
+        {
+            using (var brft = new Bitmap(bitmap)) {
+                brft.RotateFlip(rft);
+                using (var matsource = brft.ToMat())
+                    using (var matcolor = new Mat()) {
+                    Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(32, 32), 0, 0, InterpolationFlags.Area);
+                    using (var mat = new Mat()) {
+                        Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
+                        using (var phash = PHash.Create())
+                        using (var matphash = new Mat()) {
+                            phash.Compute(mat, matphash);
+                            matphash.GetArray(out byte[] phasharray);
+                            var hash = BitConverter.ToUInt64(phasharray, 0);
+                            return hash;
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void ComputePBlob(Bitmap bitmap, out ulong[] hashes)
+        {
+            hashes = new ulong[4];
+            hashes[0] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipNone);
+            hashes[1] = ComputeHashRotate(bitmap, RotateFlipType.Rotate90FlipNone);
+            hashes[2] = ComputeHashRotate(bitmap, RotateFlipType.Rotate270FlipNone);
+            hashes[3] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipX);
+        }
+
+        public static int ComputeDistance(ulong[] x, ulong[] y)
+        {
+            var mindistance = 256;
+            for (var i = 0; i < x.Length; i++) {
+                for (var j = 0; j < y.Length; j++) {
+                    var d = Intrinsic.PopCnt(x[i] ^ y[j]);
+                    if (d < mindistance){
+                        mindistance = d;
+                    }
+                }
+            }
+
+            return mindistance;
+        }
+
+        public static byte[] ComputeDiff(ulong[] x, ulong[] y)
         {
             var m = new List<Tuple<int, int, int>>();
             for (var i = 0; i < x.Length; i += 4)
@@ -336,22 +447,39 @@ namespace ImageBank
             }
 
             m.Sort((a1, a2) => a1.Item3.CompareTo(a2.Item3));
-            var sum = 0f;
-            var w = 1f;
-            var sumw = 0f;
+            var diff = new List<byte>();
             while (m.Count > 0)
             {
-                sum += m[0].Item3 * w;
-                sumw += w;
-                w /= 2f;
-
+                diff.Add((byte)m[0].Item3);
                 var ix = m[0].Item1;
                 var iy = m[0].Item2;
                 m.RemoveAll(e => e.Item1 == ix || e.Item2 == iy);
             }
 
-            var f = (float)sum / sumw;
-            return f;
+            return diff.ToArray();
+        }
+
+        public static string ShowDiff(byte[] diff)
+        {
+            for (var i = 0; i < diff.Length; i++) {
+                if (diff[i] != 0) {
+                    return $"{i}:{diff[i]}";
+                }
+            }
+
+            return $"EQ";
+        }
+
+        public static int CompareDiff(byte[] x, byte[] y)
+        {
+            for (var i = 0; i < x.Length; i++) {
+                var c = x[i].CompareTo(y[i]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+
+            return 0;
         }
 
         /*
@@ -465,6 +593,32 @@ namespace ImageBank
             }
             
             return null;
+        }
+        */
+
+        /*
+        public static int CompareMap(byte[] x, byte[] y)
+        {
+            var i = 0;
+            var j = 0;
+            var m = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i] == y[j]) {
+                    i++;
+                    j++;
+                    m++;
+                }
+                else {
+                    if (x[i] < y[j]) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+                }
+            }
+
+            return m;
         }
         */
     }

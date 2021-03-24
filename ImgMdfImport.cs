@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
@@ -26,11 +25,6 @@ namespace ImageBank
                     .ToArray();
 
             foreach (var fileInfo in fileInfos) {
-                //if (fileInfo.Length > 1024 * 104)
-                //{
-                //    break;
-                //}
-
                 var filename = fileInfo.FullName;
                 var name = Path.GetFileNameWithoutExtension(filename);
                 var extension = Path.GetExtension(filename);
@@ -38,8 +32,7 @@ namespace ImageBank
                     continue;
                 }
 
-                if (path.Equals(AppConsts.PathHp))
-                {
+                if (path.Equals(AppConsts.PathHp)) {
                     var shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
                     folder = Path.GetDirectoryName(shortfilename);
                     if (_imgList.TryGetValue(name, out var imgfound)) {
@@ -74,7 +67,7 @@ namespace ImageBank
                 }
 
                 lock (_imglock) {
-                    var lastadded = DateTime.Now;
+                    var lastchanged = DateTime.Now;
                     var lastview = GetMinLastView();
                     if (
                         !extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
@@ -88,20 +81,10 @@ namespace ImageBank
                     var hash = Helper.ComputeHash(imagedata);
                     if (path.Equals(AppConsts.PathRw)) {
                         folder = Helper.ComputeFolder(imagedata);
-                        /*
-                        folder = 1;
-                        if (_imgList.Count > 0) {
-                            folder = _imgList.Max(e => e.Value.Folder);
-                            var nfolder = _imgList.Count(e => e.Value.Folder == folder);
-                            if (nfolder >= AppConsts.MaxImagesInFolder) {
-                                folder++;
-                            }
-                        }
-                        */
                     }
 
                     if (_hashList.TryGetValue(hash, out var imgfound)) {
-                        lastadded = imgfound.LastAdded;
+                        lastchanged = imgfound.LastChanged;
                         lastview = imgfound.LastView;
                         lastcheck = imgfound.LastCheck;
                         if (File.Exists(imgfound.FileName)) {
@@ -114,16 +97,19 @@ namespace ImageBank
                                 folder: folder,
                                 hash: imgfound.Hash,
                                 blob: imgfound.Blob,
-                                phash: imgfound.Phash,
-                                lastadded: lastadded,
+                                pblob: imgfound.PBlob,
+                                lastchanged: lastchanged,
                                 lastview: lastview,
                                 counter: imgfound.Counter,
                                 lastcheck: lastcheck,
                                 nexthash: imgfound.NextHash,
-                                distance: imgfound.Distance,
+                                diff: imgfound.GetDiff(),
                                 width: imgfound.Width,
                                 height: imgfound.Height,
-                                size: imgfound.Size);
+                                size: imgfound.Size,
+                                id: imgfound.Id,
+                                lastid: imgfound.LastId,
+                                distance: imgfound.Distance);
 
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
@@ -141,7 +127,7 @@ namespace ImageBank
                         continue;
                     }
 
-                    ImageHelper.ComputeBlob(bitmap, out var phash, out var descriptors);
+                    ImageHelper.ComputeBlob(bitmap, out var descriptors);
                     if (descriptors == null || descriptors.Length == 0) {
                         message = "not enough descriptors";
                         ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
@@ -152,6 +138,9 @@ namespace ImageBank
 
                     var blob = ImageHelper.ArrayFrom64(descriptors);
 
+                    ImageHelper.ComputePBlob(bitmap, out var hashes);
+                    var pblob = ImageHelper.ArrayFrom64(hashes);
+
                     var len = 8;
                     while (len <= 32) {
                         name = hash.Substring(0, len);
@@ -161,22 +150,26 @@ namespace ImageBank
 
                         len++;
                     }
-                
+
+                    var id = AllocateId();
                     var img = new Img(
                         name: name,
                         folder: folder,
                         hash: hash,
                         blob: blob,
-                        phash: phash,
-                        lastadded: lastadded,
+                        pblob: pblob,
+                        lastchanged: lastchanged,
                         lastview: lastview,
                         counter: 0,
                         lastcheck: lastcheck,
                         nexthash: hash,
-                        distance: AppConsts.MaxDistance,
+                        diff: new byte[1] { 0xFF },
                         width: bitmap.Width,
                         height: bitmap.Height,
-                        size: imagedata.Length);
+                        size: imagedata.Length,
+                        id: id,
+                        lastid: 0,
+                        distance: 256);
 
                     var lastmodified = File.GetLastWriteTime(filename);
                     if (lastmodified > DateTime.Now) {

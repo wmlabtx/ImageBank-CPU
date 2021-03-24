@@ -10,10 +10,10 @@
         public const string FolderDefault = "root";
 
         public const int MaxImages = 100000;
-        public const int MaxAdd = 1000;
+        public const int MaxAdd = 10000;
 
         public const int HashLength = 32;
-        public const float MaxDistance = 256f;
+        public const int PDistance = 8;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -33,16 +33,19 @@
         public const string AttrFolder = "Folder";
         public const string AttrHash = "Hash";
         public const string AttrDescriptors = "Descriptors";
-        public const string AttrMapDescriptors = "MapDescriptors";
-        public const string AttrPhash = "Phash";
-        public const string AttrLastAdded = "LastAdded";
+        public const string AttrDiff = "Diff";
+        public const string AttrLastChanged = "LastChanged";
         public const string AttrLastView = "LastView";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrNextHash = "NextHash";
-        public const string AttrDistance = "Distance";
         public const string AttrCounter = "Counter";
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
+        public const string TableVars = "Vars";
+        public const string AttrId = "Id";
+        public const string AttrLastId = "LastId";
+        public const string AttrHashes = "Hashes";
+        public const string AttrDistance = "Distance";
     }
 }

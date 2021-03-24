@@ -17,7 +17,8 @@ namespace ImageBank
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
 
         private static readonly DateTime _viewnow = new DateTime(2020, 1, 1);
-        private readonly Random _random = new Random();
+
+        private static int _id;
 
         public ImgMdf()
         {
@@ -53,6 +54,13 @@ namespace ImageBank
                     .Min(e => e.Value.LastCheck)
                     .AddSeconds(-1);
             }
+        }
+
+        private static int AllocateId()
+        {
+            _id++;
+            SqlUpdateVar(AppConsts.AttrId, _id);
+            return _id;
         }
     }
 }

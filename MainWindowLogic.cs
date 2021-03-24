@@ -166,12 +166,7 @@ namespace ImageBank
                 pBoxes[index].Source = Helper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Folder}\\{name}");
-
-                var sf = ImgMdf.FolderSize(AppVars.ImgPanel[index].Img.Folder);
-                if (sf > 1) {
-                    sb.Append($" [{sf}]");
-                }
+                sb.Append($"{AppVars.ImgPanel[index].Img.Id}:{AppVars.ImgPanel[index].Img.Folder}\\{name}");
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
@@ -184,7 +179,7 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
+                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastChanged))} ago]");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
@@ -196,14 +191,12 @@ namespace ImageBank
                     }
                 }
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0)
-                {
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
                 else
                 {
-                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160)
-                    {
+                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160) {
                         scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
 
@@ -212,19 +205,26 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.Distance < 1f)
-            {
-                if (AppVars.ImgPanel[0].Img.Width == AppVars.ImgPanel[1].Img.Width &&
-                    AppVars.ImgPanel[0].Img.Height == AppVars.ImgPanel[1].Img.Height)
-                {
-                    if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size)
-                    {
+            if (AppVars.ImgPanel[0].Img.Distance < AppConsts.PDistance || AppVars.ImgPanel[0].Img.GetDiff()[0] < AppConsts.PDistance) {
+                var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
+                var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
+
+                if (dimX == dimY) {
+                    if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
                         pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
-                    else
-                    {
+                    else {
                         pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
+                }
+                else {
+                    if (dimY <= dimX) {
+                        pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                    }
+                    else {
+                        pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                    }
+
                 }
             }
 
@@ -312,7 +312,7 @@ namespace ImageBank
         private void DoCompute(object s, DoWorkEventArgs args)
         {
             while (!_backgroundWorker.CancellationPending) {
-                AppVars.Collection.Compute(_backgroundWorker);
+                ImgMdf.Compute(_backgroundWorker);
                 Thread.Sleep(200);
             }
 

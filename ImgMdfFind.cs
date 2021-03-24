@@ -30,6 +30,14 @@ namespace ImageBank
                                 continue;
                             }
 
+                            if (eX.Counter == 0 &&
+                                (eX.Distance < AppConsts.PDistance || eX.GetDiff()[0] < AppConsts.PDistance)) {
+                                imgX = eX;
+                                nameX = imgX.Name;
+                                nameY = eY.Name;
+                                break;
+                            }
+
                             if (imgX != null &&
                                 imgX.Counter < eX.Counter) {
                                 continue;
@@ -37,9 +45,17 @@ namespace ImageBank
 
                             if (imgX != null &&
                                 imgX.Counter == eX.Counter &&
-                                imgX.Distance <= eX.Distance) {
+                                imgX.LastView <= eX.LastView) {
                                 continue;
                             }
+
+                            /*
+                            if (imgX != null &&
+                                imgX.Counter == eX.Counter &&
+                                ImageHelper.CompareDiff(imgX.GetDiff(), eX.GetDiff()) <= 0) {
+                                continue;
+                            }
+                            */
 
                             imgX = eX;
                             var imgY = eY;
@@ -120,7 +136,7 @@ namespace ImageBank
                 var scope = _imgList.Where(e => e.Value.Counter == mincounter).ToArray();
                 sb.Append($"{scope.Length}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-                sb.Append($"{imgX.Distance:F1} ");
+                sb.Append($"{imgX.Distance}/{ImageHelper.ShowDiff(imgX.GetDiff())} ");
 
                 /*
                 var moves = 0;
