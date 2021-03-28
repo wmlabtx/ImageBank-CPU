@@ -8,16 +8,14 @@ namespace ImageBank
         public string Name { get; }
 
         private string _folder;
-        public string Folder
-        {
+        public string Folder {
             get => _folder;
-            set
-            {
+            set {
                 if (string.IsNullOrEmpty(value)) {
                     throw new ArgumentException(@"string.IsNullOrEmpty(value)");
                 }
 
-                var oldfilename = FileName; 
+                var oldfilename = FileName;
                 _folder = value;
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFolder, value);
                 var newfilename = FileName;
@@ -34,84 +32,98 @@ namespace ImageBank
 
         public string Hash { get; }
 
-        public byte[] Blob { get; private set; }
+        public byte[] ColorDescriptors { get; }
 
-        private readonly ulong[] _descriptors;
-        public ulong[] GetDescriptors()
-        {
-            return _descriptors;
-        }
+        private float _colordistance;
+        public float ColorDistance {
+            get {
+                return _colordistance;
+            }
+            set {
+                _colordistance = value;
+                if (_colordistance < 0f) {
+                    throw new ArgumentException("_colordistance < 0f");
+                }
 
-        private byte[] _diff;
-        public byte[] Diff
-        {
-            set
-            {
-                _diff = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDiff, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColorDistance, value);
             }
         }
 
-        public byte[] GetDiff()
-        {
-            return _diff;
+        public ulong[] PerceptiveDescriptors { get; }
+
+        private int _perceptivedistance;
+        public int PerceptiveDistance {
+            get => _perceptivedistance;
+            set {
+                _perceptivedistance = value;
+                if (_perceptivedistance < 0 || _perceptivedistance > AppConsts.MaxPerceptiveDistance) {
+                    throw new ArgumentException("_perceptivedistance < 0 || _perceptivedistance > AppConsts.MaxPerceptiveDistance");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrPerceptiveDistance, value);
+            }
+        }
+
+        public ulong[] OrbDescriptors { get; }
+
+        private int _orbdistance;
+        public int OrbDistance {
+            get => _orbdistance;
+            set {
+                _orbdistance = value;
+                if (_orbdistance < 0) {
+                    throw new ArgumentException("_orbdistance < 0");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrOrbDistance, value);
+            }
         }
 
         private DateTime _lastchanged;
-        public DateTime LastChanged
-        {
+        public DateTime LastChanged {
             get => _lastchanged;
-            set
-            {
+            set {
                 _lastchanged = value;
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastChanged, value);
             }
         }
 
         private DateTime _lastview;
-        public DateTime LastView
-        {
+        public DateTime LastView {
             get => _lastview;
-            set
-            {
+            set {
                 _lastview = value;
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastView, value);
             }
         }
 
         private DateTime _lastcheck;
-        public DateTime LastCheck
-        {
+        public DateTime LastCheck {
             get => _lastcheck;
-            set
-            {
+            set {
                 _lastcheck = value;
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
             }
         }
 
         private string _nexthash;
-        public string NextHash
-        {
+        public string NextHash {
             get => _nexthash;
-            set
-            {
+            set {
                 _nexthash = value;
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNextHash, value);
             }
         }
 
         private int _counter;
-        public int Counter
-        {
+        public int Counter {
             get => _counter;
-            set
-            {
+            set {
                 _counter = value;
                 if (_counter < 0) {
                     throw new ArgumentException("_counter < 0");
                 }
-                
+
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
             }
         }
@@ -122,11 +134,9 @@ namespace ImageBank
         public int Id { get; }
 
         private int _lastid;
-        public int LastId
-        {
+        public int LastId {
             get => _lastid;
-            set
-            {
+            set {
                 _lastid = value;
                 if (_lastid < 0) {
                     throw new ArgumentException("_lastid < 0");
@@ -136,63 +146,51 @@ namespace ImageBank
             }
         }
 
-        public byte[] PBlob { get; private set; }
-
-        private readonly ulong[] _hashes;
-        public ulong[] GetHashes()
-        {
-            return _hashes;
-        }
-
-        private int _distance;
-        public int Distance
-        {
-            get => _distance;
-            set
-            {
-                _distance = value;
-                if (_distance < 0) {
-                    throw new ArgumentException("_distance < 0");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrDistance, value);
-            }
-        }
-
         public Img(
+            int id,
             string name,
             string folder,
             string hash,
+
             int width,
             int height,
             int size,
-            byte[] blob,
+
+            byte[] colordescriptors,
+            float colordistance,
+            ulong[] perceptivedescriptors,
+            int perceptivedistance,
+            ulong[] orbdescriptors,
+            int orbdistance,
+           
             DateTime lastchanged,
             DateTime lastview,
-            int counter,
             DateTime lastcheck,
+
             string nexthash,
-            byte[] diff,
-            int id,
             int lastid,
-            byte[] pblob,
-            int distance
-            )
-        {
+            int counter
+            ) {
+            if (id <= 0) {
+                throw new ArgumentException("id <= 0");
+            }
+
+            Id = id;
+
             if (string.IsNullOrEmpty(name) || name.Length > 32) {
                 throw new ArgumentException("string.IsNullOrEmpty(name) || name.Length > 32");
             }
 
             Name = name;
 
-            if (string.IsNullOrEmpty(folder)) {
-                throw new ArgumentException(@"string.IsNullOrEmpty(folder)");
+            if (string.IsNullOrEmpty(folder) || name.Length > 8) {
+                throw new ArgumentException("string.IsNullOrEmpty(folder) || folder.Length > 8");
             }
 
             _folder = folder;
 
-            if (string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength) {
-                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != AppConsts.HashLength");
+            if (string.IsNullOrEmpty(hash) || hash.Length != 32) {
+                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != 32");
             }
 
             Hash = hash;
@@ -215,46 +213,64 @@ namespace ImageBank
 
             Size = size;
 
-            Blob = blob ?? throw new ArgumentException("blob == null");
-            _descriptors = ImageHelper.ArrayTo64(blob);
+            if (colordescriptors == null || colordescriptors.Length != 1024) {
+                throw new ArgumentException("colordescriptors == null || colordescriptors.Length != 1024");
+            }
+
+            ColorDescriptors = colordescriptors;
+
+            if (colordistance < 0f) {
+                throw new ArgumentException("colordistance < 0f");
+            }
+
+            _colordistance = colordistance;
+
+            if (perceptivedescriptors == null || perceptivedescriptors.Length != 4) {
+                throw new ArgumentException("perceptivedescriptors == null || perceptivedescriptors.Length != 4");
+            }
+
+            PerceptiveDescriptors = perceptivedescriptors;
+
+            if (perceptivedistance < 0 || perceptivedistance > AppConsts.MaxPerceptiveDistance) {
+                throw new ArgumentException("perceptivedistance < 0 || perceptivedistance > AppConsts.MaxPerceptiveDistance");
+            }
+
+            _perceptivedistance = perceptivedistance;
+
+            if (orbdescriptors == null || orbdescriptors.Length < 4) {
+                throw new ArgumentException("orbdescriptors == null || orbdescriptors.Length < 4");
+            }
+
+            OrbDescriptors = orbdescriptors;
+
+            if (orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance) {
+                throw new ArgumentException("orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance");
+            }
+
+            _orbdistance = orbdistance;
 
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
+
+            if (string.IsNullOrEmpty(nexthash) || nexthash.Length != 32) {
+                throw new ArgumentException("string.IsNullOrEmpty(nexthash) || nexthash.Length != 32");
+            }
+
+            _nexthash = nexthash;
 
             if (counter < 0) {
                 throw new ArgumentException("counter < 0");
             }
 
             _counter = counter;
-            _nexthash = nexthash;
-
-            if (diff == null || diff.Length > 100) { 
-                throw new ArgumentException("diff == null || diff.Length > 100");
-            }
-
-            _diff = diff;
-
-            if (id <= 0) {
-                throw new ArgumentException("id <= 0");
-            }
-
-            Id = id;
+            
 
             if (lastid < 0) {
                 throw new ArgumentException("lastid < 0");
             }
 
             _lastid = lastid;
-
-            PBlob = pblob ?? throw new ArgumentException("pblob == null");
-            _hashes = ImageHelper.ArrayTo64(pblob);
-
-            if (distance < 0) {
-                throw new ArgumentException("distance < 0");
-            }
-
-            _distance = distance;
         }
     }
 }

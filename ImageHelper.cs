@@ -24,13 +24,11 @@ namespace ImageBank
             
             try
             {
-                using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor))
-                {
+                using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor)) {
                     bitmap = BitmapConverter.ToBitmap(mat);
                 }
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 bitmap = null;
                 return false;
             }
@@ -41,8 +39,7 @@ namespace ImageBank
         private static Bitmap RepixelBitmap(Image bitmap)
         {
             var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
-            using (var g = Graphics.FromImage(bitmap24BppRgb))
-            {
+            using (var g = Graphics.FromImage(bitmap24BppRgb)) {
                 g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }
 
@@ -240,9 +237,9 @@ namespace ImageBank
             return buffer;
         }
 
-        public static void ComputeBlob(Bitmap bitmap, out ulong[] descriptors)
+        public static void ComputeOrbDescriptors(Bitmap bitmap, out ulong[] orbdescriptors)
         {
-            descriptors = null;
+            orbdescriptors = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat())
             {
@@ -252,16 +249,7 @@ namespace ImageBank
                 {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
                     var keypoints = _orb.Detect(mat);
-                    if (keypoints.Length > 0)
-                    {
-                        /*
-                        using (var matkeypoints = new Mat())
-                        {
-                            Cv2.DrawKeypoints(matcolor, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                            matkeypoints.SaveImage($"matkeypoints_{keypoints.Length}.png");
-                        }
-                        */
-
+                    if (keypoints.Length > 0) {
                         var grid = new List<KeyPoint>[100];
                         foreach (var e in keypoints)
                         {
@@ -277,10 +265,8 @@ namespace ImageBank
                         }
 
                         var lkeypoints = new List<KeyPoint>();
-                        foreach (var g in grid)
-                        {
-                            if (g != null && g.Count > 0)
-                            {
+                        foreach (var g in grid) {
+                            if (g != null && g.Count > 0) {
                                 var keypoint = g.OrderByDescending(e => e.Octave).ThenByDescending(e => e.Response).FirstOrDefault();
                                 lkeypoints.Add(keypoint);
                             }
@@ -291,16 +277,8 @@ namespace ImageBank
                         {
                             _orb.Compute(mat, ref keypoints, matdescriptors);
                             if (matdescriptors.Rows > 0 && keypoints.Length > 0) {
-                                /*
-                                using (var matkeypoints = new Mat())
-                                {
-                                    Cv2.DrawKeypoints(matcolor, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                                    matkeypoints.SaveImage("matkeypoints.png");
-                                }
-                                */
-
                                 matdescriptors.GetArray(out byte[] array);
-                                descriptors = ArrayTo64(array);
+                                orbdescriptors = ArrayTo64(array);
                             }
                         }
                     }
@@ -331,8 +309,8 @@ namespace ImageBank
             db = 200.0 * (y - z);
         }
 
-        public static void ComputeHist(Bitmap bitmap, out byte[] hist)
-        {           
+        public static void ComputeColorDescriptors(Bitmap bitmap, out byte[] colordescriptors)
+        {
             byte[] brgs;
             using (var bitmap256x256 = ResizeBitmap(bitmap, 256, 256)) {
                 var rect = new Rectangle(0, 0, 256, 256);
@@ -356,22 +334,22 @@ namespace ImageBank
                 // A -86.18 98.25 = 184.43
                 // B -107.86 94.48 = 202.34
 
-                var ol = (int)(dl / 25.06); // [0..100] -> 0..3 // 2 bit
-                var oa = (int)((da + 87.0) / 11.57); // [-86..98] +87 [0..185]  -> 0..15 // 4 bit
-                var ob = (int)((db + 108.0) / 12.63); // [-108..94] +108 [0..202] -> 0..15 // 4 bit
+                var ol = (int)(dl / 25.25); // [0..100] -> 0..3 // 2 bit
+                var oa = (int)((da + 87.0) / 11.63); // [-86..98] +87 [0..185]  -> 0..15 // 4 bit
+                var ob = (int)((db + 108.0) / 12.75); // [-108..94] +108 [0..202] -> 0..15 // 4 bit
                 var bin = (short)((oa << 6) | (ob << 2) | ol);
                 inthist[bin]++;
             }
 
-            hist = new byte[1024];
+            colordescriptors = new byte[1024];
             offset = 0;
             while (offset < 1024) {
-                hist[offset] = (byte)Math.Sqrt(inthist[offset]);
+                colordescriptors[offset] = (byte)Math.Sqrt(inthist[offset]);
                 offset++;
             }
         }
 
-        public static float ComputeDistance(byte[] hx, byte[] hy)
+        public static float ComputeColorDistance(byte[] hx, byte[] hy)
         {
             var sum = 0f;
             var offset = 0;
@@ -405,18 +383,18 @@ namespace ImageBank
             }
         }
 
-        public static void ComputePBlob(Bitmap bitmap, out ulong[] hashes)
+        public static void ComputePerceptiveDescriptors(Bitmap bitmap, out ulong[] perceptivedescriptors)
         {
-            hashes = new ulong[4];
-            hashes[0] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipNone);
-            hashes[1] = ComputeHashRotate(bitmap, RotateFlipType.Rotate90FlipNone);
-            hashes[2] = ComputeHashRotate(bitmap, RotateFlipType.Rotate270FlipNone);
-            hashes[3] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipX);
+            perceptivedescriptors = new ulong[4];
+            perceptivedescriptors[0] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipNone);
+            perceptivedescriptors[1] = ComputeHashRotate(bitmap, RotateFlipType.Rotate90FlipNone);
+            perceptivedescriptors[2] = ComputeHashRotate(bitmap, RotateFlipType.Rotate270FlipNone);
+            perceptivedescriptors[3] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipX);
         }
 
-        public static int ComputeDistance(ulong[] x, ulong[] y)
+        public static int ComputePerceptiveDistance(ulong[] x, ulong[] y)
         {
-            var mindistance = 256;
+            var mindistance = AppConsts.MaxPerceptiveDistance;
             for (var i = 0; i < x.Length; i++) {
                 for (var j = 0; j < y.Length; j++) {
                     var d = Intrinsic.PopCnt(x[i] ^ y[j]);
@@ -429,13 +407,11 @@ namespace ImageBank
             return mindistance;
         }
 
-        public static byte[] ComputeDiff(ulong[] x, ulong[] y)
+        public static int ComputeOrbDistance(ulong[] x, ulong[] y)
         {
             var m = new List<Tuple<int, int, int>>();
-            for (var i = 0; i < x.Length; i += 4)
-            {
-                for (var j = 0; j < y.Length; j += 4)
-                {
+            for (var i = 0; i < x.Length; i += 4) {
+                for (var j = 0; j < y.Length; j += 4) {
                     var d =
                         Intrinsic.PopCnt(x[i + 0] ^ y[j + 0]) +
                         Intrinsic.PopCnt(x[i + 1] ^ y[j + 1]) +
@@ -447,154 +423,9 @@ namespace ImageBank
             }
 
             m.Sort((a1, a2) => a1.Item3.CompareTo(a2.Item3));
-            var diff = new List<byte>();
-            while (m.Count > 0)
-            {
-                diff.Add((byte)m[0].Item3);
-                var ix = m[0].Item1;
-                var iy = m[0].Item2;
-                m.RemoveAll(e => e.Item1 == ix || e.Item2 == iy);
-            }
-
-            return diff.ToArray();
+            var distance = m[0].Item3;
+            return distance;
         }
-
-        public static string ShowDiff(byte[] diff)
-        {
-            for (var i = 0; i < diff.Length; i++) {
-                if (diff[i] != 0) {
-                    return $"{i}:{diff[i]}";
-                }
-            }
-
-            return $"EQ";
-        }
-
-        public static int CompareDiff(byte[] x, byte[] y)
-        {
-            for (var i = 0; i < x.Length; i++) {
-                var c = x[i].CompareTo(y[i]);
-                if (c != 0) {
-                    return c;
-                }
-            }
-
-            return 0;
-        }
-
-        /*
-        public static string ComputeFolder(Bitmap bitmap)
-        {
-            using (var matsource = bitmap.ToMat())
-            using (var matcolor = new Mat()) {
-                Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(256, 256), 0, 0, InterpolationFlags.Area);
-                using (var matcolumn = matcolor.Reshape(3, matcolor.Rows * matcolor.Cols))
-                using (var mat = new Mat()) {
-                    matcolumn.ConvertTo(mat, MatType.CV_32FC3);
-                    using (var matbestlabels = new Mat())
-                    using (Mat matcenters = new Mat()) {
-                        
-                        Cv2.Kmeans(
-                            mat,
-                            8,
-                            matbestlabels,
-                            new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.MaxIter, 10, 1.0),
-                            3,
-                            KMeansFlags.PpCenters,
-                            matcenters);
-
-                        matbestlabels.GetArray(out int[] bestlabels);
-                        matcenters.GetArray(out float[] centers);
-                        var hl = new int[8];
-                        foreach (var l in bestlabels) {
-                            hl[l]++;
-                        }
-
-                        using (var pbitmap = new Bitmap(64 * 8, 64, PixelFormat.Format24bppRgb))
-                        using (var graphics = Graphics.FromImage(pbitmap))
-                        {
-                            for (var i = 0; i < 8; i++) {
-                                using (var myBrush = new SolidBrush(Color.FromArgb((int)centers[i * 3 + 2], (int)centers[i * 3 + 1], (int)centers[i * 3 + 0])))
-                                {
-                                    graphics.FillRectangle(myBrush, new Rectangle(i * 64, 0, 64, 64));
-                                }
-                            }
-
-                            pbitmap.Save("palette8.png", ImageFormat.Png);
-                        }
-
-                        var bc = 0;
-                        var bcv = 0;
-                        for (var i = 0; i < hl.Length; i++) {
-                            if (hl[i] > bcv) {
-                                bc = i;
-                                bcv = hl[i];
-                            }
-                        }
-
-                        var rcolor = (int)Math.Floor(centers[2]);
-                        var gcolor = (int)Math.Floor(centers[1]);
-                        var bcolor = (int)Math.Floor(centers[0]);
-
-                        ///
-
-                        Cv2.Kmeans(
-                            mat,
-                            1,
-                            matbestlabels,
-                            new TermCriteria(CriteriaTypes.Eps | CriteriaTypes.MaxIter, 10, 1.0),
-                            3,
-                            KMeansFlags.PpCenters,
-                            matcenters);
-
-                        matbestlabels.GetArray(out int[] bestlabels);
-                        matcenters.GetArray(out float[] centers);
-                        
-
-                        var rcolor = (int)Math.Floor(centers[2]);
-                        var gcolor = (int)Math.Floor(centers[1]);
-                        var bcolor = (int)Math.Floor(centers[0]);
-
-                        ///
-                        
-                        using (var pbitmap = new Bitmap(256, 256, PixelFormat.Format24bppRgb))
-                        using (var graphics = Graphics.FromImage(pbitmap))
-                        using (var myBrush = new SolidBrush(Color.FromArgb(rcolor, gcolor, bcolor))) {
-                            graphics.FillRectangle(myBrush, new Rectangle(0, 0, 256, 256));
-                            pbitmap.Save("palette.png", ImageFormat.Png);
-                        }
-
-                        var r = rcolor / 255.0;
-                        var g = gcolor / 255.0;
-                        var b = bcolor / 255.0;
-                        var r2 = rcolor >> 6;
-                        var g2 = gcolor >> 6;
-                        var b2 = bcolor >> 6;
-                        var irgb = (byte)((r2 << 4) | (g2 << 2) | b2);
-
-                        r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-                        g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-                        b = (b > 0.04045) ? Math.Pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
-
-                        var x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
-                        var y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
-                        var z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
-
-                        x = (x > 0.008856) ? Math.Pow(x, 1.0 / 3.0) : (7.787 * x) + 16.0 / 116.0;
-                        y = (y > 0.008856) ? Math.Pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
-                        z = (z > 0.008856) ? Math.Pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
-
-                        var lfloat = (float)((116.0 * y) - 16.0);
-                        var afloat = (float)(500.0 * (x - y));
-                        var bfloat = (float)(200.0 * (y - z));
-                    }
-                }
-
-            }
-            
-            return null;
-        }
-        */
 
         /*
         public static int CompareMap(byte[] x, byte[] y)

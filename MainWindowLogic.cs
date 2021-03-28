@@ -197,7 +197,7 @@ namespace ImageBank
                 else
                 {
                     if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160) {
-                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 128, 128));
                     }
 
                 }
@@ -205,7 +205,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.Distance < AppConsts.PDistance || AppVars.ImgPanel[0].Img.GetDiff()[0] < AppConsts.PDistance) {
+            if (AppVars.ImgPanel[0].Img.OrbDistance < AppConsts.MinOrbDistance || AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
                 var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
                 var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
 
@@ -267,7 +267,7 @@ namespace ImageBank
         private async void ImgPanelDelete(int index)
         {
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Delete(AppVars.ImgPanel[index].Img.Name); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Name); }).ConfigureAwait(true);
             await Task.Run(() => { AppVars.Collection.Find(string.Empty, string.Empty, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -312,7 +312,7 @@ namespace ImageBank
         private void DoCompute(object s, DoWorkEventArgs args)
         {
             while (!_backgroundWorker.CancellationPending) {
-                ImgMdf.Compute(_backgroundWorker);
+                AppVars.Collection.Compute(_backgroundWorker);
                 Thread.Sleep(200);
             }
 

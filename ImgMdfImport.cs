@@ -69,14 +69,6 @@ namespace ImageBank
                 lock (_imglock) {
                     var lastchanged = DateTime.Now;
                     var lastview = GetMinLastView();
-                    if (
-                        !extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
-                        !extension.Equals(AppConsts.DbxExtension, StringComparison.OrdinalIgnoreCase) &&
-                        !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)
-                        ){
-                        lastview = _viewnow;
-                    }
-
                     var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
                     if (path.Equals(AppConsts.PathRw)) {
@@ -93,23 +85,30 @@ namespace ImageBank
                         }
                         else {
                             var imgreplace = new Img(
+                                id: imgfound.Id,
                                 name: imgfound.Name,
                                 folder: folder,
                                 hash: imgfound.Hash,
-                                blob: imgfound.Blob,
-                                pblob: imgfound.PBlob,
-                                lastchanged: lastchanged,
-                                lastview: lastview,
-                                counter: imgfound.Counter,
-                                lastcheck: lastcheck,
-                                nexthash: imgfound.NextHash,
-                                diff: imgfound.GetDiff(),
+
                                 width: imgfound.Width,
                                 height: imgfound.Height,
                                 size: imgfound.Size,
-                                id: imgfound.Id,
+
+                                colordescriptors: imgfound.ColorDescriptors,
+                                colordistance: imgfound.ColorDistance,
+                                perceptivedescriptors: imgfound.PerceptiveDescriptors,
+                                perceptivedistance: imgfound.PerceptiveDistance,
+                                orbdescriptors: imgfound.OrbDescriptors,
+                                orbdistance: imgfound.OrbDistance,
+
+                                lastchanged: lastchanged,
+                                lastview: lastview,
+                                lastcheck: lastcheck,
+
+
+                                nexthash: imgfound.NextHash,
                                 lastid: imgfound.LastId,
-                                distance: imgfound.Distance);
+                                counter: imgfound.Counter);
 
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
@@ -127,19 +126,15 @@ namespace ImageBank
                         continue;
                     }
 
-                    ImageHelper.ComputeBlob(bitmap, out var descriptors);
-                    if (descriptors == null || descriptors.Length == 0) {
-                        message = "not enough descriptors";
-                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
+                    ImageHelper.ComputeColorDescriptors(bitmap, out var colordescriptors);
+                    ImageHelper.ComputePerceptiveDescriptors(bitmap, out var perceptivedescriptors);
+                    ImageHelper.ComputeOrbDescriptors(bitmap, out var orbdescriptors);
+                    if (orbdescriptors.Length == 0) {
+                        ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {name}: {message}");
                         bad++;
                         File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                         continue;
                     }
-
-                    var blob = ImageHelper.ArrayFrom64(descriptors);
-
-                    ImageHelper.ComputePBlob(bitmap, out var hashes);
-                    var pblob = ImageHelper.ArrayFrom64(hashes);
 
                     var len = 8;
                     while (len <= 32) {
@@ -153,23 +148,29 @@ namespace ImageBank
 
                     var id = AllocateId();
                     var img = new Img(
+                        id: id,
                         name: name,
                         folder: folder,
                         hash: hash,
-                        blob: blob,
-                        pblob: pblob,
-                        lastchanged: lastchanged,
-                        lastview: lastview,
-                        counter: 0,
-                        lastcheck: lastcheck,
-                        nexthash: hash,
-                        diff: new byte[1] { 0xFF },
+
                         width: bitmap.Width,
                         height: bitmap.Height,
                         size: imagedata.Length,
-                        id: id,
+
+                        colordescriptors: colordescriptors,
+                        colordistance: 100f,
+                        perceptivedescriptors: perceptivedescriptors,
+                        perceptivedistance: AppConsts.MaxPerceptiveDistance,
+                        orbdescriptors: orbdescriptors,
+                        orbdistance: AppConsts.MaxOrbDistance,
+
+                        lastchanged: lastchanged,
+                        lastview: lastview,
+                        lastcheck: lastcheck,
+
+                        nexthash: hash,
                         lastid: 0,
-                        distance: 256);
+                        counter: 0);
 
                     var lastmodified = File.GetLastWriteTime(filename);
                     if (lastmodified > DateTime.Now) {

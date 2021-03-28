@@ -6,6 +6,8 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        private readonly Random _random = new Random();
+
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
@@ -17,8 +19,8 @@ namespace ImageBank
                         return;
                     }
 
-                    if (string.IsNullOrEmpty(nameX))
-                    {
+                    if (string.IsNullOrEmpty(nameX)) {
+                        var r = _random.Next(20);
                         imgX = null;
                         foreach (var e in _imgList) {
                             var eX = e.Value;
@@ -30,32 +32,38 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (eX.Counter == 0 &&
-                                (eX.Distance < AppConsts.PDistance || eX.GetDiff()[0] < AppConsts.PDistance)) {
-                                imgX = eX;
-                                nameX = imgX.Name;
-                                nameY = eY.Name;
-                                break;
-                            }
-
                             if (imgX != null &&
                                 imgX.Counter < eX.Counter) {
                                 continue;
                             }
 
-                            if (imgX != null &&
+                            if (r == 0 &&
+                                imgX != null &&
+                                imgX.Counter == eX.Counter &&
+                                imgX.ColorDistance <= eX.ColorDistance) {
+                                continue;
+                            }
+
+                            if (r == 1 &&
+                                imgX != null &&
+                                imgX.Counter == eX.Counter &&
+                                imgX.OrbDistance <= eX.OrbDistance) {
+                                continue;
+                            }
+
+                            if (r == 2 &&
+                                imgX != null &&
+                                imgX.Counter == eX.Counter &&
+                                imgX.PerceptiveDistance <= eX.PerceptiveDistance) {
+                                continue;
+                            }
+
+                            if (r >= 3 &&
+                                imgX != null &&
                                 imgX.Counter == eX.Counter &&
                                 imgX.LastView <= eX.LastView) {
                                 continue;
                             }
-
-                            /*
-                            if (imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                ImageHelper.CompareDiff(imgX.GetDiff(), eX.GetDiff()) <= 0) {
-                                continue;
-                            }
-                            */
 
                             imgX = eX;
                             var imgY = eY;
@@ -86,90 +94,14 @@ namespace ImageBank
                         continue;
                     }
 
-                    /*
-                    if (imgX.Distance < 0.1)
-                    {
-                        if (AppVars.ImgPanel[0].Length <= AppVars.ImgPanel[1].Length)
-                        {
-                            Delete(nameY);
-                            progress.Report($"{nameY} deleted");
-                            nameX = string.Empty;
-                            continue;
-                        }
-                        else
-                        {
-                            Delete(nameX);
-                            progress.Report($"{nameX} deleted");
-                            nameX = string.Empty;
-                            continue;
-                        }
-                    }
-                    */
-
-                    /*
-                    var folderX = AppVars.ImgPanel[0].Img.Folder;
-                    var folderY = AppVars.ImgPanel[1].Img.Folder;
-                    if (folderX != folderY) {
-                        var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
-                        var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
-                        if ((folderX < folderY && dimX > dimY) ||
-                            (folderX > folderY && dimX < dimY))
-                        {
-                            AppVars.ImgPanel[0].Img.Folder = folderY;
-                            AppVars.ImgPanel[1].Img.Folder = folderX;
-                        }
-                    }
-                    */
-
                     break;
                 }
 
-                /*
                 var mincounter = _imgList.Min(e => e.Value.Counter);
-                var scope = _imgList.Where(e => e.Value.Counter == mincounter).ToArray();
-                var mindistance = scope.Min(e => (int)(e.Value.Distance * 10f));
-                scope = scope.Where(e => (int)(e.Value.Distance * 10f) == mindistance).ToArray();
-                sb.Append($"{mindistance / 10f:F1}:{scope.Length}/{_imgList.Count}: ");
-                */
-
-                var mincounter = _imgList.Min(e => e.Value.Counter);
-                var scope = _imgList.Where(e => e.Value.Counter == mincounter).ToArray();
-                sb.Append($"{scope.Length}/{_imgList.Count}: ");
+                var newpics = _imgList.Count(e => e.Value.Counter == mincounter);
+                sb.Append($"{newpics}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-                sb.Append($"{imgX.Distance}/{ImageHelper.ShowDiff(imgX.GetDiff())} ");
-
-                /*
-                var moves = 0;
-                var movemessage = string.Empty;
-                var c = new int[100];
-                foreach (var e in _imgList)
-                {
-                    c[e.Value.Folder]++;
-                }
-
-                for (var df = 2; df <= 99; df++)
-                {
-                    if (c[df - 1] < AppConsts.MaxImagesInFolder && c[df] > 0)
-                    {
-                        var img = _imgList
-                            .Where(e => e.Value.Folder == df)
-                            .OrderBy(e => e.Value.LastAdded)
-                            .FirstOrDefault()
-                            .Value;
-
-                        c[df - 1]++;
-                        c[df]--;
-                        img.Folder = df - 1;
-                        moves++;
-                        movemessage = $"{df}[{c[df]}] {char.ConvertFromUtf32(0x2192)} {df - 1}[{c[df - 1]}] ";
-                        
-                    }
-                }
-
-                if (moves > 0) {
-                    sb.Append($"{movemessage} ({moves} moves)");
-                }
-                */
+                sb.Append($"p:{imgX.PerceptiveDistance}/o:{imgX.OrbDistance}/c:{imgX.ColorDistance:F2} ");
             }
 
             progress.Report(sb.ToString());

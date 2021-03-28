@@ -32,37 +32,35 @@ namespace ImageBank
                     }
                     else
                     {
-                        ImageHelper.ComputeBlob(bitmap, out var rdescriptors);
-                        if (rdescriptors == null || rdescriptors.Length == 0)
-                        {
-                            ((IProgress<string>)AppVars.Progress).Report($"Not enough descriptors {img.Folder}\\{name}");
-                            return;
-                        }
-
-                        var rblob = ImageHelper.ArrayFrom64(rdescriptors);
-                        ImageHelper.ComputePBlob(bitmap, out var rhashes);
-                        var rpblob = ImageHelper.ArrayFrom64(rhashes);
-
+                        ImageHelper.ComputeColorDescriptors(bitmap, out var rcolordescriptors);
+                        ImageHelper.ComputePerceptiveDescriptors(bitmap, out var rperceptivedescriptors);
+                        ImageHelper.ComputeOrbDescriptors(bitmap, out var rorbdescriptors);
                         var minlc = GetMinLastCheck();
                         var id = AllocateId();
                         var rimg = new Img(
+                            id: id,
                             name: img.Name,
                             folder: img.Folder,
                             hash: rhash,
-                            blob: rblob,
-                            pblob: rpblob,
-                            lastchanged: img.LastChanged,
-                            lastview: img.LastView,
-                            counter: img.Counter,
-                            lastcheck: minlc,
-                            nexthash: rhash,
-                            diff: new byte[1] { 0xFF },
+
                             width: bitmap.Width,
                             height: bitmap.Height,
                             size: rimagedata.Length,
-                            id: id,
+
+                            colordescriptors: rcolordescriptors,
+                            colordistance: 100f,
+                            perceptivedescriptors: rperceptivedescriptors,
+                            perceptivedistance: AppConsts.MaxPerceptiveDistance,
+                            orbdescriptors: rorbdescriptors,
+                            orbdistance: AppConsts.MaxOrbDistance,
+
+                            lastchanged: img.LastChanged,
+                            lastview: img.LastView,
+                            lastcheck: minlc,
+
+                            nexthash: rhash,
                             lastid: 0,
-                            distance: 256);
+                            counter: img.Counter);
 
                         Delete(img.Name);
                         Add(rimg);

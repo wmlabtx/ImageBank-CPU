@@ -2,7 +2,7 @@
 {
     public partial class ImgMdf
     {
-        public void Delete(string name)
+        public static void Delete(string name)
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(name, out var img)) {
@@ -17,7 +17,9 @@
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
                             e.Value.LastId = 0;
-                            e.Value.Diff = new byte[1] { 0xFF };
+                            e.Value.ColorDistance = 100f;
+                            e.Value.PerceptiveDistance = AppConsts.MaxPerceptiveDistance;
+                            e.Value.OrbDistance = AppConsts.MaxOrbDistance;
                             e.Value.LastCheck = GetMinLastCheck();
                         }
                     }

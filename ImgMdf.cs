@@ -16,8 +16,6 @@ namespace ImageBank
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
 
-        private static readonly DateTime _viewnow = new DateTime(2020, 1, 1);
-
         private static int _id;
 
         public ImgMdf()
@@ -36,9 +34,8 @@ namespace ImageBank
                     return DateTime.Now;
                 }
 
-                var scope = _imgList.Where(e => e.Value.LastView != _viewnow).ToArray();
-                if (scope.Length == 0)
-                {
+                var scope = _imgList.ToArray();
+                if (scope.Length == 0) {
                     return DateTime.Now;
                 }
 

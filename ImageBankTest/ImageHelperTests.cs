@@ -18,31 +18,31 @@ namespace ImageBankTest
         public void ComputeBlobTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeHist((Bitmap)image, out var h);
-            ImageHelper.ComputePBlob((Bitmap)image, out var p);
+            ImageHelper.ComputeColorDescriptors((Bitmap)image, out var h);
+            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image, out var p);
         }
 
         [TestMethod()]
         public void CompareBlobTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeHist((Bitmap)image1, out var h1);
-            ImageHelper.ComputePBlob((Bitmap)image1, out var p1);
+            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h1);
+            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image1, out var p1);
 
             var image2 = Image.FromFile("org_png.jpg");
-            ImageHelper.ComputeHist((Bitmap)image1, out var h2);
-            ImageHelper.ComputePBlob((Bitmap)image2, out var p2);
+            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h2);
+            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image2, out var p2);
 
-            var rd = ImageHelper.ComputeDistance(h1, h2);
-            var rp = ImageHelper.ComputeDistance(p1, p2);
+            var rd = ImageHelper.ComputeColorDistance(h1, h2);
+            var rp = ImageHelper.ComputePerceptiveDistance(p1, p2);
         }
 
         [TestMethod()]
         public void GetDistanceBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeHist((Bitmap)image1, out var h1);
-            ImageHelper.ComputePBlob((Bitmap)image1, out var p1);
+            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h1);
+            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image1, out var p1);
             var files = new[] {
                 "org_png.jpg",
                 "org_resized.jpg",
@@ -64,10 +64,10 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeHist((Bitmap)image2, out var h2);
-                ImageHelper.ComputePBlob((Bitmap)image2, out var p2);
-                var rd = ImageHelper.ComputeDistance(h1, h2);
-                var rp = ImageHelper.ComputeDistance(p1, p2);
+                ImageHelper.ComputeColorDescriptors((Bitmap)image2, out var h2);
+                ImageHelper.ComputePerceptiveDescriptors((Bitmap)image2, out var p2);
+                var rd = ImageHelper.ComputeColorDistance(h1, h2);
+                var rp = ImageHelper.ComputePerceptiveDistance(p1, p2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }

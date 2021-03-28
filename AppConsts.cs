@@ -9,11 +9,13 @@
         public const string PathRw = PathRoot + @"Rw";
         public const string FolderDefault = "root";
 
-        public const int MaxImages = 100000;
-        public const int MaxAdd = 10000;
+        public const int MaxImages = 200000;
+        public const int MaxAdd = 30000;
 
-        public const int HashLength = 32;
-        public const int PDistance = 8;
+        public const int MaxPerceptiveDistance = 64;
+        public const int MinPerceptiveDistance = 8;
+        public const int MaxOrbDistance = 256;
+        public const int MinOrbDistance = 16;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -29,23 +31,30 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
+        public const string AttrId = "Id";
         public const string AttrName = "Name";
         public const string AttrFolder = "Folder";
         public const string AttrHash = "Hash";
-        public const string AttrDescriptors = "Descriptors";
-        public const string AttrDiff = "Diff";
+
+        public const string AttrWidth = "Width";
+        public const string AttrHeight = "Height";
+        public const string AttrSize = "Size";
+
+        public const string AttrColorDescriptors = "ColorDescriptors";
+        public const string AttrColorDistance = "ColorDistance";
+        public const string AttrPerceptiveDescriptorsBlob = "PerceptiveDescriptorsBlob";
+        public const string AttrPerceptiveDistance = "PerceptiveDistance";
+        public const string AttrOrbDescriptorsBlob = "OrbDescriptorsBlob";
+        public const string AttrOrbDistance = "OrbDistance";
+
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastView = "LastView";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrNextHash = "NextHash";
+        
         public const string AttrCounter = "Counter";
-        public const string AttrWidth = "Width";
-        public const string AttrHeight = "Height";
-        public const string AttrSize = "Size";
-        public const string TableVars = "Vars";
-        public const string AttrId = "Id";
         public const string AttrLastId = "LastId";
-        public const string AttrHashes = "Hashes";
-        public const string AttrDistance = "Distance";
+        
+        public const string TableVars = "Vars";
     }
 }
