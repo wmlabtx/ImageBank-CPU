@@ -69,6 +69,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
                     sb.Append($"{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"{AppConsts.AttrOrbDescriptorsBlob}, ");
+                    sb.Append($"{AppConsts.AttrOrbKeyPointsBlob}, ");
                     sb.Append($"{AppConsts.AttrOrbDistance}, ");
 
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
@@ -93,6 +94,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
                     sb.Append($"@{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"@{AppConsts.AttrOrbDescriptorsBlob}, ");
+                    sb.Append($"@{AppConsts.AttrOrbKeyPointsBlob}, ");
                     sb.Append($"@{AppConsts.AttrOrbDistance}, ");
 
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
@@ -122,8 +124,10 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDescriptorsBlob}", perceptivedescriptorsblob);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDistance}", img.PerceptiveDistance);
 
-                    var orbdescriptorsblob = ImageHelper.ArrayFrom64(img.OrbDescriptors);
+                    var orbdescriptorsblob = ImageHelper.ArrayFromMat(img.OrbDescriptors);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbDescriptorsBlob}", orbdescriptorsblob);
+                    var orbkeypointsblob = ImageHelper.ArrayFromKeyPoints(img.OrbKeyPoints);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbKeyPointsBlob}", orbkeypointsblob);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbDistance}", img.OrbDistance);
 
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);

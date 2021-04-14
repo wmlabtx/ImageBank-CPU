@@ -6,12 +6,13 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private readonly Random _random = new Random();
+        private static readonly Random _random = new Random();
 
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
             var sb = new StringBuilder();
+            var method = string.Empty;
             lock (_imglock) {
                 while (true) {
                     if (_imgList.Count < 2) {
@@ -20,7 +21,7 @@ namespace ImageBank
                     }
 
                     if (string.IsNullOrEmpty(nameX)) {
-                        var r = _random.Next(20);
+                        var r = 2; //  _random.Next(7);
                         imgX = null;
                         foreach (var e in _imgList) {
                             var eX = e.Value;
@@ -33,36 +34,68 @@ namespace ImageBank
                             }
 
                             if (imgX != null &&
-                                imgX.Counter < eX.Counter) {
+                                eX.LastView > eX.LastChanged) {
                                 continue;
                             }
 
-                            if (r == 0 &&
-                                imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                imgX.ColorDistance <= eX.ColorDistance) {
-                                continue;
-                            }
+                            if (imgX != null) {
+                                switch (r) {
+                                    case 0:
+                                        method = "CLR";
+                                        if (imgX.ColorDistance <= eX.ColorDistance) {
+                                            continue;
+                                        }
 
-                            if (r == 1 &&
-                                imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                imgX.OrbDistance <= eX.OrbDistance) {
-                                continue;
-                            }
+                                        break;
 
-                            if (r == 2 &&
-                                imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                imgX.PerceptiveDistance <= eX.PerceptiveDistance) {
-                                continue;
-                            }
+                                    case 1:
+                                        method = "ORB";
+                                        if (imgX.OrbDistance <= eX.OrbDistance) {
+                                            continue;
+                                        }
 
-                            if (r >= 3 &&
-                                imgX != null &&
-                                imgX.Counter == eX.Counter &&
-                                imgX.LastView <= eX.LastView) {
-                                continue;
+                                        break;
+
+                                    case 2:
+                                        method = "PHS";
+                                        if (imgX.PerceptiveDistance <= eX.PerceptiveDistance) {
+                                            continue;
+                                        }
+
+                                        break;
+
+                                    case 3:
+                                        method = "MD5";
+                                        if (imgX.Hash.CompareTo(eX.Hash) <= 0) {
+                                            continue;
+                                        }
+
+                                        break;
+
+                                    case 4:
+                                        method = "LSV";
+                                        if (imgX.LastView <= eX.LastView) {
+                                            continue;
+                                        }
+
+                                        break;
+
+                                    case 5:
+                                        method = "DIM";
+                                        if (imgX.Width * imgX.Height <= eX.Width * eX.Height) {
+                                            continue;
+                                        }
+
+                                        break;
+
+                                    case 6:
+                                        method = "CFL";
+                                        if (imgX.ColorDescriptors.Count(b => b != 0) >= eX.ColorDescriptors.Count(b => b != 0)) {
+                                            continue;
+                                        }
+
+                                        break;
+                                }
                             }
 
                             imgX = eX;
@@ -97,11 +130,11 @@ namespace ImageBank
                     break;
                 }
 
-                var mincounter = _imgList.Min(e => e.Value.Counter);
-                var newpics = _imgList.Count(e => e.Value.Counter == mincounter);
-                sb.Append($"{newpics}/{_imgList.Count}: ");
+                var zerocounter = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
+                sb.Append($"{zerocounter}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
-                sb.Append($"p:{imgX.PerceptiveDistance}/o:{imgX.OrbDistance}/c:{imgX.ColorDistance:F2} ");
+                sb.Append($"{method} ");
+                sb.Append($"p:{imgX.PerceptiveDistance}/o:{imgX.OrbDistance:F2}/c:{imgX.ColorDistance:F2} ");
             }
 
             progress.Report(sb.ToString());

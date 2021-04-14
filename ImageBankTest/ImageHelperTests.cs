@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
 using ImageBank;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -18,31 +13,35 @@ namespace ImageBankTest
         public void ComputeBlobTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeColorDescriptors((Bitmap)image, out var h);
-            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image, out var p);
+            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image, out var o1, out var k1);
+            var array = ImageHelper.ArrayFromMat(o1);
+            var o2 = ImageHelper.ArrayToMat(array);
+            var ob1 = o1.At<byte>(1, 2);
+            var ob2 = o2.At<byte>(1, 2);
+            Assert.AreEqual(ob1, ob2);
+            array = ImageHelper.ArrayFromKeyPoints(k1);
+            var k2 = ImageHelper.ArrayToKeyPoints(array);
+            Assert.AreEqual(k1[1].Pt.Y, k2[1].Pt.Y);
         }
 
         [TestMethod()]
         public void CompareBlobTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h1);
-            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image1, out var p1);
+            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image1, out var o1, out var k1);
 
-            var image2 = Image.FromFile("org_png.jpg");
-            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h2);
-            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image2, out var p2);
+            var image2 = Image.FromFile("org_nologo.jpg");
+            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image2, out var o2, out var k2);
 
-            var rd = ImageHelper.ComputeColorDistance(h1, h2);
-            var rp = ImageHelper.ComputePerceptiveDistance(p1, p2);
+            var r = ImageHelper.ComputeOrbDistance_v2(o1, k1, o2, k2);
         }
 
         [TestMethod()]
         public void GetDistanceBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeColorDescriptors((Bitmap)image1, out var h1);
-            ImageHelper.ComputePerceptiveDescriptors((Bitmap)image1, out var p1);
+            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image1, out var o1, out var k1);
+
             var files = new[] {
                 "org_png.jpg",
                 "org_resized.jpg",
@@ -64,20 +63,20 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeColorDescriptors((Bitmap)image2, out var h2);
-                ImageHelper.ComputePerceptiveDescriptors((Bitmap)image2, out var p2);
-                var rd = ImageHelper.ComputeColorDistance(h1, h2);
-                var rp = ImageHelper.ComputePerceptiveDistance(p1, p2);
+                ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image2, out var o2, out var k2);
+
+                var ro = ImageHelper.ComputeOrbDistance_v2(o1, k1, o2, k2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: {rp}/{rd:F2}");
+                sb.Append($"{filename}: {ro:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
         }
 
+        /*
         [TestMethod()]
         public void ComputeBits()
         {
@@ -135,5 +134,6 @@ namespace ImageBankTest
             stat = stat.OrderBy(e => e.Item2).ToList();
 
         }
+        */
     }
 }

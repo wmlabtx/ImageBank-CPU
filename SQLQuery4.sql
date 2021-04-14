@@ -1,1 +1,0 @@
-﻿UPDATE Images SET Counter = 0

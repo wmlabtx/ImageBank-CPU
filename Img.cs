@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.IO;
 
 namespace ImageBank
@@ -64,15 +65,17 @@ namespace ImageBank
             }
         }
 
-        public ulong[] OrbDescriptors { get; }
+        public Mat OrbDescriptors { get; }
 
-        private int _orbdistance;
-        public int OrbDistance {
+        public KeyPoint[] OrbKeyPoints { get; }
+
+        private float _orbdistance;
+        public float OrbDistance {
             get => _orbdistance;
             set {
                 _orbdistance = value;
-                if (_orbdistance < 0) {
-                    throw new ArgumentException("_orbdistance < 0");
+                if (_orbdistance < 0f || _orbdistance > AppConsts.MaxOrbDistance) {
+                    throw new ArgumentException("_orbdistance < 0f || _orbdistance > AppConsts.MaxOrbDistance");
                 }
 
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrOrbDistance, value);
@@ -160,8 +163,9 @@ namespace ImageBank
             float colordistance,
             ulong[] perceptivedescriptors,
             int perceptivedistance,
-            ulong[] orbdescriptors,
-            int orbdistance,
+            Mat orbdescriptors,
+            KeyPoint[] orbkeypoints,
+            float orbdistance,
            
             DateTime lastchanged,
             DateTime lastview,
@@ -183,8 +187,8 @@ namespace ImageBank
 
             Name = name;
 
-            if (string.IsNullOrEmpty(folder) || name.Length > 8) {
-                throw new ArgumentException("string.IsNullOrEmpty(folder) || folder.Length > 8");
+            if (string.IsNullOrEmpty(folder) || name.Length > 12) {
+                throw new ArgumentException("string.IsNullOrEmpty(folder) || folder.Length > 12");
             }
 
             _folder = folder;
@@ -237,11 +241,17 @@ namespace ImageBank
 
             _perceptivedistance = perceptivedistance;
 
-            if (orbdescriptors == null || orbdescriptors.Length < 4) {
-                throw new ArgumentException("orbdescriptors == null || orbdescriptors.Length < 4");
+            if (orbdescriptors == null) {
+                throw new ArgumentException("orbdescriptors == null");
             }
 
             OrbDescriptors = orbdescriptors;
+
+            if (orbkeypoints == null || orbkeypoints.Length == 0 || orbkeypoints.Length > 250) {
+                throw new ArgumentException("orbkeypoints == null || orbkeypoints.Length == 0 || orbkeypoints.Length > 250");
+            }
+
+            OrbKeyPoints = orbkeypoints;
 
             if (orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance) {
                 throw new ArgumentException("orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance");

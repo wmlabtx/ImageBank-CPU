@@ -41,7 +41,9 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrNextHash}, "); // 16
 
             sb.Append($"{AppConsts.AttrCounter}, "); // 17
-            sb.Append($"{AppConsts.AttrLastId} "); // 18
+            sb.Append($"{AppConsts.AttrLastId}, "); // 18
+            
+            sb.Append($"{AppConsts.AttrOrbKeyPointsBlob} "); // 19
 
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
@@ -67,8 +69,10 @@ namespace ImageBank
                             var perceptivedescriptors = ImageHelper.ArrayTo64(perceptivedescriptorsblob);
                             var perceptivedistance = reader.GetInt32(10);
                             var orbdescriptorsblob = (byte[])reader[11];
-                            var orbdescriptors = ImageHelper.ArrayTo64(orbdescriptorsblob);
-                            var orbdistance = reader.GetInt32(12);
+                            var orbdescriptors = ImageHelper.ArrayToMat(orbdescriptorsblob);
+                            var orbkeypointsblob = (byte[])reader[19];
+                            var orbkeypoints = ImageHelper.ArrayToKeyPoints(orbkeypointsblob);
+                            var orbdistance = reader.GetFloat(12);
 
                             var lastchanged = reader.GetDateTime(13);
                             var lastview = reader.GetDateTime(14);
@@ -93,6 +97,7 @@ namespace ImageBank
                                 perceptivedescriptors: perceptivedescriptors,
                                 perceptivedistance: perceptivedistance,
                                 orbdescriptors: orbdescriptors,
+                                orbkeypoints: orbkeypoints,
                                 orbdistance: orbdistance,
 
                                 lastchanged: lastchanged,

@@ -34,7 +34,7 @@ namespace ImageBank
                     {
                         ImageHelper.ComputeColorDescriptors(bitmap, out var rcolordescriptors);
                         ImageHelper.ComputePerceptiveDescriptors(bitmap, out var rperceptivedescriptors);
-                        ImageHelper.ComputeOrbDescriptors(bitmap, out var rorbdescriptors);
+                        ImageHelper.ComputeOrbDescriptors_v2(bitmap, out var rorbdescriptors, out var rorbkeypoints);
                         var minlc = GetMinLastCheck();
                         var id = AllocateId();
                         var rimg = new Img(
@@ -52,6 +52,7 @@ namespace ImageBank
                             perceptivedescriptors: rperceptivedescriptors,
                             perceptivedistance: AppConsts.MaxPerceptiveDistance,
                             orbdescriptors: rorbdescriptors,
+                            orbkeypoints: rorbkeypoints,
                             orbdistance: AppConsts.MaxOrbDistance,
 
                             lastchanged: img.LastChanged,

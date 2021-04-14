@@ -9,13 +9,13 @@
         public const string PathRw = PathRoot + @"Rw";
         public const string FolderDefault = "root";
 
-        public const int MaxImages = 200000;
-        public const int MaxAdd = 30000;
+        public const int MaxImages = 300000;
+        public const int MaxAdd = 100000;
 
         public const int MaxPerceptiveDistance = 64;
         public const int MinPerceptiveDistance = 8;
-        public const int MaxOrbDistance = 256;
-        public const int MinOrbDistance = 16;
+        public const float MaxOrbDistance = 256f;
+        public const float MinOrbDistance = 16f;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -45,6 +45,7 @@
         public const string AttrPerceptiveDescriptorsBlob = "PerceptiveDescriptorsBlob";
         public const string AttrPerceptiveDistance = "PerceptiveDistance";
         public const string AttrOrbDescriptorsBlob = "OrbDescriptorsBlob";
+        public const string AttrOrbKeyPointsBlob = "OrbKeyPointsBlob";
         public const string AttrOrbDistance = "OrbDistance";
 
         public const string AttrLastChanged = "LastChanged";

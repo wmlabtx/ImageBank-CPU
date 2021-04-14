@@ -194,21 +194,29 @@ namespace ImageBank
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
-                else
-                {
-                    if (AppVars.ImgPanel[index].Bitmap.Height == 2160 || AppVars.ImgPanel[index].Bitmap.Width == 2160) {
-                        scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 128, 128));
-                    }
 
+                if (AppVars.ImgPanel[index].Bitmap.Width < 480 || AppVars.ImgPanel[index].Bitmap.Height < 480) {
+                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                }
+
+                if (AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance &&
+                    AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
+                    AppVars.ImgPanel[index].Bitmap.Height == 2160 ||
+                    (AppVars.ImgPanel[index].Bitmap.Width == 2180 ||
+                    AppVars.ImgPanel[index].Bitmap.Height == 2180 ||
+                    AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
+                    AppVars.ImgPanel[index].Bitmap.Height == 2880 ||
+                    AppVars.ImgPanel[index].Bitmap.Width == 3110 ||
+                    AppVars.ImgPanel[index].Bitmap.Height == 3110)) {
+                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 }
 
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.OrbDistance < AppConsts.MinOrbDistance || AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
+            if (AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
                 var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
                 var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
-
                 if (dimX == dimY) {
                     if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
                         pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
@@ -216,15 +224,6 @@ namespace ImageBank
                     else {
                         pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                     }
-                }
-                else {
-                    if (dimY <= dimX) {
-                        pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                    }
-                    else {
-                        pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                    }
-
                 }
             }
 
@@ -312,7 +311,7 @@ namespace ImageBank
         private void DoCompute(object s, DoWorkEventArgs args)
         {
             while (!_backgroundWorker.CancellationPending) {
-                AppVars.Collection.Compute(_backgroundWorker);
+                ImgMdf.Compute(_backgroundWorker);
                 Thread.Sleep(200);
             }
 

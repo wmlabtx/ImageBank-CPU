@@ -24,6 +24,8 @@ namespace ImageBank
                     .OrderBy(e => e.Length)
                     .ToArray();
 
+            long msize = 0;
+
             foreach (var fileInfo in fileInfos) {
                 var filename = fileInfo.FullName;
                 var name = Path.GetFileNameWithoutExtension(filename);
@@ -99,6 +101,7 @@ namespace ImageBank
                                 perceptivedescriptors: imgfound.PerceptiveDescriptors,
                                 perceptivedistance: imgfound.PerceptiveDistance,
                                 orbdescriptors: imgfound.OrbDescriptors,
+                                orbkeypoints: imgfound.OrbKeyPoints,
                                 orbdistance: imgfound.OrbDistance,
 
                                 lastchanged: lastchanged,
@@ -128,8 +131,8 @@ namespace ImageBank
 
                     ImageHelper.ComputeColorDescriptors(bitmap, out var colordescriptors);
                     ImageHelper.ComputePerceptiveDescriptors(bitmap, out var perceptivedescriptors);
-                    ImageHelper.ComputeOrbDescriptors(bitmap, out var orbdescriptors);
-                    if (orbdescriptors.Length == 0) {
+                    ImageHelper.ComputeOrbDescriptors_v2(bitmap, out var orbdescriptors, out var orbkeypoints);
+                    if (orbkeypoints == null ||orbkeypoints.Length == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {name}: {message}");
                         bad++;
                         File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
@@ -162,6 +165,7 @@ namespace ImageBank
                         perceptivedescriptors: perceptivedescriptors,
                         perceptivedistance: AppConsts.MaxPerceptiveDistance,
                         orbdescriptors: orbdescriptors,
+                        orbkeypoints: orbkeypoints,
                         orbdistance: AppConsts.MaxOrbDistance,
 
                         lastchanged: lastchanged,
@@ -194,6 +198,14 @@ namespace ImageBank
                 added++;
                 if (added >= maxadd) {
                     break;
+                }
+
+                if (msize == 0) {
+                    msize = fileInfo.Length + (10 * 1024);
+                }
+
+                if (fileInfo.Length > msize) {
+                    //break;
                 }
             }
 
