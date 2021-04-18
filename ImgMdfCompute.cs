@@ -46,6 +46,11 @@ namespace ImageBank
                         break;
                     }
 
+                    if (eX.PerceptiveDistance == AppConsts.MaxPerceptiveDistance || eX.OrbDistance == AppConsts.MaxOrbDistance) {
+                        img1 = eX;
+                        break;
+                    }
+
                     if (img1 != null &&
                         img1.LastCheck <= eX.LastCheck) {
                         continue;
@@ -60,7 +65,7 @@ namespace ImageBank
             var np = img1.PerceptiveDistance;
             var no = img1.OrbDistance;
             lock (_imglock) {
-                if (img1.NextHash.Equals(img1.Hash) || !_hashList.ContainsKey(img1.NextHash)) {
+                if (img1.NextHash.Equals(img1.Hash) || !_hashList.ContainsKey(img1.NextHash) || img1.PerceptiveDistance == AppConsts.MaxPerceptiveDistance || img1.OrbDistance == AppConsts.MaxOrbDistance) {
                     nexthash = img1.Hash;
                     img1.ColorDistance = 100f;
                     img1.PerceptiveDistance = AppConsts.MaxPerceptiveDistance;

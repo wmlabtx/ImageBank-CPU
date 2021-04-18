@@ -21,7 +21,6 @@ namespace ImageBank
                     }
 
                     if (string.IsNullOrEmpty(nameX)) {
-                        var r = 2; //  _random.Next(7);
                         imgX = null;
                         foreach (var e in _imgList) {
                             var eX = e.Value;
@@ -38,64 +37,22 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (imgX != null) {
-                                switch (r) {
-                                    case 0:
-                                        method = "CLR";
-                                        if (imgX.ColorDistance <= eX.ColorDistance) {
-                                            continue;
-                                        }
+                            if (imgX != null &&
+                                imgX.PerceptiveDistance < eX.PerceptiveDistance) {
+                                continue;
+                            }
 
-                                        break;
+                            if (imgX != null &&
+                                imgX.PerceptiveDistance == eX.PerceptiveDistance &&
+                                imgX.OrbDistance < eX.OrbDistance) {
+                                continue;
+                            }
 
-                                    case 1:
-                                        method = "ORB";
-                                        if (imgX.OrbDistance <= eX.OrbDistance) {
-                                            continue;
-                                        }
-
-                                        break;
-
-                                    case 2:
-                                        method = "PHS";
-                                        if (imgX.PerceptiveDistance <= eX.PerceptiveDistance) {
-                                            continue;
-                                        }
-
-                                        break;
-
-                                    case 3:
-                                        method = "MD5";
-                                        if (imgX.Hash.CompareTo(eX.Hash) <= 0) {
-                                            continue;
-                                        }
-
-                                        break;
-
-                                    case 4:
-                                        method = "LSV";
-                                        if (imgX.LastView <= eX.LastView) {
-                                            continue;
-                                        }
-
-                                        break;
-
-                                    case 5:
-                                        method = "DIM";
-                                        if (imgX.Width * imgX.Height <= eX.Width * eX.Height) {
-                                            continue;
-                                        }
-
-                                        break;
-
-                                    case 6:
-                                        method = "CFL";
-                                        if (imgX.ColorDescriptors.Count(b => b != 0) >= eX.ColorDescriptors.Count(b => b != 0)) {
-                                            continue;
-                                        }
-
-                                        break;
-                                }
+                            if (imgX != null &&
+                                imgX.PerceptiveDistance == eX.PerceptiveDistance &&
+                                imgX.OrbDistance == eX.OrbDistance &&
+                                imgX.ColorDistance <= eX.ColorDistance) {
+                                continue;
                             }
 
                             imgX = eX;

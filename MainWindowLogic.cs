@@ -214,7 +214,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
+            if (AppVars.ImgPanel[0].Img.PerceptiveDistance == 0) {
                 var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
                 var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
                 if (dimX == dimY) {
