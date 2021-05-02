@@ -24,8 +24,6 @@ namespace ImageBank
                     .OrderBy(e => e.Length)
                     .ToArray();
 
-            long msize = 0;
-
             foreach (var fileInfo in fileInfos) {
                 var filename = fileInfo.FullName;
                 var name = Path.GetFileNameWithoutExtension(filename);
@@ -70,7 +68,7 @@ namespace ImageBank
 
                 lock (_imglock) {
                     var lastchanged = DateTime.Now;
-                    var lastview = GetMinLastView();
+                    var lastview = new DateTime(2020, 1, 1);
                     var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
                     if (path.Equals(AppConsts.PathRw)) {
@@ -96,30 +94,25 @@ namespace ImageBank
                                 height: imgfound.Height,
                                 size: imgfound.Size,
 
-                                colordescriptors: imgfound.ColorDescriptors,
-                                colordistance: imgfound.ColorDistance,
                                 perceptivedescriptors: imgfound.PerceptiveDescriptors,
                                 perceptivedistance: imgfound.PerceptiveDistance,
-                                orbdescriptors: imgfound.OrbDescriptors,
-                                orbkeypoints: imgfound.OrbKeyPoints,
-                                orbdistance: imgfound.OrbDistance,
+                                akazepairs: imgfound.AkazePairs,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
 
-
                                 nexthash: imgfound.NextHash,
-                                lastid: imgfound.LastId,
                                 counter: imgfound.Counter);
 
+                            var akazedescriptorsfound = LoadAkazeDescriptors(imgfound.Name);
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
                             File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
                             Helper.DeleteToRecycleBin(filename);
 
                             Delete(imgfound.Name);
-                            Add(imgreplace);
+                            Add(imgreplace, akazedescriptorsfound);
                             bitmap.Dispose();
 
                             moved++;
@@ -129,10 +122,9 @@ namespace ImageBank
                         continue;
                     }
 
-                    ImageHelper.ComputeColorDescriptors(bitmap, out var colordescriptors);
                     ImageHelper.ComputePerceptiveDescriptors(bitmap, out var perceptivedescriptors);
-                    ImageHelper.ComputeOrbDescriptors_v2(bitmap, out var orbdescriptors, out var orbkeypoints);
-                    if (orbkeypoints == null ||orbkeypoints.Length == 0) {
+                    ImageHelper.ComputeAkazeDescriptors(bitmap, out var akazedescriptors);
+                    if (akazedescriptors == null || akazedescriptors.Rows == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {name}: {message}");
                         bad++;
                         File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
@@ -160,20 +152,15 @@ namespace ImageBank
                         height: bitmap.Height,
                         size: imagedata.Length,
 
-                        colordescriptors: colordescriptors,
-                        colordistance: 100f,
                         perceptivedescriptors: perceptivedescriptors,
                         perceptivedistance: AppConsts.MaxPerceptiveDistance,
-                        orbdescriptors: orbdescriptors,
-                        orbkeypoints: orbkeypoints,
-                        orbdistance: AppConsts.MaxOrbDistance,
+                        akazepairs: 0,
 
                         lastchanged: lastchanged,
                         lastview: lastview,
                         lastcheck: lastcheck,
 
                         nexthash: hash,
-                        lastid: 0,
                         counter: 0);
 
                     var lastmodified = File.GetLastWriteTime(filename);
@@ -187,7 +174,7 @@ namespace ImageBank
                         Helper.DeleteToRecycleBin(filename);
                     }
 
-                    Add(img);
+                    Add(img, akazedescriptors);
                     bitmap.Dispose();
 
                     if (_imgList.Count >= AppConsts.MaxImages) {
@@ -198,14 +185,6 @@ namespace ImageBank
                 added++;
                 if (added >= maxadd) {
                     break;
-                }
-
-                if (msize == 0) {
-                    msize = fileInfo.Length + (10 * 1024);
-                }
-
-                if (fileInfo.Length > msize) {
-                    //break;
                 }
             }
 

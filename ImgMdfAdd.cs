@@ -1,8 +1,10 @@
-﻿namespace ImageBank
+﻿using OpenCvSharp;
+
+namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private void AddToMemory(Img img)
+        private static void AddToMemory(Img img)
         {
             lock (_imglock) { 
                 _hashList.Add(img.Hash, img);
@@ -10,10 +12,10 @@
             }
         }
 
-        private void Add(Img img)
+        private void Add(Img img, Mat akazedescriptors)
         {
             AddToMemory(img);
-            SqlAdd(img);
+            SqlAdd(img, akazedescriptors);
         }
     }
 }

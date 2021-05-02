@@ -16,6 +16,7 @@ namespace ImageBank
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
 
+        private static readonly Random _random = new Random();
         private static int _id;
 
         public ImgMdf()

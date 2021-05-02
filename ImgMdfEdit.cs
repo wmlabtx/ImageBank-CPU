@@ -32,9 +32,8 @@ namespace ImageBank
                     }
                     else
                     {
-                        ImageHelper.ComputeColorDescriptors(bitmap, out var rcolordescriptors);
                         ImageHelper.ComputePerceptiveDescriptors(bitmap, out var rperceptivedescriptors);
-                        ImageHelper.ComputeOrbDescriptors_v2(bitmap, out var rorbdescriptors, out var rorbkeypoints);
+                        ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors);
                         var minlc = GetMinLastCheck();
                         var id = AllocateId();
                         var rimg = new Img(
@@ -47,24 +46,19 @@ namespace ImageBank
                             height: bitmap.Height,
                             size: rimagedata.Length,
 
-                            colordescriptors: rcolordescriptors,
-                            colordistance: 100f,
                             perceptivedescriptors: rperceptivedescriptors,
                             perceptivedistance: AppConsts.MaxPerceptiveDistance,
-                            orbdescriptors: rorbdescriptors,
-                            orbkeypoints: rorbkeypoints,
-                            orbdistance: AppConsts.MaxOrbDistance,
+                            akazepairs: 0,
 
                             lastchanged: img.LastChanged,
                             lastview: img.LastView,
                             lastcheck: minlc,
 
                             nexthash: rhash,
-                            lastid: 0,
                             counter: img.Counter);
 
                         Delete(img.Name);
-                        Add(rimg);
+                        Add(rimg, rakazedescriptors);
                         Helper.WriteData(rimg.FileName, rimagedata);
                     }
 

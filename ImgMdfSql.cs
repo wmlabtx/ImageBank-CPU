@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
+using OpenCvSharp;
 
 namespace ImageBank
 {
@@ -48,7 +49,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(Img img)
+        private static void SqlAdd(Img img, Mat akazedescriptors)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -64,21 +65,16 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHeight}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
 
-                    sb.Append($"{AppConsts.AttrColorDescriptors}, ");
-                    sb.Append($"{AppConsts.AttrColorDistance}, ");
                     sb.Append($"{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
                     sb.Append($"{AppConsts.AttrPerceptiveDistance}, ");
-                    sb.Append($"{AppConsts.AttrOrbDescriptorsBlob}, ");
-                    sb.Append($"{AppConsts.AttrOrbKeyPointsBlob}, ");
-                    sb.Append($"{AppConsts.AttrOrbDistance}, ");
+                    sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob}, ");
+                    sb.Append($"{AppConsts.AttrAkazePairs}, ");
 
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
-
-                    sb.Append($"{AppConsts.AttrCounter}, ");
-                    sb.Append($"{AppConsts.AttrLastId}");
+                    sb.Append($"{AppConsts.AttrCounter} ");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
                     sb.Append($"@{AppConsts.AttrName}, ");
@@ -89,21 +85,16 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHeight}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
 
-                    sb.Append($"@{AppConsts.AttrColorDescriptors}, ");
-                    sb.Append($"@{AppConsts.AttrColorDistance}, ");
                     sb.Append($"@{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
                     sb.Append($"@{AppConsts.AttrPerceptiveDistance}, ");
-                    sb.Append($"@{AppConsts.AttrOrbDescriptorsBlob}, ");
-                    sb.Append($"@{AppConsts.AttrOrbKeyPointsBlob}, ");
-                    sb.Append($"@{AppConsts.AttrOrbDistance}, ");
+                    sb.Append($"@{AppConsts.AttrAkazeDescriptorsBlob}, ");
+                    sb.Append($"@{AppConsts.AttrAkazePairs}, ");
 
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
-
-                    sb.Append($"@{AppConsts.AttrCounter}, ");
-                    sb.Append($"@{AppConsts.AttrLastId}");
+                    sb.Append($"@{AppConsts.AttrCounter}");
                     sb.Append(')');
 #pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     sqlCommand.CommandText = sb.ToString();
@@ -117,26 +108,19 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
 
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColorDescriptors}", img.ColorDescriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColorDistance}", img.ColorDistance);
-
                     var perceptivedescriptorsblob = ImageHelper.ArrayFrom64(img.PerceptiveDescriptors);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDescriptorsBlob}", perceptivedescriptorsblob);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDistance}", img.PerceptiveDistance);
 
-                    var orbdescriptorsblob = ImageHelper.ArrayFromMat(img.OrbDescriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbDescriptorsBlob}", orbdescriptorsblob);
-                    var orbkeypointsblob = ImageHelper.ArrayFromKeyPoints(img.OrbKeyPoints);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbKeyPointsBlob}", orbkeypointsblob);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrOrbDistance}", img.OrbDistance);
+                    var akazedescriptorsblob = ImageHelper.ArrayFromMat(akazedescriptors);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeDescriptorsBlob}", akazedescriptorsblob);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazePairs}", img.AkazePairs);
 
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
-
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastId}", img.LastId);
                     sqlCommand.ExecuteNonQuery();
                 }
             }

@@ -6,8 +6,6 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static readonly Random _random = new Random();
-
         public void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
@@ -32,27 +30,42 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (imgX != null &&
-                                eX.LastView > eX.LastChanged) {
+                            if (eX.LastView > eX.LastChanged) {
                                 continue;
                             }
 
-                            if (imgX != null &&
-                                imgX.PerceptiveDistance < eX.PerceptiveDistance) {
-                                continue;
-                            }
+                            if (imgX != null) {
+                                if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
+                                    continue;
+                                }
 
-                            if (imgX != null &&
-                                imgX.PerceptiveDistance == eX.PerceptiveDistance &&
-                                imgX.OrbDistance < eX.OrbDistance) {
-                                continue;
-                            }
+                                if (imgX.PerceptiveDistance == eX.PerceptiveDistance &&
+                                    imgX.LastView <= eX.LastView) {
+                                    continue;
+                                }
 
-                            if (imgX != null &&
-                                imgX.PerceptiveDistance == eX.PerceptiveDistance &&
-                                imgX.OrbDistance == eX.OrbDistance &&
-                                imgX.ColorDistance <= eX.ColorDistance) {
-                                continue;
+                                /*
+                                if (imgX.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
+                                    if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
+                                        continue;
+                                    }
+
+                                    if (imgX.PerceptiveDistance == eX.PerceptiveDistance && 
+                                        imgX.AkazePairs >= eX.AkazePairs) {
+                                        continue;
+                                    }
+                                }
+                                else {
+                                    if (imgX.Counter < eX.Counter) {
+                                        continue;
+                                    }
+
+                                    if (imgX.Counter == eX.Counter &&
+                                        imgX.AkazePairs >= eX.AkazePairs) {
+                                        continue;
+                                    }
+                                }
+                                */
                             }
 
                             imgX = eX;
@@ -91,7 +104,7 @@ namespace ImageBank
                 sb.Append($"{zerocounter}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
                 sb.Append($"{method} ");
-                sb.Append($"p:{imgX.PerceptiveDistance}/o:{imgX.OrbDistance:F2}/c:{imgX.ColorDistance:F2} ");
+                sb.Append($"p:{imgX.PerceptiveDistance}/a:{imgX.AkazePairs} ");
             }
 
             progress.Report(sb.ToString());

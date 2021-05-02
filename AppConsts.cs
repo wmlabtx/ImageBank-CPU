@@ -10,12 +10,15 @@
         public const string FolderDefault = "root";
 
         public const int MaxImages = 300000;
-        public const int MaxAdd = 100000;
+        public const int MaxAdd = 100;
+
+        public const int MaxDescriptors = 1000;
+        public const int DescriptorSize = 61;
 
         public const int MaxPerceptiveDistance = 64;
         public const int MinPerceptiveDistance = 8;
-        public const float MaxOrbDistance = 256f;
-        public const float MinOrbDistance = 16f;
+
+        public const int MinAkazePairs = MaxDescriptors / 4;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -40,13 +43,10 @@
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
 
-        public const string AttrColorDescriptors = "ColorDescriptors";
-        public const string AttrColorDistance = "ColorDistance";
         public const string AttrPerceptiveDescriptorsBlob = "PerceptiveDescriptorsBlob";
         public const string AttrPerceptiveDistance = "PerceptiveDistance";
-        public const string AttrOrbDescriptorsBlob = "OrbDescriptorsBlob";
-        public const string AttrOrbKeyPointsBlob = "OrbKeyPointsBlob";
-        public const string AttrOrbDistance = "OrbDistance";
+        public const string AttrAkazeDescriptorsBlob = "AkazeDescriptorsBlob";
+        public const string AttrAkazePairs = "AkazePairs";
 
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastView = "LastView";
@@ -54,7 +54,6 @@
         public const string AttrNextHash = "NextHash";
         
         public const string AttrCounter = "Counter";
-        public const string AttrLastId = "LastId";
         
         public const string TableVars = "Vars";
     }

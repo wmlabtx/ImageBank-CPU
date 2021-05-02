@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.IO;
 
 namespace ImageBank
@@ -33,23 +32,6 @@ namespace ImageBank
 
         public string Hash { get; }
 
-        public byte[] ColorDescriptors { get; }
-
-        private float _colordistance;
-        public float ColorDistance {
-            get {
-                return _colordistance;
-            }
-            set {
-                _colordistance = value;
-                if (_colordistance < 0f) {
-                    throw new ArgumentException("_colordistance < 0f");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrColorDistance, value);
-            }
-        }
-
         public ulong[] PerceptiveDescriptors { get; }
 
         private int _perceptivedistance;
@@ -65,20 +47,16 @@ namespace ImageBank
             }
         }
 
-        public Mat OrbDescriptors { get; }
-
-        public KeyPoint[] OrbKeyPoints { get; }
-
-        private float _orbdistance;
-        public float OrbDistance {
-            get => _orbdistance;
+        private int _akazepairs;
+        public int AkazePairs {
+            get => _akazepairs;
             set {
-                _orbdistance = value;
-                if (_orbdistance < 0f || _orbdistance > AppConsts.MaxOrbDistance) {
-                    throw new ArgumentException("_orbdistance < 0f || _orbdistance > AppConsts.MaxOrbDistance");
+                _akazepairs = value;
+                if (_akazepairs < 0 || _akazepairs > AppConsts.MaxDescriptors) {
+                    throw new ArgumentException("_akazepairs < 0 || _akazepairs > AppConsts.MaxDescriptors");
                 }
 
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrOrbDistance, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrAkazePairs, value);
             }
         }
 
@@ -136,19 +114,6 @@ namespace ImageBank
         public int Size { get; }
         public int Id { get; }
 
-        private int _lastid;
-        public int LastId {
-            get => _lastid;
-            set {
-                _lastid = value;
-                if (_lastid < 0) {
-                    throw new ArgumentException("_lastid < 0");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastId, value);
-            }
-        }
-
         public Img(
             int id,
             string name,
@@ -159,20 +124,15 @@ namespace ImageBank
             int height,
             int size,
 
-            byte[] colordescriptors,
-            float colordistance,
             ulong[] perceptivedescriptors,
             int perceptivedistance,
-            Mat orbdescriptors,
-            KeyPoint[] orbkeypoints,
-            float orbdistance,
+            int akazepairs,
            
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
 
             string nexthash,
-            int lastid,
             int counter
             ) {
             if (id <= 0) {
@@ -217,18 +177,6 @@ namespace ImageBank
 
             Size = size;
 
-            if (colordescriptors == null || colordescriptors.Length != 1024) {
-                throw new ArgumentException("colordescriptors == null || colordescriptors.Length != 1024");
-            }
-
-            ColorDescriptors = colordescriptors;
-
-            if (colordistance < 0f) {
-                throw new ArgumentException("colordistance < 0f");
-            }
-
-            _colordistance = colordistance;
-
             if (perceptivedescriptors == null || perceptivedescriptors.Length != 4) {
                 throw new ArgumentException("perceptivedescriptors == null || perceptivedescriptors.Length != 4");
             }
@@ -241,23 +189,11 @@ namespace ImageBank
 
             _perceptivedistance = perceptivedistance;
 
-            if (orbdescriptors == null) {
-                throw new ArgumentException("orbdescriptors == null");
+            if (akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
             }
 
-            OrbDescriptors = orbdescriptors;
-
-            if (orbkeypoints == null || orbkeypoints.Length == 0 || orbkeypoints.Length > 250) {
-                throw new ArgumentException("orbkeypoints == null || orbkeypoints.Length == 0 || orbkeypoints.Length > 250");
-            }
-
-            OrbKeyPoints = orbkeypoints;
-
-            if (orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance) {
-                throw new ArgumentException("orbdistance < 0f || orbdistance > AppConsts.MaxOrbDistance");
-            }
-
-            _orbdistance = orbdistance;
+            _akazepairs = akazepairs;
 
             _lastchanged = lastchanged;
             _lastview = lastview;
@@ -274,13 +210,6 @@ namespace ImageBank
             }
 
             _counter = counter;
-            
-
-            if (lastid < 0) {
-                throw new ArgumentException("lastid < 0");
-            }
-
-            _lastid = lastid;
         }
     }
 }

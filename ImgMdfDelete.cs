@@ -16,11 +16,8 @@
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
-                            e.Value.LastId = 0;
-                            e.Value.ColorDistance = 100f;
                             e.Value.PerceptiveDistance = AppConsts.MaxPerceptiveDistance;
-                            e.Value.OrbDistance = AppConsts.MaxOrbDistance;
-                            e.Value.LastCheck = GetMinLastCheck();
+                            e.Value.AkazePairs = 0;
                         }
                     }
                 }

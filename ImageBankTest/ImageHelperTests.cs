@@ -13,34 +13,31 @@ namespace ImageBankTest
         public void ComputeBlobTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image, out var o1, out var k1);
-            var array = ImageHelper.ArrayFromMat(o1);
-            var o2 = ImageHelper.ArrayToMat(array);
-            var ob1 = o1.At<byte>(1, 2);
-            var ob2 = o2.At<byte>(1, 2);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image, out var a1);
+            var array = ImageHelper.ArrayFromMat(a1);
+            var a2 = ImageHelper.ArrayToMat(array);
+            var ob1 = a1.At<byte>(1, 2);
+            var ob2 = a2.At<byte>(1, 2);
             Assert.AreEqual(ob1, ob2);
-            array = ImageHelper.ArrayFromKeyPoints(k1);
-            var k2 = ImageHelper.ArrayToKeyPoints(array);
-            Assert.AreEqual(k1[1].Pt.Y, k2[1].Pt.Y);
         }
 
         [TestMethod()]
         public void CompareBlobTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image1, out var o1, out var k1);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
 
             var image2 = Image.FromFile("org_nologo.jpg");
-            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image2, out var o2, out var k2);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
 
-            var r = ImageHelper.ComputeOrbDistance_v2(o1, k1, o2, k2);
+            var p = ImageHelper.ComputeAkazePairs(a1, a2);
         }
 
         [TestMethod()]
         public void GetDistanceBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image1, out var o1, out var k1);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
 
             var files = new[] {
                 "org_png.jpg",
@@ -63,14 +60,14 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeOrbDescriptors_v2((Bitmap)image2, out var o2, out var k2);
+                ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
 
-                var ro = ImageHelper.ComputeOrbDistance_v2(o1, k1, o2, k2);
+                var p = ImageHelper.ComputeAkazePairs(a1, a2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: {ro:F2}");
+                sb.Append($"{filename}: p={p}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
