@@ -35,6 +35,7 @@ namespace ImageBank
                             }
 
                             if (imgX != null) {
+                                /*
                                 if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
                                     continue;
                                 }
@@ -43,8 +44,8 @@ namespace ImageBank
                                     imgX.LastView <= eX.LastView) {
                                     continue;
                                 }
+                                */
 
-                                /*
                                 if (imgX.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
                                     if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
                                         continue;
@@ -65,7 +66,6 @@ namespace ImageBank
                                         continue;
                                     }
                                 }
-                                */
                             }
 
                             imgX = eX;

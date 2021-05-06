@@ -97,6 +97,7 @@ namespace ImageBank
                                 perceptivedescriptors: imgfound.PerceptiveDescriptors,
                                 perceptivedistance: imgfound.PerceptiveDistance,
                                 akazepairs: imgfound.AkazePairs,
+                                akazecentroid: imgfound.AkazeCentroid,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
@@ -131,6 +132,8 @@ namespace ImageBank
                         continue;
                     }
 
+                    var akazecentroid = ImageHelper.AkazeDescriptorsToCentoid(akazedescriptors);
+
                     var len = 8;
                     while (len <= 32) {
                         name = hash.Substring(0, len);
@@ -155,6 +158,7 @@ namespace ImageBank
                         perceptivedescriptors: perceptivedescriptors,
                         perceptivedistance: AppConsts.MaxPerceptiveDistance,
                         akazepairs: 0,
+                        akazecentroid: akazecentroid,
 
                         lastchanged: lastchanged,
                         lastview: lastview,

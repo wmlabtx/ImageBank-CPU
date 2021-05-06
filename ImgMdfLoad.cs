@@ -33,12 +33,13 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrPerceptiveDistance}, "); // 8
             
             sb.Append($"{AppConsts.AttrAkazePairs}, "); // 9
+            sb.Append($"{AppConsts.AttrAkazeCentroid}, "); // 10
 
-            sb.Append($"{AppConsts.AttrLastChanged}, "); // 10
-            sb.Append($"{AppConsts.AttrLastView}, "); // 11
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 12
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 13
-            sb.Append($"{AppConsts.AttrCounter} "); // 14
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
+            sb.Append($"{AppConsts.AttrLastView}, "); // 12
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 14
+            sb.Append($"{AppConsts.AttrCounter} "); // 15
 
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
@@ -63,12 +64,13 @@ namespace ImageBank
                             var perceptivedistance = reader.GetInt32(8);
                             
                             var akazepairs = reader.GetInt32(9);
+                            var akazecentroid = (byte[])reader[10];
 
-                            var lastchanged = reader.GetDateTime(10);
-                            var lastview = reader.GetDateTime(11);
-                            var lastcheck = reader.GetDateTime(12);
-                            var nexthash = reader.GetString(13);
-                            var counter = reader.GetInt32(14);
+                            var lastchanged = reader.GetDateTime(11);
+                            var lastview = reader.GetDateTime(12);
+                            var lastcheck = reader.GetDateTime(13);
+                            var nexthash = reader.GetString(14);
+                            var counter = reader.GetInt32(15);
 
                             var img = new Img(
                                 id: id,
@@ -83,6 +85,7 @@ namespace ImageBank
                                 perceptivedescriptors: perceptivedescriptors,
                                 perceptivedistance: perceptivedistance,
                                 akazepairs: akazepairs,
+                                akazecentroid: akazecentroid,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,

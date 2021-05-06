@@ -278,6 +278,41 @@ namespace ImageBank
             }
         }
 
+        public static byte[] AkazeDescriptorsToCentoid(Mat adescriptors)
+        {
+            var buffer = ArrayFromMat(adescriptors);
+            var fc = new int[488];
+            var counter = buffer.Length / 61;
+            for (var i = 0; i < counter; i++) {
+                var off1 = i * 61;
+                for (var b = 0; b < 488; b++) {
+                    var off2 = off1 + (b >> 3);
+                    var mask = 1 << (b & 0x7);
+                    if ((buffer[off2] & mask) != 0) {
+                        fc[b]++;
+                    }
+                }
+            }
+
+            var centroid = new byte[488];
+            for (var i = 0; i < 488; i++) {
+                centroid[i] = (byte)(fc[i] * 255f / counter);
+            }
+
+            return centroid;
+        }
+
+        public static ulong ComputeCentoidDistance(byte[] cx, byte[] cy)
+        {
+            var sum = 0UL;
+            for (var i = 0; i < 488; i++) {
+                var delta = cx[i] - cy[i];
+                sum += (ulong)(delta * delta);
+            }
+
+            return sum;
+        }
+
         public static byte[] ArrayFromMat(Mat mat)
         {
             mat.GetArray(out byte[] array);

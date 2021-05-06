@@ -69,6 +69,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob}, ");
                     sb.Append($"{AppConsts.AttrAkazePairs}, ");
+                    sb.Append($"{AppConsts.AttrAkazeCentroid}, ");
 
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
@@ -89,6 +90,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"@{AppConsts.AttrAkazeDescriptorsBlob}, ");
                     sb.Append($"@{AppConsts.AttrAkazePairs}, ");
+                    sb.Append($"@{AppConsts.AttrAkazeCentroid}, ");
 
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
@@ -115,6 +117,7 @@ namespace ImageBank
                     var akazedescriptorsblob = ImageHelper.ArrayFromMat(akazedescriptors);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeDescriptorsBlob}", akazedescriptorsblob);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazePairs}", img.AkazePairs);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeCentroid}", img.AkazeCentroid);
 
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);

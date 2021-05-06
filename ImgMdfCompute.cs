@@ -83,6 +83,10 @@ namespace ImageBank
             }
 
             using (var a1 = LoadAkazeDescriptors(img1.Name)) {
+                if (img1.AkazeCentroid.Length == 0) {
+                    img1.AkazeCentroid = ImageHelper.AkazeDescriptorsToCentoid(a1);
+                }
+
                 var nexthash = img1.NextHash;
                 var npd = img1.PerceptiveDistance;
                 var nap = img1.AkazePairs;
@@ -138,6 +142,50 @@ namespace ImageBank
                     img1.LastCheck = DateTime.Now;
                     return;
                 }
+
+                var ncd = ulong.MaxValue;
+                foreach (var e in candidates) {
+                    if (e.Item1.AkazeCentroid.Length != 0) {
+                        var cd = ImageHelper.ComputeCentoidDistance(img1.AkazeCentroid, e.Item1.AkazeCentroid);
+                        if (cd < ncd) {
+                            nexthash = e.Item1.Hash;
+                            ncd = cd;
+                        }
+                    }
+                }
+
+                if (ncd < ulong.MaxValue) {
+                    lock (_imglock) {
+                        if (_hashList.TryGetValue(nexthash, out var img2)) {
+                            using (var a2 = LoadAkazeDescriptors(img2.Name)) {
+                                var nap2 = ImageHelper.ComputeAkazePairs(a1, a2);
+                                if (nap2 > img1.AkazePairs) {
+                                    npd = ImageHelper.ComputePerceptiveDistance(img1.PerceptiveDescriptors, img2.PerceptiveDescriptors);
+                                    var sb = new StringBuilder();
+                                    sb.Append(GetNew());
+                                    sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
+                                    sb.Append($"{img1.Id}: ");
+                                    sb.Append($"{img1.AkazePairs} ");
+                                    sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
+                                    sb.Append($"{nap2} ");
+                                    img1.PerceptiveDistance = npd;
+                                    img1.AkazePairs = nap2;
+                                    img1.NextHash = nexthash;
+                                    img1.LastChanged = DateTime.Now;
+                                    if (img1.AkazePairs > AppConsts.MinAkazePairs) {
+                                        img1.Counter = 0;
+                                    }
+
+                                    backgroundworker.ReportProgress(0, sb.ToString());
+
+                                    img1.LastCheck = DateTime.Now;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+
 
                 for (var i = 0; i < _candidates.Length; i++) {
                     if (_candidates[i].Item1.Equals(img1.Name)) {

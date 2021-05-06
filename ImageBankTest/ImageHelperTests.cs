@@ -14,6 +14,7 @@ namespace ImageBankTest
         {
             var image = Image.FromFile("org.jpg");
             ImageHelper.ComputeAkazeDescriptors((Bitmap)image, out var a1);
+            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
             var array = ImageHelper.ArrayFromMat(a1);
             var a2 = ImageHelper.ArrayToMat(array);
             var ob1 = a1.At<byte>(1, 2);
@@ -26,11 +27,14 @@ namespace ImageBankTest
         {
             var image1 = Image.FromFile("org.jpg");
             ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
+            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
 
             var image2 = Image.FromFile("org_nologo.jpg");
             ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
+            var c2 = ImageHelper.AkazeDescriptorsToCentoid(a2);
 
             var p = ImageHelper.ComputeAkazePairs(a1, a2);
+            var cd = ImageHelper.ComputeCentoidDistance(c1, c2);
         }
 
         [TestMethod()]
@@ -38,6 +42,7 @@ namespace ImageBankTest
         {
             var image1 = Image.FromFile("org.jpg");
             ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
+            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
 
             var files = new[] {
                 "org_png.jpg",
@@ -61,13 +66,15 @@ namespace ImageBankTest
             {
                 var image2 = Image.FromFile(filename);
                 ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
+                var c2 = ImageHelper.AkazeDescriptorsToCentoid(a2);
 
                 var p = ImageHelper.ComputeAkazePairs(a1, a2);
+                var cd = ImageHelper.ComputeCentoidDistance(c1, c2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: p={p}");
+                sb.Append($"{filename}: p={p}, cd={cd}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

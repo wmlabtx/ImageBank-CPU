@@ -60,6 +60,19 @@ namespace ImageBank
             }
         }
 
+        private byte[] _akazecentroid;
+        public byte[] AkazeCentroid {
+            get => _akazecentroid;
+            set {
+                _akazecentroid = value;
+                if (_akazecentroid == null || (_akazecentroid != null && _akazecentroid.Length != 0 && _akazecentroid.Length != 488)) {
+                    throw new ArgumentException("_akazecentroid == null || (_akazecentroid != null && _akazecentroid.Length != 0 && _akazecentroid.Length != 488)");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrAkazeCentroid, value);
+            }
+        }
+
         private DateTime _lastchanged;
         public DateTime LastChanged {
             get => _lastchanged;
@@ -127,6 +140,7 @@ namespace ImageBank
             ulong[] perceptivedescriptors,
             int perceptivedistance,
             int akazepairs,
+            byte[] akazecentroid,
            
             DateTime lastchanged,
             DateTime lastview,
@@ -194,6 +208,12 @@ namespace ImageBank
             }
 
             _akazepairs = akazepairs;
+
+            if (akazecentroid == null || (akazecentroid != null && akazecentroid.Length != 0 && akazecentroid.Length != 488)) {
+                throw new ArgumentException("akazecentroid == null || (akazecentroid != null && akazecentroid.Length != 0 && akazecentroid.Length != 488)");
+            }
+
+            _akazecentroid = akazecentroid;
 
             _lastchanged = lastchanged;
             _lastview = lastview;

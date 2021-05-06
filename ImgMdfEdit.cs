@@ -34,6 +34,7 @@ namespace ImageBank
                     {
                         ImageHelper.ComputePerceptiveDescriptors(bitmap, out var rperceptivedescriptors);
                         ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors);
+                        var rakazecentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazedescriptors);
                         var minlc = GetMinLastCheck();
                         var id = AllocateId();
                         var rimg = new Img(
@@ -49,6 +50,7 @@ namespace ImageBank
                             perceptivedescriptors: rperceptivedescriptors,
                             perceptivedistance: AppConsts.MaxPerceptiveDistance,
                             akazepairs: 0,
+                            akazecentroid: rakazecentroid,
 
                             lastchanged: img.LastChanged,
                             lastview: img.LastView,
