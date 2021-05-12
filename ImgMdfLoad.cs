@@ -29,17 +29,15 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrHeight}, "); // 5
             sb.Append($"{AppConsts.AttrSize}, "); // 6
 
-            sb.Append($"{AppConsts.AttrPerceptiveDescriptorsBlob}, "); // 7
-            sb.Append($"{AppConsts.AttrPerceptiveDistance}, "); // 8
-            
-            sb.Append($"{AppConsts.AttrAkazePairs}, "); // 9
-            sb.Append($"{AppConsts.AttrAkazeCentroid}, "); // 10
+            sb.Append($"{AppConsts.AttrAkazePairs}, "); // 7
+            sb.Append($"{AppConsts.AttrAkazeCentroid}, "); // 8
+            sb.Append($"{AppConsts.AttrAkazeMirrorCentroid}, "); // 9
 
-            sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
-            sb.Append($"{AppConsts.AttrLastView}, "); // 12
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 14
-            sb.Append($"{AppConsts.AttrCounter} "); // 15
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 10
+            sb.Append($"{AppConsts.AttrLastView}, "); // 11
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 12
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 13
+            sb.Append($"{AppConsts.AttrCounter} "); // 14
 
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
@@ -59,18 +57,15 @@ namespace ImageBank
                             var height = reader.GetInt32(5);
                             var size = reader.GetInt32(6);
 
-                            var perceptivedescriptorsblob = (byte[])reader[7];
-                            var perceptivedescriptors = ImageHelper.ArrayTo64(perceptivedescriptorsblob);
-                            var perceptivedistance = reader.GetInt32(8);
-                            
-                            var akazepairs = reader.GetInt32(9);
-                            var akazecentroid = (byte[])reader[10];
+                            var akazepairs = reader.GetInt32(7);
+                            var akazecentroid = (byte[])reader[8];
+                            var akazemirrorcentroid = (byte[])reader[9];
 
-                            var lastchanged = reader.GetDateTime(11);
-                            var lastview = reader.GetDateTime(12);
-                            var lastcheck = reader.GetDateTime(13);
-                            var nexthash = reader.GetString(14);
-                            var counter = reader.GetInt32(15);
+                            var lastchanged = reader.GetDateTime(10);
+                            var lastview = reader.GetDateTime(11);
+                            var lastcheck = reader.GetDateTime(12);
+                            var nexthash = reader.GetString(13);
+                            var counter = reader.GetInt32(14);
 
                             var img = new Img(
                                 id: id,
@@ -82,10 +77,9 @@ namespace ImageBank
                                 height: height,
                                 size: size,
 
-                                perceptivedescriptors: perceptivedescriptors,
-                                perceptivedistance: perceptivedistance,
                                 akazepairs: akazepairs,
                                 akazecentroid: akazecentroid,
+                                akazemirrorcentroid: akazemirrorcentroid,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
@@ -131,11 +125,11 @@ namespace ImageBank
             progress.Report("Database loaded");
         }
 
-        public static Mat LoadAkazeDescriptors(string name)
+        public static Mat LoadDescriptors(string field, string name)
         {
             var sb = new StringBuilder();
             sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob} ");
+            sb.Append($"{field} ");
             sb.Append($"FROM {AppConsts.TableImages} ");
             sb.Append($"WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}");
             var sqltext = sb.ToString();
@@ -155,6 +149,17 @@ namespace ImageBank
             }
 
             return null;
+        }
+
+
+        public static Mat LoadAkazeDescriptors(string name)
+        {
+            return LoadDescriptors(AppConsts.AttrAkazeDescriptorsBlob, name);
+        }
+
+        public static Mat LoadAkazeMirrorDescriptors(string name)
+        {
+            return LoadDescriptors(AppConsts.AttrAkazeMirrorDescriptorsBlob, name);
         }
     }
 }

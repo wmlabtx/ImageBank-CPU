@@ -12,10 +12,10 @@ namespace ImageBank
             }
         }
 
-        private void Add(Img img, Mat akazedescriptors)
+        private void Add(Img img, Mat akazedescriptors, Mat akazemirrordescriptors)
         {
             AddToMemory(img);
-            SqlAdd(img, akazedescriptors);
+            SqlAdd(img, akazedescriptors, akazemirrordescriptors);
         }
     }
 }

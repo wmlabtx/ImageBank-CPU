@@ -32,9 +32,9 @@ namespace ImageBank
                     }
                     else
                     {
-                        ImageHelper.ComputePerceptiveDescriptors(bitmap, out var rperceptivedescriptors);
-                        ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors);
+                        ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors, out var rakazemirrordescriptors);
                         var rakazecentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazedescriptors);
+                        var rakazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazemirrordescriptors);
                         var minlc = GetMinLastCheck();
                         var id = AllocateId();
                         var rimg = new Img(
@@ -47,10 +47,9 @@ namespace ImageBank
                             height: bitmap.Height,
                             size: rimagedata.Length,
 
-                            perceptivedescriptors: rperceptivedescriptors,
-                            perceptivedistance: AppConsts.MaxPerceptiveDistance,
                             akazepairs: 0,
                             akazecentroid: rakazecentroid,
+                            akazemirrorcentroid: rakazemirrorcentroid,
 
                             lastchanged: img.LastChanged,
                             lastview: img.LastView,
@@ -60,7 +59,8 @@ namespace ImageBank
                             counter: img.Counter);
 
                         Delete(img.Name);
-                        Add(rimg, rakazedescriptors);
+                        Add(rimg, rakazedescriptors, rakazemirrordescriptors);
+
                         Helper.WriteData(rimg.FileName, rimagedata);
                     }
 

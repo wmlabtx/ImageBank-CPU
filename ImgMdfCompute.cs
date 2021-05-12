@@ -1,6 +1,5 @@
 ﻿using OpenCvSharp;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -11,7 +10,7 @@ namespace ImageBank
     public partial class ImgMdf
     {
         const int MAXCANDIDATES = 100;
-        private static readonly Tuple<string, string, Mat>[] _candidates = new Tuple<string, string, Mat>[MAXCANDIDATES];
+        private static readonly Tuple<string, string, Mat, Mat>[] _candidates = new Tuple<string, string, Mat, Mat>[MAXCANDIDATES];
         private static int _candidatescounter = 0;
 
         private static string GetNew()
@@ -49,12 +48,13 @@ namespace ImageBank
                         var name = _imgList.ElementAt(i).Value.Name;
                         var hash = _imgList.ElementAt(i).Value.Hash;
                         var akazedescriptors = LoadAkazeDescriptors(name);
-                        _candidates[i] = new Tuple<string, string, Mat>(name, hash, akazedescriptors);
+                        var akazemirrordescriptors = LoadAkazeMirrorDescriptors(name);
+                        _candidates[i] = new Tuple<string, string, Mat, Mat>(name, hash, akazedescriptors, akazemirrordescriptors);
                     }
                 }
 
                 if (_candidatescounter <= 0) {
-                    _candidatescounter = 100;
+                    _candidatescounter = MAXCANDIDATES;
                 }
                 else {
                     _candidatescounter--;
@@ -83,23 +83,18 @@ namespace ImageBank
             }
 
             using (var a1 = LoadAkazeDescriptors(img1.Name)) {
-                if (img1.AkazeCentroid.Length == 0) {
-                    img1.AkazeCentroid = ImageHelper.AkazeDescriptorsToCentoid(a1);
-                }
-
                 var nexthash = img1.NextHash;
-                var npd = img1.PerceptiveDistance;
-                var nap = img1.AkazePairs;
-                var candidates = new List<Tuple<Img, int>>();
+                var ncd = ulong.MaxValue;
                 lock (_imglock) {
-                    if (img1.NextHash.Equals(img1.Hash) ||
-                        !_hashList.ContainsKey(img1.NextHash) ||
-                        img1.PerceptiveDistance == AppConsts.MaxPerceptiveDistance) {
+                    if (img1.NextHash.Equals(img1.Hash) || !_hashList.ContainsKey(img1.NextHash)) {
                         nexthash = img1.Hash;
-                        img1.PerceptiveDistance = AppConsts.MaxPerceptiveDistance;
-                        img1.AkazePairs = 0;
-                        npd = img1.PerceptiveDistance;
-                        nap = img1.AkazePairs;
+                        if (img1.AkazePairs != 0) {
+                            img1.AkazePairs = 0;
+                        }
+
+                        if (img1.Counter != 0) {
+                            img1.Counter = 0;
+                        }
                     }
 
                     foreach (var img in _imgList) {
@@ -107,48 +102,11 @@ namespace ImageBank
                             continue;
                         }
 
-                        var dip = ImageHelper.ComputePerceptiveDistance(img1.PerceptiveDescriptors, img.Value.PerceptiveDescriptors);
-                        candidates.Add(new Tuple<Img, int>(img.Value, dip));
-                    }
-
-                    candidates = candidates.OrderBy(e => e.Item2).ToList();
-                }
-
-                if ((img1.PerceptiveDistance == AppConsts.MaxPerceptiveDistance || candidates[0].Item2 < AppConsts.MinPerceptiveDistance) && 
-                    candidates[0].Item2 < img1.PerceptiveDistance) {
-                    nexthash = candidates[0].Item1.Hash;
-                    lock (_imglock) {
-                        if (_hashList.TryGetValue(nexthash, out var img2)) {
-                            using (var a2 = LoadAkazeDescriptors(img2.Name)) {
-                                nap = ImageHelper.ComputeAkazePairs(a1, a2);
-                                npd = candidates[0].Item2;
-                                var sb = new StringBuilder();
-                                sb.Append(GetNew());
-                                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                                sb.Append($"{img1.Id}: ");
-                                sb.Append($"{img1.PerceptiveDistance} ");
-                                sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                                sb.Append($"{npd} ");
-                                img1.PerceptiveDistance = npd;
-                                img1.AkazePairs = nap;
-                                img1.NextHash = nexthash;
-                                img1.LastChanged = DateTime.Now;
-                                img1.Counter = 0;
-                                backgroundworker.ReportProgress(0, sb.ToString());
-                            }
-                        }
-                    }
-
-                    img1.LastCheck = DateTime.Now;
-                    return;
-                }
-
-                var ncd = ulong.MaxValue;
-                foreach (var e in candidates) {
-                    if (e.Item1.AkazeCentroid.Length != 0) {
-                        var cd = ImageHelper.ComputeCentoidDistance(img1.AkazeCentroid, e.Item1.AkazeCentroid);
+                        var c1 = ImageHelper.ComputeCentoidDistance(img1.AkazeCentroid, img.Value.AkazeCentroid);
+                        var c2 = ImageHelper.ComputeCentoidDistance(img1.AkazeCentroid, img.Value.AkazeMirrorCentroid);
+                        var cd = Math.Min(c1, c2);
                         if (cd < ncd) {
-                            nexthash = e.Item1.Hash;
+                            nexthash = img.Value.Hash;
                             ncd = cd;
                         }
                     }
@@ -157,27 +115,24 @@ namespace ImageBank
                 if (ncd < ulong.MaxValue) {
                     lock (_imglock) {
                         if (_hashList.TryGetValue(nexthash, out var img2)) {
-                            using (var a2 = LoadAkazeDescriptors(img2.Name)) {
-                                var nap2 = ImageHelper.ComputeAkazePairs(a1, a2);
+                            using (var a2 = LoadAkazeDescriptors(img2.Name))
+                            using (var am2 = LoadAkazeMirrorDescriptors(img2.Name)) {
+                                var nap2 = Math.Max(ImageHelper.ComputeAkazePairs(a1, a2), ImageHelper.ComputeAkazePairs(a1, am2));
                                 if (nap2 > img1.AkazePairs) {
-                                    npd = ImageHelper.ComputePerceptiveDistance(img1.PerceptiveDescriptors, img2.PerceptiveDescriptors);
                                     var sb = new StringBuilder();
                                     sb.Append(GetNew());
                                     sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                                     sb.Append($"{img1.Id}: ");
+                                    sb.Append($"[{img1.Counter}] ");
                                     sb.Append($"{img1.AkazePairs} ");
                                     sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
+                                    sb.Append($"[{img1.Counter + 1}] ");
                                     sb.Append($"{nap2} ");
-                                    img1.PerceptiveDistance = npd;
                                     img1.AkazePairs = nap2;
                                     img1.NextHash = nexthash;
                                     img1.LastChanged = DateTime.Now;
-                                    if (img1.AkazePairs > AppConsts.MinAkazePairs) {
-                                        img1.Counter = 0;
-                                    }
-
                                     backgroundworker.ReportProgress(0, sb.ToString());
-
+                                    img1.Counter += 1;
                                     img1.LastCheck = DateTime.Now;
                                     return;
                                 }
@@ -186,13 +141,15 @@ namespace ImageBank
                     }
                 }
 
-
+                var nap = img1.AkazePairs;
                 for (var i = 0; i < _candidates.Length; i++) {
                     if (_candidates[i].Item1.Equals(img1.Name)) {
                         continue;
                     }
 
-                    var nap2 = ImageHelper.ComputeAkazePairs(a1, _candidates[i].Item3);
+                    var p1 = ImageHelper.ComputeAkazePairs(a1, _candidates[i].Item3);
+                    var p2 = ImageHelper.ComputeAkazePairs(a1, _candidates[i].Item4);
+                    var nap2 = Math.Max(p1, p2);
                     if (nap2 > nap) {
                         nap = nap2;
                         nexthash = _candidates[i].Item2;
@@ -202,28 +159,25 @@ namespace ImageBank
                 if (nap > img1.AkazePairs) {
                     lock (_imglock) {
                         if (_hashList.TryGetValue(nexthash, out var img2)) {
-                            npd = ImageHelper.ComputePerceptiveDistance(img1.PerceptiveDescriptors, img2.PerceptiveDescriptors);
                             var sb = new StringBuilder();
                             sb.Append(GetNew());
                             sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                             sb.Append($"{img1.Id}: ");
+                            sb.Append($"[{img1.Counter}] ");
                             sb.Append($"{img1.AkazePairs} ");
                             sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
+                            sb.Append($"[{img1.Counter + 1}] ");
                             sb.Append($"{nap} ");
-                            img1.PerceptiveDistance = npd;
                             img1.AkazePairs = nap;
                             img1.NextHash = nexthash;
                             img1.LastChanged = DateTime.Now;
-                            if (img1.AkazePairs > AppConsts.MinAkazePairs) {
-                                img1.Counter = 0;
-                            }
-
                             backgroundworker.ReportProgress(0, sb.ToString());
                         }
                     }
                 }
             }
 
+            img1.Counter += 1;
             img1.LastCheck = DateTime.Now;
         }
     }

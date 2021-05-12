@@ -10,15 +10,10 @@
         public const string FolderDefault = "root";
 
         public const int MaxImages = 300000;
-        public const int MaxAdd = 10000;
+        public const int MaxAdd = 100;
 
         public const int MaxDescriptors = 1000;
         public const int DescriptorSize = 61;
-
-        public const int MaxPerceptiveDistance = 64;
-        public const int MinPerceptiveDistance = 4;
-
-        public const int MinAkazePairs = MaxDescriptors / 4;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -43,11 +38,11 @@
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
 
-        public const string AttrPerceptiveDescriptorsBlob = "PerceptiveDescriptorsBlob";
-        public const string AttrPerceptiveDistance = "PerceptiveDistance";
         public const string AttrAkazeDescriptorsBlob = "AkazeDescriptorsBlob";
+        public const string AttrAkazeMirrorDescriptorsBlob = "AkazeMirrorDescriptorsBlob";
         public const string AttrAkazePairs = "AkazePairs";
         public const string AttrAkazeCentroid = "AkazeCentroid";
+        public const string AttrAkazeMirrorCentroid = "AkazeMirrorCentroid";
 
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastView = "LastView";

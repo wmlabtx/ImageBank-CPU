@@ -13,8 +13,9 @@ namespace ImageBankTest
         public void ComputeBlobTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image, out var a1);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image, out var a1, out var am1);
             var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
+            var cm1 = ImageHelper.AkazeDescriptorsToCentoid(am1);
             var array = ImageHelper.ArrayFromMat(a1);
             var a2 = ImageHelper.ArrayToMat(array);
             var ob1 = a1.At<byte>(1, 2);
@@ -41,7 +42,7 @@ namespace ImageBankTest
         public void GetDistanceBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
+            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1, out var m);
             var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
 
             var files = new[] {

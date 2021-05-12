@@ -94,10 +94,9 @@ namespace ImageBank
                                 height: imgfound.Height,
                                 size: imgfound.Size,
 
-                                perceptivedescriptors: imgfound.PerceptiveDescriptors,
-                                perceptivedistance: imgfound.PerceptiveDistance,
                                 akazepairs: imgfound.AkazePairs,
                                 akazecentroid: imgfound.AkazeCentroid,
+                                akazemirrorcentroid: imgfound.AkazeMirrorCentroid,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
@@ -107,13 +106,14 @@ namespace ImageBank
                                 counter: imgfound.Counter);
 
                             var akazedescriptorsfound = LoadAkazeDescriptors(imgfound.Name);
+                            var akazemirrordescriptorsfound = LoadAkazeMirrorDescriptors(imgfound.Name);
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
                             File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
                             Helper.DeleteToRecycleBin(filename);
 
                             Delete(imgfound.Name);
-                            Add(imgreplace, akazedescriptorsfound);
+                            Add(imgreplace, akazedescriptorsfound, akazemirrordescriptorsfound);
                             bitmap.Dispose();
 
                             moved++;
@@ -123,8 +123,7 @@ namespace ImageBank
                         continue;
                     }
 
-                    ImageHelper.ComputePerceptiveDescriptors(bitmap, out var perceptivedescriptors);
-                    ImageHelper.ComputeAkazeDescriptors(bitmap, out var akazedescriptors);
+                    ImageHelper.ComputeAkazeDescriptors(bitmap, out var akazedescriptors, out var akazemirrordescriptors);
                     if (akazedescriptors == null || akazedescriptors.Rows == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {name}: {message}");
                         bad++;
@@ -133,6 +132,7 @@ namespace ImageBank
                     }
 
                     var akazecentroid = ImageHelper.AkazeDescriptorsToCentoid(akazedescriptors);
+                    var akazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(akazemirrordescriptors);
 
                     var len = 8;
                     while (len <= 32) {
@@ -155,10 +155,9 @@ namespace ImageBank
                         height: bitmap.Height,
                         size: imagedata.Length,
 
-                        perceptivedescriptors: perceptivedescriptors,
-                        perceptivedistance: AppConsts.MaxPerceptiveDistance,
                         akazepairs: 0,
                         akazecentroid: akazecentroid,
+                        akazemirrorcentroid: akazemirrorcentroid,
 
                         lastchanged: lastchanged,
                         lastview: lastview,
@@ -178,7 +177,7 @@ namespace ImageBank
                         Helper.DeleteToRecycleBin(filename);
                     }
 
-                    Add(img, akazedescriptors);
+                    Add(img, akazedescriptors, akazemirrordescriptors);
                     bitmap.Dispose();
 
                     if (_imgList.Count >= AppConsts.MaxImages) {

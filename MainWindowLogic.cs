@@ -191,7 +191,7 @@ namespace ImageBank
                     }
                 }
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                if (AppVars.ImgPanel[index].Img.LastView.Year > 2020) {
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
                 }
 
@@ -199,7 +199,7 @@ namespace ImageBank
                     scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
                 }
 
-                if (AppVars.ImgPanel[0].Img.PerceptiveDistance < AppConsts.MinPerceptiveDistance &&
+                if ((AppVars.ImgPanel[0].Img.AkazePairs >= AppConsts.MaxDescriptors / 2) &&
                     AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 2160 ||
                     (AppVars.ImgPanel[index].Bitmap.Width == 2180 ||
@@ -214,7 +214,7 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.PerceptiveDistance == 0) {
+            if (AppVars.ImgPanel[0].Img.AkazePairs >= AppConsts.MaxDescriptors / 2) {
                 var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
                 var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
                 if (dimX == dimY) {

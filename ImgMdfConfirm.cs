@@ -8,7 +8,6 @@ namespace ImageBank
         {
             lock (_imglock) {
                 AppVars.ImgPanel[index].Img.LastView = DateTime.Now;
-                AppVars.ImgPanel[index].Img.Counter++;
             }
         }
     }

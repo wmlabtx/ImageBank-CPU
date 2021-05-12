@@ -16,6 +16,7 @@ namespace ImageBank
     {
         const int MAXDIM = 1024;
         private static readonly AKAZE _akaze = AKAZE.Create();
+        private static readonly ORB _orb = ORB.Create();
         private static readonly BFMatcher _bfmatch = new BFMatcher(NormTypes.Hamming);
 
         private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -262,6 +263,15 @@ namespace ImageBank
             }
         }
 
+        public static void ComputeAkazeDescriptors(Bitmap bitmap, out Mat adescriptors, out Mat amdescriptors)
+        {
+            ComputeAkazeDescriptors(bitmap, out adescriptors);
+            using (var brft = new Bitmap(bitmap)) {
+                brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                ComputeAkazeDescriptors(brft, out amdescriptors);
+            }
+        }
+
         public static int ComputeAkazePairs(Mat a1, Mat a2)
         {
             var matches = _bfmatch.KnnMatch(a1, a2, 2);
@@ -326,51 +336,6 @@ namespace ImageBank
             var mat = new Mat(rows, cols, MatType.CV_8U);
             mat.SetArray(array);
             return mat;
-        }
-
-        private static ulong ComputeHashRotate(Bitmap bitmap, RotateFlipType rft)
-        {
-            using (var brft = new Bitmap(bitmap)) {
-                brft.RotateFlip(rft);
-                using (var matsource = brft.ToMat())
-                    using (var matcolor = new Mat()) {
-                    Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(32, 32), 0, 0, InterpolationFlags.Area);
-                    using (var mat = new Mat()) {
-                        Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                        using (var phash = PHash.Create())
-                        using (var matphash = new Mat()) {
-                            phash.Compute(mat, matphash);
-                            matphash.GetArray(out byte[] phasharray);
-                            var hash = BitConverter.ToUInt64(phasharray, 0);
-                            return hash;
-                        }
-                    }
-                }
-            }
-        }
-
-        public static void ComputePerceptiveDescriptors(Bitmap bitmap, out ulong[] perceptivedescriptors)
-        {
-            perceptivedescriptors = new ulong[4];
-            perceptivedescriptors[0] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipNone);
-            perceptivedescriptors[1] = ComputeHashRotate(bitmap, RotateFlipType.Rotate90FlipNone);
-            perceptivedescriptors[2] = ComputeHashRotate(bitmap, RotateFlipType.Rotate270FlipNone);
-            perceptivedescriptors[3] = ComputeHashRotate(bitmap, RotateFlipType.RotateNoneFlipX);
-        }
-
-        public static int ComputePerceptiveDistance(ulong[] x, ulong[] y)
-        {
-            var mindistance = AppConsts.MaxPerceptiveDistance;
-            for (var i = 0; i < x.Length; i++) {
-                for (var j = 0; j < y.Length; j++) {
-                    var d = Intrinsic.PopCnt(x[i] ^ y[j]);
-                    if (d < mindistance){
-                        mindistance = d;
-                    }
-                }
-            }
-
-            return mindistance;
         }
 
         private static void VoteForUniqueness(DMatch[][] matches, Mat mask, float uniqnessThreshold = 0.80f)

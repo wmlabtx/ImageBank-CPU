@@ -49,7 +49,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(Img img, Mat akazedescriptors)
+        private static void SqlAdd(Img img, Mat akazedescriptors, Mat akazemirrordescriptors)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -65,11 +65,11 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHeight}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
 
-                    sb.Append($"{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
-                    sb.Append($"{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob}, ");
+                    sb.Append($"{AppConsts.AttrAkazeMirrorDescriptorsBlob}, ");
                     sb.Append($"{AppConsts.AttrAkazePairs}, ");
                     sb.Append($"{AppConsts.AttrAkazeCentroid}, ");
+                    sb.Append($"{AppConsts.AttrAkazeMirrorCentroid}, ");
 
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
@@ -86,11 +86,11 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHeight}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
 
-                    sb.Append($"@{AppConsts.AttrPerceptiveDescriptorsBlob}, ");
-                    sb.Append($"@{AppConsts.AttrPerceptiveDistance}, ");
                     sb.Append($"@{AppConsts.AttrAkazeDescriptorsBlob}, ");
+                    sb.Append($"@{AppConsts.AttrAkazeMirrorDescriptorsBlob}, ");
                     sb.Append($"@{AppConsts.AttrAkazePairs}, ");
                     sb.Append($"@{AppConsts.AttrAkazeCentroid}, ");
+                    sb.Append($"@{AppConsts.AttrAkazeMirrorCentroid}, ");
 
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
@@ -110,14 +110,14 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
 
-                    var perceptivedescriptorsblob = ImageHelper.ArrayFrom64(img.PerceptiveDescriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDescriptorsBlob}", perceptivedescriptorsblob);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPerceptiveDistance}", img.PerceptiveDistance);
-
                     var akazedescriptorsblob = ImageHelper.ArrayFromMat(akazedescriptors);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeDescriptorsBlob}", akazedescriptorsblob);
+                    var akazemirrordescriptorsblob = ImageHelper.ArrayFromMat(akazemirrordescriptors);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeMirrorDescriptorsBlob}", akazemirrordescriptorsblob);
+
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazePairs}", img.AkazePairs);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeCentroid}", img.AkazeCentroid);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeMirrorCentroid}", img.AkazeMirrorCentroid);
 
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);

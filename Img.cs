@@ -32,21 +32,6 @@ namespace ImageBank
 
         public string Hash { get; }
 
-        public ulong[] PerceptiveDescriptors { get; }
-
-        private int _perceptivedistance;
-        public int PerceptiveDistance {
-            get => _perceptivedistance;
-            set {
-                _perceptivedistance = value;
-                if (_perceptivedistance < 0 || _perceptivedistance > AppConsts.MaxPerceptiveDistance) {
-                    throw new ArgumentException("_perceptivedistance < 0 || _perceptivedistance > AppConsts.MaxPerceptiveDistance");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrPerceptiveDistance, value);
-            }
-        }
-
         private int _akazepairs;
         public int AkazePairs {
             get => _akazepairs;
@@ -60,18 +45,8 @@ namespace ImageBank
             }
         }
 
-        private byte[] _akazecentroid;
-        public byte[] AkazeCentroid {
-            get => _akazecentroid;
-            set {
-                _akazecentroid = value;
-                if (_akazecentroid == null || (_akazecentroid != null && _akazecentroid.Length != 0 && _akazecentroid.Length != 488)) {
-                    throw new ArgumentException("_akazecentroid == null || (_akazecentroid != null && _akazecentroid.Length != 0 && _akazecentroid.Length != 488)");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrAkazeCentroid, value);
-            }
-        }
+        public byte[] AkazeCentroid { get; }
+        public byte[] AkazeMirrorCentroid { get; }
 
         private DateTime _lastchanged;
         public DateTime LastChanged {
@@ -137,11 +112,10 @@ namespace ImageBank
             int height,
             int size,
 
-            ulong[] perceptivedescriptors,
-            int perceptivedistance,
             int akazepairs,
             byte[] akazecentroid,
-           
+            byte[] akazemirrorcentroid,
+
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
@@ -191,29 +165,23 @@ namespace ImageBank
 
             Size = size;
 
-            if (perceptivedescriptors == null || perceptivedescriptors.Length != 4) {
-                throw new ArgumentException("perceptivedescriptors == null || perceptivedescriptors.Length != 4");
-            }
-
-            PerceptiveDescriptors = perceptivedescriptors;
-
-            if (perceptivedistance < 0 || perceptivedistance > AppConsts.MaxPerceptiveDistance) {
-                throw new ArgumentException("perceptivedistance < 0 || perceptivedistance > AppConsts.MaxPerceptiveDistance");
-            }
-
-            _perceptivedistance = perceptivedistance;
-
             if (akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors) {
                 throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
             }
 
             _akazepairs = akazepairs;
 
-            if (akazecentroid == null || (akazecentroid != null && akazecentroid.Length != 0 && akazecentroid.Length != 488)) {
-                throw new ArgumentException("akazecentroid == null || (akazecentroid != null && akazecentroid.Length != 0 && akazecentroid.Length != 488)");
+            if (akazecentroid == null || akazecentroid.Length != 488) {
+                throw new ArgumentException("akazecentroid == null || akazecentroid.Length != 488");
             }
 
-            _akazecentroid = akazecentroid;
+            AkazeCentroid = akazecentroid;
+
+            if (akazemirrorcentroid == null || akazemirrorcentroid.Length != 488) {
+                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length != 488");
+            }
+
+            AkazeMirrorCentroid = akazemirrorcentroid;
 
             _lastchanged = lastchanged;
             _lastview = lastview;

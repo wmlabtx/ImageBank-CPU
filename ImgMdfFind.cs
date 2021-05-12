@@ -30,41 +30,20 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (eX.LastView > eX.LastChanged) {
+                            if (eX.LastView.Year == 2020) {
+                                imgX = eX;
+                                nameX = imgX.Name;
+                                nameY = eY.Name;
+                                break;
+                            }
+
+                            if (eX.LastChanged < e.Value.LastView) {
                                 continue;
                             }
 
                             if (imgX != null) {
-                                /*
-                                if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
+                                if (imgX.AkazePairs >= eX.AkazePairs) {
                                     continue;
-                                }
-
-                                if (imgX.PerceptiveDistance == eX.PerceptiveDistance &&
-                                    imgX.LastView <= eX.LastView) {
-                                    continue;
-                                }
-                                */
-
-                                if (imgX.PerceptiveDistance < AppConsts.MinPerceptiveDistance) {
-                                    if (imgX.PerceptiveDistance < eX.PerceptiveDistance) {
-                                        continue;
-                                    }
-
-                                    if (imgX.PerceptiveDistance == eX.PerceptiveDistance && 
-                                        imgX.AkazePairs >= eX.AkazePairs) {
-                                        continue;
-                                    }
-                                }
-                                else {
-                                    if (imgX.Counter < eX.Counter) {
-                                        continue;
-                                    }
-
-                                    if (imgX.Counter == eX.Counter &&
-                                        imgX.AkazePairs >= eX.AkazePairs) {
-                                        continue;
-                                    }
                                 }
                             }
 
@@ -100,11 +79,15 @@ namespace ImageBank
                     break;
                 }
 
-                var zerocounter = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
+                var zerocounter = _imgList.Count(e => e.Value.LastView.Year == 2020);
+                if (zerocounter == 0) {
+                    zerocounter = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
+                }
+
                 sb.Append($"{zerocounter}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
                 sb.Append($"{method} ");
-                sb.Append($"p:{imgX.PerceptiveDistance}/a:{imgX.AkazePairs} ");
+                sb.Append($"a:{imgX.AkazePairs} ");
             }
 
             progress.Report(sb.ToString());
