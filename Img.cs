@@ -1,34 +1,17 @@
-﻿using System;
-using System.IO;
+﻿using OpenCvSharp;
+using System;
 
 namespace ImageBank
 {
-    public class Img
+    public class Img : IDisposable
     {
-        public string Name { get; }
+        private bool isDisposed;
 
-        private string _folder;
-        public string Folder {
-            get => _folder;
-            set {
-                if (string.IsNullOrEmpty(value)) {
-                    throw new ArgumentException(@"string.IsNullOrEmpty(value)");
-                }
+        public int Id { get; }
+        public int Folder { get; }
+        public ulong Token { get; }
 
-                var oldfilename = FileName;
-                _folder = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFolder, value);
-                var newfilename = FileName;
-                var directory = Path.GetDirectoryName(newfilename);
-                if (!Directory.Exists(directory)) {
-                    Directory.CreateDirectory(directory);
-                }
-
-                File.Move(oldfilename, newfilename);
-            }
-        }
-
-        public string FileName => $"{AppConsts.PathHp}\\{Folder}\\{Name}{AppConsts.MzxExtension}";
+        public string FileName => $"{AppConsts.PathHp}\\{Folder:D2}\\{Id:D6}{AppConsts.MzxExtension}";
 
         public string Hash { get; }
 
@@ -41,19 +24,19 @@ namespace ImageBank
                     throw new ArgumentException("_akazepairs < 0 || _akazepairs > AppConsts.MaxDescriptors");
                 }
 
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrAkazePairs, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrAkazePairs, value);
             }
         }
 
-        public byte[] AkazeCentroid { get; }
-        public byte[] AkazeMirrorCentroid { get; }
+        public Mat AkazeDescriptors { get; }
+        public Mat AkazeMirrorDescriptors { get; }
 
         private DateTime _lastchanged;
         public DateTime LastChanged {
             get => _lastchanged;
             set {
                 _lastchanged = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastChanged, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastChanged, value);
             }
         }
 
@@ -62,7 +45,7 @@ namespace ImageBank
             get => _lastview;
             set {
                 _lastview = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastView, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastView, value);
             }
         }
 
@@ -71,7 +54,7 @@ namespace ImageBank
             get => _lastcheck;
             set {
                 _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
             }
         }
 
@@ -80,7 +63,7 @@ namespace ImageBank
             get => _nexthash;
             set {
                 _nexthash = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNextHash, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrNextHash, value);
             }
         }
 
@@ -93,28 +76,25 @@ namespace ImageBank
                     throw new ArgumentException("_counter < 0");
                 }
 
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrCounter, value);
+                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrCounter, value);
             }
         }
 
         public int Width { get; }
         public int Height { get; }
         public int Size { get; }
-        public int Id { get; }
 
         public Img(
             int id,
-            string name,
-            string folder,
             string hash,
 
             int width,
             int height,
             int size,
 
+            Mat akazedescriptors,
+            Mat akazemirrordescriptors,
             int akazepairs,
-            byte[] akazecentroid,
-            byte[] akazemirrorcentroid,
 
             DateTime lastchanged,
             DateTime lastview,
@@ -123,29 +103,20 @@ namespace ImageBank
             string nexthash,
             int counter
             ) {
+
             if (id <= 0) {
                 throw new ArgumentException("id <= 0");
             }
 
             Id = id;
 
-            if (string.IsNullOrEmpty(name) || name.Length > 32) {
-                throw new ArgumentException("string.IsNullOrEmpty(name) || name.Length > 32");
-            }
-
-            Name = name;
-
-            if (string.IsNullOrEmpty(folder) || name.Length > 12) {
-                throw new ArgumentException("string.IsNullOrEmpty(folder) || folder.Length > 12");
-            }
-
-            _folder = folder;
-
             if (string.IsNullOrEmpty(hash) || hash.Length != 32) {
                 throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != 32");
             }
 
             Hash = hash;
+            Token  = ulong.Parse(Hash.Substring(0, 16), System.Globalization.NumberStyles.AllowHexSpecifier);
+            Folder = (int)((Token % 50) + 1);
 
             if (width <= 0) {
                 throw new ArgumentException("width <= 0");
@@ -164,24 +135,15 @@ namespace ImageBank
             }
 
             Size = size;
+            
+            AkazeDescriptors = akazedescriptors ?? throw new ArgumentException("akazedescriptors == null");
+            AkazeMirrorDescriptors = akazemirrordescriptors ?? throw new ArgumentException("akazemirrordescriptors == null");
 
             if (akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors) {
                 throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
             }
 
             _akazepairs = akazepairs;
-
-            if (akazecentroid == null || akazecentroid.Length != 488) {
-                throw new ArgumentException("akazecentroid == null || akazecentroid.Length != 488");
-            }
-
-            AkazeCentroid = akazecentroid;
-
-            if (akazemirrorcentroid == null || akazemirrorcentroid.Length != 488) {
-                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length != 488");
-            }
-
-            AkazeMirrorCentroid = akazemirrorcentroid;
 
             _lastchanged = lastchanged;
             _lastview = lastview;
@@ -198,6 +160,31 @@ namespace ImageBank
             }
 
             _counter = counter;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed) {
+                return;
+            }
+
+            if (disposing) {
+                AkazeDescriptors.Dispose();
+                AkazeMirrorDescriptors.Dispose();
+            }
+
+            isDisposed = true;
+        }
+
+        ~Img()
+        {
+            Dispose(false);
         }
     }
 }

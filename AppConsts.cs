@@ -2,15 +2,15 @@
 {
     public static class AppConsts
     {
-        private const string PathRoot = @"D:\Users\Murad\Documents\Sdb\";
+        public const string PathRoot = @"D:\Users\Murad\Documents\Sdb\";
         public const string FileDatabase = PathRoot + @"Db\images.mdf";
 
         public const string PathHp = PathRoot + @"Hp";
         public const string PathRw = PathRoot + @"Rw";
         public const string FolderDefault = "root";
 
-        public const int MaxImages = 300000;
-        public const int MaxAdd = 100;
+        public const int MaxImages = 10000;
+        public const int MaxAdd = 10000;
 
         public const int MaxDescriptors = 1000;
         public const int DescriptorSize = 61;
@@ -30,7 +30,6 @@
 
         public const string TableImages = "Images";
         public const string AttrId = "Id";
-        public const string AttrName = "Name";
         public const string AttrFolder = "Folder";
         public const string AttrHash = "Hash";
 
@@ -41,8 +40,6 @@
         public const string AttrAkazeDescriptorsBlob = "AkazeDescriptorsBlob";
         public const string AttrAkazeMirrorDescriptorsBlob = "AkazeMirrorDescriptorsBlob";
         public const string AttrAkazePairs = "AkazePairs";
-        public const string AttrAkazeCentroid = "AkazeCentroid";
-        public const string AttrAkazeMirrorCentroid = "AkazeMirrorCentroid";
 
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastView = "LastView";
@@ -52,5 +49,9 @@
         public const string AttrCounter = "Counter";
         
         public const string TableVars = "Vars";
+        
+        public const string TableResults = "Results";
+        public const string AttrIdX = "IdX";
+        public const string AttrIdY = "IdY";
     }
 }

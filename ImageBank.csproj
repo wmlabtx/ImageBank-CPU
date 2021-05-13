@@ -133,7 +133,6 @@
     <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />
     <Compile Include="ImgMdfGetImgPanel.cs" />
-    <Compile Include="ImgMdfFolder.cs" />
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfLoad.cs" />
     <Compile Include="ImgMdfConfirm.cs" />

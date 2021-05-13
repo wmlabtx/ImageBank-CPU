@@ -2,15 +2,19 @@
 {
     public partial class ImgMdf
     {
-        public static void Delete(string name)
+        public static void Delete(int id)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(name, out var img)) {
+                if (_imgList.TryGetValue(id, out var img)) {
                     Helper.DeleteToRecycleBin(img.FileName);
-                    _imgList.Remove(name);
+                    _imgList.Remove(id);
 
                     if (_hashList.ContainsKey(img.Hash)) {
                         _hashList.Remove(img.Hash);
+                    }
+
+                    if (_resultList.ContainsKey(id)) {
+                        _resultList.Remove(id);
                     }
 
                     foreach (var e in _imgList) {
@@ -19,11 +23,18 @@
                             e.Value.AkazePairs = 0;
                             e.Value.Counter = 0;
                         }
+
+                        if (_resultList.TryGetValue(e.Value.Id, out var nx)) {
+                            if (nx.ContainsKey(id)) {
+                                nx.Remove(id);
+                            }
+                        }
                     }
                 }
             }
 
-            SqlDelete(name);
+            SqlDelete(id);
+            SqlDeleteResult(id);
         }
     }
 }

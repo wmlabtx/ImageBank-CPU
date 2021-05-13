@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Find(string nameX, string nameY, IProgress<string> progress)
+        public void Find(int idX, int idY, IProgress<string> progress)
         {
             Img imgX;
             var sb = new StringBuilder();
@@ -18,8 +18,9 @@ namespace ImageBank
                         return;
                     }
 
-                    if (string.IsNullOrEmpty(nameX)) {
+                    if (idX == 0) {
                         imgX = null;
+                        var tdX = DateTime.MaxValue;
                         foreach (var e in _imgList) {
                             var eX = e.Value;
                             if (eX.Hash.Equals(eX.NextHash)) {
@@ -32,8 +33,28 @@ namespace ImageBank
 
                             if (eX.LastView.Year == 2020) {
                                 imgX = eX;
-                                nameX = imgX.Name;
-                                nameY = eY.Name;
+                                idX = eX.Id;
+                                idY = eY.Id;
+                                break;
+                            }
+
+                            var td = eX.LastView;
+                            if (td < eY.LastView) {
+                                td = eY.LastView;
+                            }
+
+                            if (imgX == null || td < tdX) {
+                                imgX = eX;
+                                idX = eX.Id;
+                                idY = eY.Id;
+                                tdX = td;
+                            }
+
+                            /*
+                            if (eX.LastView.Year == 2020) {
+                                imgX = eX;
+                                idX = imgX.Id;
+                                idY = eY.Id;
                                 break;
                             }
 
@@ -49,30 +70,31 @@ namespace ImageBank
 
                             imgX = eX;
                             var imgY = eY;
-                            nameX = imgX.Name;
-                            nameY = imgY.Name;
+                            idX = imgX.Id;
+                            idY = imgY.Id;
+                            */
                         }
                     }
 
-                    if (string.IsNullOrEmpty(nameX)) {
+                    if (idX == 0) {
                         progress.Report("No images to view");
                         return;
                     }
 
-                    AppVars.ImgPanel[0] = GetImgPanel(nameX);
+                    AppVars.ImgPanel[0] = GetImgPanel(idX);
                     if (AppVars.ImgPanel[0] == null) {
-                        Delete(nameX);
-                        progress.Report($"{nameX} deleted");
-                        nameX = string.Empty;
+                        Delete(idX);
+                        progress.Report($"{idX} deleted");
+                        idX = 0;
                         continue;
                     }
 
                     imgX = AppVars.ImgPanel[0].Img;
-                    AppVars.ImgPanel[1] = GetImgPanel(nameY);
+                    AppVars.ImgPanel[1] = GetImgPanel(idY);
                     if (AppVars.ImgPanel[1] == null) {
-                        Delete(nameY);
-                        progress.Report($"{nameY} deleted");
-                        nameX = string.Empty;
+                        Delete(idY);
+                        progress.Report($"{idY} deleted");
+                        idX = 0;
                         continue;
                     }
 
@@ -85,7 +107,7 @@ namespace ImageBank
                 }
 
                 sb.Append($"{zerocounter}/{_imgList.Count}: ");
-                sb.Append($"{imgX.Folder}\\{imgX.Name}: ");
+                sb.Append($"{imgX.Folder:D2}\\{imgX.Id:D6}: ");
                 sb.Append($"{method} ");
                 sb.Append($"a:{imgX.AkazePairs} ");
             }

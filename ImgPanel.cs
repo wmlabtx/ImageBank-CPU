@@ -6,15 +6,11 @@ namespace ImageBank
     {
         public Img Img { get; }
         public Bitmap Bitmap { get; }
-        public long Length { get; }
-        public int FolderCounter { get; }
 
-        public ImgPanel(Img img, Bitmap bitmap, long length, int foldercounter)
+        public ImgPanel(Img img, Bitmap bitmap)
         {
             Img = img;
             Bitmap = bitmap;
-            Length = length;
-            FolderCounter = foldercounter;
         }
     }
 }

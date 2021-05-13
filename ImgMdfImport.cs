@@ -26,33 +26,40 @@ namespace ImageBank
 
             foreach (var fileInfo in fileInfos) {
                 var filename = fileInfo.FullName;
-                var name = Path.GetFileNameWithoutExtension(filename);
                 var extension = Path.GetExtension(filename);
                 if (extension.Equals(AppConsts.CorruptedExtension)) {
                     continue;
                 }
 
+                string shortfilename;
                 if (path.Equals(AppConsts.PathHp)) {
-                    var shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
+                    shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
                     folder = Path.GetDirectoryName(shortfilename);
-                    if (_imgList.TryGetValue(name, out var imgfound)) {
-                        if (folder.Equals(imgfound.Folder)) {
-                            continue;
-                        }
+                    if (int.TryParse(folder, out var foundfolder)) {
+                        var name = Path.GetFileNameWithoutExtension(filename);
+                        if (int.TryParse(name, out var foundid)) {
+                            if (_imgList.TryGetValue(foundid, out var imgfound)) {
+                                if (foundfolder == imgfound.Folder) {
+                                    continue;
+                                }
 
-                        if (File.Exists(imgfound.FileName)) {
-                            found++;
-                            Helper.DeleteToRecycleBin(filename);
-                            continue;
-                        }
+                                if (File.Exists(imgfound.FileName)) {
+                                    found++;
+                                    Helper.DeleteToRecycleBin(filename);
+                                    continue;
+                                }
 
-                        Delete(imgfound.Name);
+                                Delete(imgfound.Id);
+                            }
+                        }
                     }
                 }
 
+                shortfilename = filename.Substring(AppConsts.PathRoot.Length);
+
                 if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
                     dt = DateTime.Now;
-                    ((IProgress<string>)AppVars.Progress).Report($"{name} (a:{added}/b:{bad}/f:{found}/m:{moved})...");
+                    ((IProgress<string>)AppVars.Progress).Report($"{shortfilename} (a:{added}/b:{bad}/f:{found}/m:{moved})...");
                 }
 
                 if (!ImageHelper.GetImageDataFromFile(
@@ -60,7 +67,7 @@ namespace ImageBank
                     out var imagedata,
                     out var bitmap,
                     out var message)) {
-                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {name}: {message}");
+                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
                     bad++;
                     File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                     continue;
@@ -71,9 +78,6 @@ namespace ImageBank
                     var lastview = new DateTime(2020, 1, 1);
                     var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
-                    if (path.Equals(AppConsts.PathRw)) {
-                        folder = Helper.ComputeFolder(imagedata);
-                    }
 
                     if (_hashList.TryGetValue(hash, out var imgfound)) {
                         lastchanged = imgfound.LastChanged;
@@ -86,8 +90,6 @@ namespace ImageBank
                         else {
                             var imgreplace = new Img(
                                 id: imgfound.Id,
-                                name: imgfound.Name,
-                                folder: folder,
                                 hash: imgfound.Hash,
 
                                 width: imgfound.Width,
@@ -95,8 +97,8 @@ namespace ImageBank
                                 size: imgfound.Size,
 
                                 akazepairs: imgfound.AkazePairs,
-                                akazecentroid: imgfound.AkazeCentroid,
-                                akazemirrorcentroid: imgfound.AkazeMirrorCentroid,
+                                akazedescriptors: imgfound.AkazeDescriptors,
+                                akazemirrordescriptors: imgfound.AkazeMirrorDescriptors,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
@@ -105,19 +107,16 @@ namespace ImageBank
                                 nexthash: imgfound.NextHash,
                                 counter: imgfound.Counter);
 
-                            var akazedescriptorsfound = LoadAkazeDescriptors(imgfound.Name);
-                            var akazemirrordescriptorsfound = LoadAkazeMirrorDescriptors(imgfound.Name);
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
                             File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
                             Helper.DeleteToRecycleBin(filename);
 
-                            Delete(imgfound.Name);
-                            Add(imgreplace, akazedescriptorsfound, akazemirrordescriptorsfound);
+                            Delete(imgfound.Id);
+                            Add(imgreplace);
                             bitmap.Dispose();
 
                             moved++;
-                            Delete(imgfound.Name);
                         }
 
                         continue;
@@ -125,30 +124,15 @@ namespace ImageBank
 
                     ImageHelper.ComputeAkazeDescriptors(bitmap, out var akazedescriptors, out var akazemirrordescriptors);
                     if (akazedescriptors == null || akazedescriptors.Rows == 0) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {name}: {message}");
+                        ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {shortfilename}: {message}");
                         bad++;
                         File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                         continue;
                     }
 
-                    var akazecentroid = ImageHelper.AkazeDescriptorsToCentoid(akazedescriptors);
-                    var akazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(akazemirrordescriptors);
-
-                    var len = 8;
-                    while (len <= 32) {
-                        name = hash.Substring(0, len);
-                        if (!_imgList.ContainsKey(name)) {
-                            break;
-                        }
-
-                        len++;
-                    }
-
                     var id = AllocateId();
                     var img = new Img(
                         id: id,
-                        name: name,
-                        folder: folder,
                         hash: hash,
 
                         width: bitmap.Width,
@@ -156,8 +140,8 @@ namespace ImageBank
                         size: imagedata.Length,
 
                         akazepairs: 0,
-                        akazecentroid: akazecentroid,
-                        akazemirrorcentroid: akazemirrorcentroid,
+                        akazedescriptors: akazedescriptors,
+                        akazemirrordescriptors: akazemirrordescriptors,
 
                         lastchanged: lastchanged,
                         lastview: lastview,
@@ -177,7 +161,7 @@ namespace ImageBank
                         Helper.DeleteToRecycleBin(filename);
                     }
 
-                    Add(img, akazedescriptors, akazemirrordescriptors);
+                    Add(img);
                     bitmap.Dispose();
 
                     if (_imgList.Count >= AppConsts.MaxImages) {

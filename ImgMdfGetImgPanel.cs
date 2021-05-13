@@ -1,23 +1,18 @@
-﻿using System.Linq;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private ImgPanel GetImgPanel(string name)
+        private ImgPanel GetImgPanel(int id)
         {
             Img img;
-            int foldercounter;
             lock (_imglock) {
-                if (!_imgList.TryGetValue(name, out img)) {
+                if (!_imgList.TryGetValue(id, out img)) {
                     return null;
                 }
-
-                foldercounter = _imgList.Count(e => e.Value.Folder == img.Folder);
             }
 
             if (!ImageHelper.GetImageDataFromFile(img.FileName, 
-                out byte[] imagedata,
+                out _,
 #pragma warning disable CA2000 // Dispose objects before losing scope
                 out var bitmap,
 #pragma warning restore CA2000 // Dispose objects before losing scope
@@ -27,9 +22,7 @@ namespace ImageBank
 
             var imgpanel = new ImgPanel(
                 img: img,
-                bitmap: bitmap, 
-                length: imagedata.Length,
-                foldercounter: foldercounter);
+                bitmap: bitmap);
 
             return imgpanel;
         }

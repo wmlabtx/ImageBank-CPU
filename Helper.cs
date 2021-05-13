@@ -50,17 +50,6 @@ namespace ImageBank
             }
         }
 
-        public static string ComputeFolder(byte[] array)
-        {
-            using (var md5 = MD5.Create()) {
-                var hashmd5 = md5.ComputeHash(array);
-                var val = BitConverter.ToUInt64(hashmd5, 0);
-                var ifolder = (val % 50) + 1;
-                var folder = $"{ifolder:D2}";
-                return folder;
-            }
-        }
-
         #endregion
 
         #region TimeIntervalToString
