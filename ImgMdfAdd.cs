@@ -1,4 +1,6 @@
-﻿namespace ImageBank
+﻿using OpenCvSharp;
+
+namespace ImageBank
 {
     public partial class ImgMdf
     {
@@ -10,51 +12,10 @@
             }
         }
 
-        private void Add(Img img)
+        private static void Add(Img img, Mat akazedescriptors, Mat akazemirrordescriptors)
         {
             AddToMemory(img);
-            SqlAdd(img);
-        }
-
-        private static void AddResultToMemory(int idx, int idy, int ac)
-        {
-            if (_resultList.TryGetValue(idx, out var nx)) {
-                if (nx.ContainsKey(idy)) {
-                    nx[idy] = ac;
-                }
-                else {
-                    nx.Add(idy, ac);
-                }
-            }
-            else {
-                nx = new System.Collections.Generic.SortedDictionary<int, int> {
-                    { idy, ac }
-                };
-
-                _resultList.Add(idx, nx);
-            }
-        }
-
-        private static void AddResult(int idx, int idy, int ac)
-        {
-            if (_resultList.TryGetValue(idx, out var nx)) {
-                if (nx.ContainsKey(idy)) {
-                    nx[idy] = ac;
-                    SqlUpdateResult(idx, idy, ac);
-                }
-                else {
-                    nx.Add(idy, ac);
-                    SqlAddResult(idx, idy, ac);
-                }
-            }
-            else {
-                nx = new System.Collections.Generic.SortedDictionary<int, int> {
-                    { idy, ac }
-                };
-
-                _resultList.Add(idx, nx);
-                SqlAddResult(idx, idy, ac);
-            }
+            SqlAdd(img, akazedescriptors, akazemirrordescriptors);
         }
     }
 }

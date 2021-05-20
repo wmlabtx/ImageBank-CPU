@@ -5,7 +5,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Rotate(int id, RotateFlipType rft)
+        public static void Rotate(int id, RotateFlipType rft)
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img))
@@ -33,6 +33,8 @@ namespace ImageBank
                     else
                     {
                         ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors, out var rakazemirrordescriptors);
+                        var rakazecentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazedescriptors);
+                        var rakazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazemirrordescriptors);
                         var minlc = GetMinLastCheck();
                         var rid = AllocateId();
                         var rimg = new Img(
@@ -43,8 +45,8 @@ namespace ImageBank
                             height: bitmap.Height,
                             size: rimagedata.Length,
 
-                            akazedescriptors: rakazedescriptors,
-                            akazemirrordescriptors: rakazemirrordescriptors,
+                            akazecentroid: rakazecentroid,
+                            akazemirrorcentroid: rakazemirrorcentroid,
                             akazepairs: 0,
 
                             lastchanged: img.LastChanged,
@@ -52,10 +54,10 @@ namespace ImageBank
                             lastcheck: minlc,
 
                             nexthash: rhash,
-                            counter: img.Counter);
+                            counter: 0);
 
                         Delete(img.Id);
-                        Add(rimg);
+                        Add(rimg, rakazedescriptors, rakazemirrordescriptors);
 
                         Helper.WriteData(rimg.FileName, rimagedata);
                     }

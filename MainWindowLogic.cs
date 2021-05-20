@@ -53,7 +53,7 @@ namespace ImageBank
 
             DisableElements();
             await Task.Run(() => { AppVars.Collection.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
             EnableElements();
@@ -98,7 +98,7 @@ namespace ImageBank
             }
 
             await Task.Run(() => { AppVars.Collection.Import(AppConsts.PathHp, maxadd); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -117,7 +117,7 @@ namespace ImageBank
         {            
             DisableElements();
             await Task.Run(() => { ImgMdf.Confirm(0); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -263,7 +263,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Id); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -271,8 +271,8 @@ namespace ImageBank
         private async void Rotate(RotateFlipType rft)
         {
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
-            await Task.Run(() => { AppVars.Collection.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -308,7 +308,7 @@ namespace ImageBank
         {
             while (!_backgroundWorker.CancellationPending) {
                 ImgMdf.Compute(_backgroundWorker);
-                Thread.Sleep(200);
+                Thread.Sleep(1000);
             }
 
             args.Cancel = true;

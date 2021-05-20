@@ -15,7 +15,6 @@ namespace ImageBank
         private static object _imglock = new object();
         private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
-        private static readonly SortedDictionary<int, SortedDictionary<int, int>> _resultList = new SortedDictionary<int, SortedDictionary<int, int>>();
 
         private static readonly Random _random = new Random();
         private static int _id;

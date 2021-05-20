@@ -13,28 +13,17 @@
                         _hashList.Remove(img.Hash);
                     }
 
-                    if (_resultList.ContainsKey(id)) {
-                        _resultList.Remove(id);
-                    }
-
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
                             e.Value.AkazePairs = 0;
                             e.Value.Counter = 0;
                         }
-
-                        if (_resultList.TryGetValue(e.Value.Id, out var nx)) {
-                            if (nx.ContainsKey(id)) {
-                                nx.Remove(id);
-                            }
-                        }
                     }
                 }
             }
 
             SqlDelete(id);
-            SqlDeleteResult(id);
         }
     }
 }

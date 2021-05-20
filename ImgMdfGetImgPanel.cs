@@ -2,7 +2,7 @@
 {
     public partial class ImgMdf
     {
-        private ImgPanel GetImgPanel(int id)
+        private static ImgPanel GetImgPanel(int id)
         {
             Img img;
             lock (_imglock) {

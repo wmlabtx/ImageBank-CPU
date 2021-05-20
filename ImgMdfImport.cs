@@ -96,9 +96,9 @@ namespace ImageBank
                                 height: imgfound.Height,
                                 size: imgfound.Size,
 
+                                akazecentroid: imgfound.AkazeCentroid,
+                                akazemirrorcentroid: imgfound.AkazeMirrorCentroid,
                                 akazepairs: imgfound.AkazePairs,
-                                akazedescriptors: imgfound.AkazeDescriptors,
-                                akazemirrordescriptors: imgfound.AkazeMirrorDescriptors,
 
                                 lastchanged: lastchanged,
                                 lastview: lastview,
@@ -107,13 +107,16 @@ namespace ImageBank
                                 nexthash: imgfound.NextHash,
                                 counter: imgfound.Counter);
 
+                            var akazedescriptorsfound = LoadAkazeDescriptors(imgfound.Id);
+                            var akazemirrordescriptorsfound = LoadAkazeMirrorDescriptors(imgfound.Id);
+
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
                             File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
                             Helper.DeleteToRecycleBin(filename);
 
                             Delete(imgfound.Id);
-                            Add(imgreplace);
+                            Add(imgreplace, akazedescriptorsfound, akazemirrordescriptorsfound);
                             bitmap.Dispose();
 
                             moved++;
@@ -130,6 +133,9 @@ namespace ImageBank
                         continue;
                     }
 
+                    var akazecentroid = ImageHelper.AkazeDescriptorsToCentoid(akazedescriptors);
+                    var akazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(akazemirrordescriptors);
+
                     var id = AllocateId();
                     var img = new Img(
                         id: id,
@@ -139,9 +145,9 @@ namespace ImageBank
                         height: bitmap.Height,
                         size: imagedata.Length,
 
+                        akazecentroid: akazecentroid,
+                        akazemirrorcentroid: akazemirrorcentroid,
                         akazepairs: 0,
-                        akazedescriptors: akazedescriptors,
-                        akazemirrordescriptors: akazemirrordescriptors,
 
                         lastchanged: lastchanged,
                         lastview: lastview,
@@ -161,7 +167,7 @@ namespace ImageBank
                         Helper.DeleteToRecycleBin(filename);
                     }
 
-                    Add(img);
+                    Add(img, akazedescriptors, akazemirrordescriptors);
                     bitmap.Dispose();
 
                     if (_imgList.Count >= AppConsts.MaxImages) {

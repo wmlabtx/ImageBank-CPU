@@ -1,19 +1,18 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 
 namespace ImageBank
 {
-    public class Img : IDisposable
+    public class Img
     {
-        private bool isDisposed;
-
         public int Id { get; }
         public int Folder { get; }
-        public ulong Token { get; }
 
         public string FileName => $"{AppConsts.PathHp}\\{Folder:D2}\\{Id:D6}{AppConsts.MzxExtension}";
 
         public string Hash { get; }
+
+        public byte[] AkazeCentroid { get; }
+        public byte[] AkazeMirrorCentroid { get; }
 
         private int _akazepairs;
         public int AkazePairs {
@@ -27,9 +26,6 @@ namespace ImageBank
                 ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrAkazePairs, value);
             }
         }
-
-        public Mat AkazeDescriptors { get; }
-        public Mat AkazeMirrorDescriptors { get; }
 
         private DateTime _lastchanged;
         public DateTime LastChanged {
@@ -92,8 +88,8 @@ namespace ImageBank
             int height,
             int size,
 
-            Mat akazedescriptors,
-            Mat akazemirrordescriptors,
+            byte[] akazecentroid,
+            byte[] akazemirrorcentroid,
             int akazepairs,
 
             DateTime lastchanged,
@@ -115,8 +111,8 @@ namespace ImageBank
             }
 
             Hash = hash;
-            Token  = ulong.Parse(Hash.Substring(0, 16), System.Globalization.NumberStyles.AllowHexSpecifier);
-            Folder = (int)((Token % 50) + 1);
+            var token  = ulong.Parse(Hash.Substring(0, 16), System.Globalization.NumberStyles.AllowHexSpecifier);
+            Folder = (int)((token % 50) + 1);
 
             if (width <= 0) {
                 throw new ArgumentException("width <= 0");
@@ -136,12 +132,21 @@ namespace ImageBank
 
             Size = size;
             
-            AkazeDescriptors = akazedescriptors ?? throw new ArgumentException("akazedescriptors == null");
-            AkazeMirrorDescriptors = akazemirrordescriptors ?? throw new ArgumentException("akazemirrordescriptors == null");
-
             if (akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors) {
                 throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
             }
+
+            if (akazecentroid == null || akazecentroid.Length != 488) {
+                throw new ArgumentException("akazecentroid == null || akazecentroid.Length != 488");
+            }
+
+            AkazeCentroid = akazecentroid;
+
+            if (akazemirrorcentroid == null || akazemirrorcentroid.Length != 488) {
+                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length != 488");
+            }
+
+            AkazeMirrorCentroid = akazemirrorcentroid;
 
             _akazepairs = akazepairs;
 
@@ -160,31 +165,6 @@ namespace ImageBank
             }
 
             _counter = counter;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (isDisposed) {
-                return;
-            }
-
-            if (disposing) {
-                AkazeDescriptors.Dispose();
-                AkazeMirrorDescriptors.Dispose();
-            }
-
-            isDisposed = true;
-        }
-
-        ~Img()
-        {
-            Dispose(false);
         }
     }
 }

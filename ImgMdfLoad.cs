@@ -1,5 +1,7 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Text;
 
 namespace ImageBank
@@ -26,8 +28,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrHeight}, "); // 3
             sb.Append($"{AppConsts.AttrSize}, "); // 4
 
-            sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob}, "); // 5
-            sb.Append($"{AppConsts.AttrAkazeMirrorDescriptorsBlob}, "); // 6
+            sb.Append($"{AppConsts.AttrAkazeCentroid}, "); // 5
+            sb.Append($"{AppConsts.AttrAkazeMirrorCentroid}, "); // 6
             sb.Append($"{AppConsts.AttrAkazePairs}, "); // 7
 
             sb.Append($"{AppConsts.AttrLastChanged}, "); // 8
@@ -51,11 +53,9 @@ namespace ImageBank
                             var width = reader.GetInt32(2);
                             var height = reader.GetInt32(3);
                             var size = reader.GetInt32(4);
-
-                            var akazedescriptorsblob = (byte[])reader[5];
-                            var akazedescriptors = ImageHelper.ArrayToMat(akazedescriptorsblob);
-                            var akazemirrordescriptorsblob = (byte[])reader[6];
-                            var akazemirrordescriptors = ImageHelper.ArrayToMat(akazemirrordescriptorsblob);
+                            
+                            var akazecentroid = (byte[])reader[5];
+                            var akazemirrorcentroid = (byte[])reader[6];
                             var akazepairs = reader.GetInt32(7);
 
                             var lastchanged = reader.GetDateTime(8);
@@ -72,8 +72,8 @@ namespace ImageBank
                                 height: height,
                                 size: size,
 
-                                akazedescriptors: akazedescriptors,
-                                akazemirrordescriptors: akazemirrordescriptors,
+                                akazecentroid: akazecentroid,
+                                akazemirrorcentroid: akazemirrorcentroid,
                                 akazepairs: akazepairs,
 
                                 lastchanged: lastchanged,
@@ -116,44 +116,58 @@ namespace ImageBank
                     }
                 }
 
+                progress.Report("Database loaded");
 
-                progress.Report("Loading results...");
-
-                sb.Length = 0;
-                sb.Append("SELECT ");
-
-                sb.Append($"{AppConsts.AttrIdX}, "); // 0
-                sb.Append($"{AppConsts.AttrIdY}, "); // 1
-                sb.Append($"{AppConsts.AttrAkazePairs} "); // 2
-
-                sb.Append($"FROM {AppConsts.TableResults}");
-                sqltext = sb.ToString();
-                lock (_sqllock) {
-#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
-                    using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
-                        using (var reader = sqlCommand.ExecuteReader()) {
-                            var dtn = DateTime.Now;
-                            while (reader.Read()) {
-                                var idx = reader.GetInt32(0);
-                                var idy = reader.GetInt32(1);
-                                var akazepairs = reader.GetInt32(2);
-
-                                AddResultToMemory(idx, idy, akazepairs);
-
-                                if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
-                                    dtn = DateTime.Now;
-                                    progress.Report($"Loading results ({_resultList.Count})...");
-                                }
+                /*
+                lock (_imgList) {
+                    foreach (var img in _imgList.Select(e => e.Value).ToArray()) {
+                        if (img.Id < 9500) {
+                            if (img.Counter == 0) {
+                                img.LastView = DateTime.Now;
+                                img.Counter = 1;
                             }
+                            
                         }
                     }
-
-
                 }
-
-                progress.Report("Database loaded");
+                */
             }
+        }
+
+        public static Mat LoadDescriptors(string field, int id)
+        {
+            var sb = new StringBuilder();
+            sb.Append("SELECT ");
+            sb.Append($"{field} ");
+            sb.Append($"FROM {AppConsts.TableImages} ");
+            sb.Append($"WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}");
+            var sqltext = sb.ToString();
+            lock (_sqllock) {
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
+                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+                    using (var reader = sqlCommand.ExecuteReader()) {
+                        while (reader.Read()) {
+                            var akazedescriptorsblob = (byte[])reader[0];
+                            var akazedescriptors = ImageHelper.ArrayToMat(akazedescriptorsblob);
+                            return akazedescriptors;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static Mat LoadAkazeDescriptors(int id)
+        {
+            return LoadDescriptors(AppConsts.AttrAkazeDescriptorsBlob, id);
+        }
+
+        public static Mat LoadAkazeMirrorDescriptors(int id)
+        {
+            return LoadDescriptors(AppConsts.AttrAkazeMirrorDescriptorsBlob, id);
         }
     }
 }

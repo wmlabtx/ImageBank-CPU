@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Find(int idX, int idY, IProgress<string> progress)
+        public static void Find(int idX, int idY, IProgress<string> progress)
         {
             Img imgX;
             var sb = new StringBuilder();
@@ -20,7 +20,6 @@ namespace ImageBank
 
                     if (idX == 0) {
                         imgX = null;
-                        var tdX = DateTime.MaxValue;
                         foreach (var e in _imgList) {
                             var eX = e.Value;
                             if (eX.Hash.Equals(eX.NextHash)) {
@@ -31,48 +30,17 @@ namespace ImageBank
                                 continue;
                             }
 
-                            if (eX.LastView.Year == 2020) {
-                                imgX = eX;
-                                idX = eX.Id;
-                                idY = eY.Id;
-                                break;
-                            }
-
-                            var td = eX.LastView;
-                            if (td < eY.LastView) {
-                                td = eY.LastView;
-                            }
-
-                            if (imgX == null || td < tdX) {
-                                imgX = eX;
-                                idX = eX.Id;
-                                idY = eY.Id;
-                                tdX = td;
-                            }
-
-                            /*
-                            if (eX.LastView.Year == 2020) {
-                                imgX = eX;
-                                idX = imgX.Id;
-                                idY = eY.Id;
-                                break;
-                            }
-
-                            if (eX.LastChanged < e.Value.LastView) {
+                            if (eX.LastChanged < eX.LastView) {
                                 continue;
                             }
 
-                            if (imgX != null) {
-                                if (imgX.AkazePairs >= eX.AkazePairs) {
-                                    continue;
-                                }
+                            if (imgX == null ||
+                                imgX.Counter > eX.Counter ||
+                                (imgX.Counter == eX.Counter && imgX.AkazePairs < eX.AkazePairs)) {
+                                imgX = eX;
+                                idX = eX.Id;
+                                idY = eY.Id;
                             }
-
-                            imgX = eX;
-                            var imgY = eY;
-                            idX = imgX.Id;
-                            idY = imgY.Id;
-                            */
                         }
                     }
 
