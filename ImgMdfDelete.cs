@@ -17,7 +17,6 @@
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
                             e.Value.AkazePairs = 0;
-                            e.Value.Counter = 0;
                         }
                     }
                 }

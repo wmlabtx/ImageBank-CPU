@@ -10,40 +10,17 @@ namespace ImageBankTest
     public class ImageHelperTests
     {
         [TestMethod()]
-        public void ComputeBlobTest()
+        public void ComputeKazeTest()
         {
             var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image, out var a1, out var am1);
-            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
-            var cm1 = ImageHelper.AkazeDescriptorsToCentoid(am1);
-            var array = ImageHelper.ArrayFromMat(a1);
-            var a2 = ImageHelper.ArrayToMat(array);
-            var ob1 = a1.At<byte>(1, 2);
-            var ob2 = a2.At<byte>(1, 2);
-            Assert.AreEqual(ob1, ob2);
+            ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var b1, out var bm1);
         }
 
         [TestMethod()]
-        public void CompareBlobTest()
+        public void GetKazeBulkTest()
         {
             var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1);
-            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
-
-            var image2 = Image.FromFile("org_nologo.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
-            var c2 = ImageHelper.AkazeDescriptorsToCentoid(a2);
-
-            var p = ImageHelper.ComputeAkazePairs(a1, a2);
-            var cd = ImageHelper.ComputeCentoidDistance(c1, c2);
-        }
-
-        [TestMethod()]
-        public void GetDistanceBulkTest()
-        {
-            var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeAkazeDescriptors((Bitmap)image1, out var a1, out var m);
-            var c1 = ImageHelper.AkazeDescriptorsToCentoid(a1);
+            ImageHelper.ComputeKazeDescriptors((Bitmap)image1, out var b1, out var bm1);
 
             var files = new[] {
                 "org_png.jpg",
@@ -66,16 +43,15 @@ namespace ImageBankTest
             foreach (var filename in files)
             {
                 var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeAkazeDescriptors((Bitmap)image2, out var a2);
-                var c2 = ImageHelper.AkazeDescriptorsToCentoid(a2);
+                ImageHelper.ComputeKazeDescriptors((Bitmap)image2, out var b2, out var bm2);
 
-                var p = ImageHelper.ComputeAkazePairs(a1, a2);
-                var cd = ImageHelper.ComputeCentoidDistance(c1, c2);
+                var m = ImageHelper.ComputeKazeMatch(b1, b2, bm2);
+
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: p={p}, cd={cd}");
+                sb.Append($"{filename}: m={m}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

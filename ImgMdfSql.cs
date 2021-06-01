@@ -49,7 +49,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(Img img, Mat akazedescriptors, Mat akazemirrordescriptors)
+        private static void SqlAdd(Img img)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -63,8 +63,6 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrHeight}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
 
-                    sb.Append($"{AppConsts.AttrAkazeDescriptorsBlob}, ");
-                    sb.Append($"{AppConsts.AttrAkazeMirrorDescriptorsBlob}, ");
                     sb.Append($"{AppConsts.AttrAkazeCentroid}, ");
                     sb.Append($"{AppConsts.AttrAkazeMirrorCentroid}, ");
                     sb.Append($"{AppConsts.AttrAkazePairs}, ");
@@ -82,8 +80,6 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrHeight}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
 
-                    sb.Append($"@{AppConsts.AttrAkazeDescriptorsBlob}, ");
-                    sb.Append($"@{AppConsts.AttrAkazeMirrorDescriptorsBlob}, ");
                     sb.Append($"@{AppConsts.AttrAkazeCentroid}, ");
                     sb.Append($"@{AppConsts.AttrAkazeMirrorCentroid}, ");
                     sb.Append($"@{AppConsts.AttrAkazePairs}, ");
@@ -104,14 +100,8 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
 
-                    var akazedescriptorsblob = ImageHelper.ArrayFromMat(akazedescriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeDescriptorsBlob}", akazedescriptorsblob);
-                    var akazemirrordescriptorsblob = ImageHelper.ArrayFromMat(akazemirrordescriptors);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeMirrorDescriptorsBlob}", akazemirrordescriptorsblob);
-
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeCentroid}", img.AkazeCentroid);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazeMirrorCentroid}", img.AkazeMirrorCentroid);
-
 
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAkazePairs}", img.AkazePairs);
 

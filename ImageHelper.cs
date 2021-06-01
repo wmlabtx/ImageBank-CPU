@@ -1,6 +1,5 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
-using OpenCvSharp.ImgHash;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,9 +14,28 @@ namespace ImageBank
     public static class ImageHelper
     {
         const int MAXDIM = 1024;
-        private static readonly AKAZE _akaze = AKAZE.Create();
-        private static readonly ORB _orb = ORB.Create();
-        private static readonly BFMatcher _bfmatch = new BFMatcher(NormTypes.Hamming);
+        const int KAZESIZE = 64;
+        const int MAXCLUSTERS = 256;
+
+        private static readonly KAZE _kaze;
+        private static readonly BFMatcher _bfmatch;
+        private static readonly BOWImgDescriptorExtractor _bow;
+        private static readonly Mat _clusters;
+
+        static ImageHelper()
+        {
+            _kaze = KAZE.Create();
+            _bfmatch = new BFMatcher(NormTypes.L2);
+            _bow = new BOWImgDescriptorExtractor(_kaze, _bfmatch);
+            var clustersfile = Path.Combine(AppConsts.PathRoot, AppConsts.FileKazeClusters);
+
+            var data = File.ReadAllBytes(clustersfile);
+            var fdata = new float[data.Length / sizeof(float)];
+            Buffer.BlockCopy(data, 0, fdata, 0, data.Length);
+            _clusters = new Mat(MAXCLUSTERS, KAZESIZE, MatType.CV_32F);
+            _clusters.SetArray(fdata);
+            _bow.SetVocabulary(_clusters);
+        }
 
         private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
@@ -224,139 +242,78 @@ namespace ImageBank
             return true;
         }
 
-        public static ulong[] ArrayTo64(byte[] array)
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes)
         {
-            var buffer = new ulong[array.Length / sizeof(ulong)];
-            Buffer.BlockCopy(array, 0, buffer, 0, array.Length);
-            return buffer;
-        }
-
-        public static byte[] ArrayFrom64(ulong[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(ulong)];
-            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        public static void ComputeAkazeDescriptors(Bitmap bitmap, out Mat adescriptors)
-        {
-            adescriptors = null;
+            indexes = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat()) {
                 var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
                 Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
                 using (var mat = new Mat()) {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    var keypoints = _akaze.Detect(mat);
+                    var keypoints = _kaze.Detect(mat);
                     if (keypoints.Length > 0) {
-                        var akeypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
-                        adescriptors = new Mat();
-                        _akaze.Compute(mat, ref akeypoints, adescriptors);
-                        if (adescriptors.Rows > 0 && keypoints.Length > 0) {
-                            using (var matkeypoints = new Mat()) {
-                                Cv2.DrawKeypoints(mat, akeypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                                matkeypoints.SaveImage("akeypoints.png");
+                        keypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
+                        using (var matdescriptors = new Mat())
+                        using (var matbow = new Mat()) {
+                            _bow.Compute(mat, ref keypoints, matbow, out var idx, matdescriptors);
+                            indexes = new byte[keypoints.Length];
+                            for (var i = 0; i < idx.Length; i++) {
+                                for (var j = 0; j < idx[i].Length; j++) {
+                                    indexes[idx[i][j]] = (byte)i;
+                                }
                             }
+
+                            Array.Sort(indexes);
                         }
                     }
                 }
             }
         }
 
-        public static void ComputeAkazeDescriptors(Bitmap bitmap, out Mat adescriptors, out Mat amdescriptors)
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes, out byte[] mindexes)
         {
-            ComputeAkazeDescriptors(bitmap, out adescriptors);
+            ComputeKazeDescriptors(bitmap, out indexes);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                ComputeAkazeDescriptors(brft, out amdescriptors);
+                ComputeKazeDescriptors(brft, out mindexes);
             }
         }
 
-        public static int ComputeAkazePairs(Mat a1, Mat a2)
+        public static int ComputeKazeMatch(byte[] cx, byte[] cy)
         {
-            var matches = _bfmatch.KnnMatch(a1, a2, 2);
-            using (var mask = new Mat(matches.Length, 1, MatType.CV_8U)) {
-                mask.SetTo(new Scalar(255));
-                int nonZero = Cv2.CountNonZero(mask);
-                VoteForUniqueness(matches, mask);
-                nonZero = Cv2.CountNonZero(mask);
-                if (nonZero <= 0) {
-                    return 0;
+            var match = 0;
+            var i = 0;
+            var j = 0;
+            while (i < cx.Length && j < cy.Length) {
+                if (cx[i] == cy[j]) {
+                    match++;
+                    i++;
+                    j++;
                 }
-
-                return nonZero;
-            }
-        }
-
-        public static byte[] AkazeDescriptorsToCentoid(Mat adescriptors)
-        {
-            var buffer = ArrayFromMat(adescriptors);
-            var fc = new int[488];
-            var counter = buffer.Length / 61;
-            for (var i = 0; i < counter; i++) {
-                var off1 = i * 61;
-                for (var b = 0; b < 488; b++) {
-                    var off2 = off1 + (b >> 3);
-                    var mask = 1 << (b & 0x7);
-                    if ((buffer[off2] & mask) != 0) {
-                        fc[b]++;
-                    }
-                }
-            }
-
-            var centroid = new byte[488];
-            for (var i = 0; i < 488; i++) {
-                centroid[i] = (byte)(fc[i] * 255f / counter);
-            }
-
-            return centroid;
-        }
-
-        public static ulong ComputeCentoidDistance(byte[] cx, byte[] cy)
-        {
-            var sum = 0UL;
-            for (var i = 0; i < 488; i++) {
-                var delta = cx[i] - cy[i];
-                sum += (ulong)(delta * delta);
-            }
-
-            return sum;
-        }
-
-        public static byte[] ArrayFromMat(Mat mat)
-        {
-            mat.GetArray(out byte[] array);
-            return array;
-        }
-
-        public static Mat ArrayToMat(byte[] array)
-        {
-            var rows = array.Length / AppConsts.DescriptorSize;
-            var cols = AppConsts.DescriptorSize;
-            var mat = new Mat(rows, cols, MatType.CV_8U);
-            mat.SetArray(array);
-            return mat;
-        }
-
-        private static void VoteForUniqueness(DMatch[][] matches, Mat mask, float uniqnessThreshold = 0.80f)
-        {
-            var maskData = new byte[matches.Length];
-            var maskHandle = GCHandle.Alloc(maskData, GCHandleType.Pinned);
-            using (var m = new Mat(matches.Length, 1, MatType.CV_8U, maskHandle.AddrOfPinnedObject())) {
-                mask.CopyTo(m);
-                for (int i = 0; i < matches.Length; i++) {
-                    if (matches[i].Length >= 2 && (matches[i][0].Distance / matches[i][1].Distance) <= uniqnessThreshold) {
-                        maskData[i] = 255;
+                else {
+                    if (cx[i] < cy[j]) {
+                        i++;
                     }
                     else {
-                        maskData[i] = 0;
+                        j++;
                     }
                 }
-
-                m.CopyTo(mask);
             }
 
-            maskHandle.Free();
+            return match;
+        }
+
+        public static int ComputeKazeMatch(byte[] x, byte[] y, byte[] ym)
+        {
+            if (x == null || y == null || ym == null) {
+                return 0;
+            }
+
+            var m1 = ComputeKazeMatch(x, y);
+            var m2 = ComputeKazeMatch(x, ym);
+            var m = Math.Max(m1, m2);
+            return m;
         }
     }
 }

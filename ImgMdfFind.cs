@@ -20,33 +20,36 @@ namespace ImageBank
 
                     if (idX == 0) {
                         imgX = null;
-                        foreach (var e in _imgList) {
-                            var eX = e.Value;
-                            if (eX.Hash.Equals(eX.NextHash)) {
-                                continue;
-                            }
+                        var valid = _imgList
+                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash))
+                            .Select(e => e.Value)
+                            .ToArray();
 
-                            if (!_hashList.TryGetValue(eX.NextHash, out var eY)) {
-                                continue;
-                            }
+                        if (valid.Length == 0) {
+                            progress.Report("No images to view");
+                            return;
+                        }
 
-                            if (eX.LastChanged < eX.LastView) {
-                                continue;
+                        var scope = valid.Where(e => e.LastView.Year <= 2020).ToArray();
+                        if (scope.Length > 0) {
+                            imgX = scope.OrderByDescending(e => e.AkazePairs).FirstOrDefault();
+                        }
+                        else {
+                            scope = valid.Where(e => e.LastChanged >= e.LastView).ToArray();
+                            if (scope.Length > 0) {
+                                imgX = scope.OrderByDescending(e => e.AkazePairs).FirstOrDefault();
                             }
-
-                            if (imgX == null ||
-                                imgX.Counter > eX.Counter ||
-                                (imgX.Counter == eX.Counter && imgX.AkazePairs < eX.AkazePairs)) {
-                                imgX = eX;
-                                idX = eX.Id;
-                                idY = eY.Id;
+                            else {
+                                imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
                             }
                         }
-                    }
 
-                    if (idX == 0) {
-                        progress.Report("No images to view");
-                        return;
+                        if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
+                            continue;
+                        }
+
+                        idX = imgX.Id;
+                        idY = imgY.Id;
                     }
 
                     AppVars.ImgPanel[0] = GetImgPanel(idX);

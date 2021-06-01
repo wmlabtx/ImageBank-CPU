@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void Import(string path, int maxadd)
+        public static void Import(string path, int maxadd)
         { 
             AppVars.SuspendEvent.Reset();
 
@@ -75,7 +75,7 @@ namespace ImageBank
 
                 lock (_imglock) {
                     var lastchanged = DateTime.Now;
-                    var lastview = new DateTime(2020, 1, 1);
+                    var lastview = GetMinLastView();
                     var lastcheck = GetMinLastCheck();
                     var hash = Helper.ComputeHash(imagedata);
 
@@ -107,16 +107,13 @@ namespace ImageBank
                                 nexthash: imgfound.NextHash,
                                 counter: imgfound.Counter);
 
-                            var akazedescriptorsfound = LoadAkazeDescriptors(imgfound.Id);
-                            var akazemirrordescriptorsfound = LoadAkazeMirrorDescriptors(imgfound.Id);
-
                             var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
                             Helper.WriteData(imgreplace.FileName, imagedata);
                             File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
                             Helper.DeleteToRecycleBin(filename);
 
                             Delete(imgfound.Id);
-                            Add(imgreplace, akazedescriptorsfound, akazemirrordescriptorsfound);
+                            Add(imgreplace);
                             bitmap.Dispose();
 
                             moved++;
@@ -125,16 +122,13 @@ namespace ImageBank
                         continue;
                     }
 
-                    ImageHelper.ComputeAkazeDescriptors(bitmap, out var akazedescriptors, out var akazemirrordescriptors);
-                    if (akazedescriptors == null || akazedescriptors.Rows == 0) {
+                    ImageHelper.ComputeKazeDescriptors(bitmap, out var indexes, out var mindexes);
+                    if (indexes == null || indexes.Length == 0) {
                         ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {shortfilename}: {message}");
                         bad++;
                         File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                         continue;
                     }
-
-                    var akazecentroid = ImageHelper.AkazeDescriptorsToCentoid(akazedescriptors);
-                    var akazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(akazemirrordescriptors);
 
                     var id = AllocateId();
                     var img = new Img(
@@ -145,8 +139,8 @@ namespace ImageBank
                         height: bitmap.Height,
                         size: imagedata.Length,
 
-                        akazecentroid: akazecentroid,
-                        akazemirrorcentroid: akazemirrorcentroid,
+                        akazecentroid: indexes,
+                        akazemirrorcentroid: mindexes,
                         akazepairs: 0,
 
                         lastchanged: lastchanged,
@@ -167,7 +161,7 @@ namespace ImageBank
                         Helper.DeleteToRecycleBin(filename);
                     }
 
-                    Add(img, akazedescriptors, akazemirrordescriptors);
+                    Add(img);
                     bitmap.Dispose();
 
                     if (_imgList.Count >= AppConsts.MaxImages) {

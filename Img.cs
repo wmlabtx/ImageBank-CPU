@@ -136,14 +136,14 @@ namespace ImageBank
                 throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
             }
 
-            if (akazecentroid == null || akazecentroid.Length != 488) {
-                throw new ArgumentException("akazecentroid == null || akazecentroid.Length != 488");
+            if (akazecentroid == null || akazecentroid.Length == 0) {
+                throw new ArgumentException("akazecentroid == null || akazecentroid.Length == 0");
             }
 
             AkazeCentroid = akazecentroid;
 
-            if (akazemirrorcentroid == null || akazemirrorcentroid.Length != 488) {
-                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length != 488");
+            if (akazemirrorcentroid == null || akazemirrorcentroid.Length == 0) {
+                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length == 0");
             }
 
             AkazeMirrorCentroid = akazemirrorcentroid;

@@ -32,9 +32,7 @@ namespace ImageBank
                     }
                     else
                     {
-                        ImageHelper.ComputeAkazeDescriptors(bitmap, out var rakazedescriptors, out var rakazemirrordescriptors);
-                        var rakazecentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazedescriptors);
-                        var rakazemirrorcentroid = ImageHelper.AkazeDescriptorsToCentoid(rakazemirrordescriptors);
+                        ImageHelper.ComputeKazeDescriptors(bitmap, out var rindexes, out var rmindexes);
                         var minlc = GetMinLastCheck();
                         var rid = AllocateId();
                         var rimg = new Img(
@@ -45,8 +43,8 @@ namespace ImageBank
                             height: bitmap.Height,
                             size: rimagedata.Length,
 
-                            akazecentroid: rakazecentroid,
-                            akazemirrorcentroid: rakazemirrorcentroid,
+                            akazecentroid: rindexes,
+                            akazemirrorcentroid: rmindexes,
                             akazepairs: 0,
 
                             lastchanged: img.LastChanged,
@@ -57,7 +55,7 @@ namespace ImageBank
                             counter: 0);
 
                         Delete(img.Id);
-                        Add(rimg, rakazedescriptors, rakazemirrordescriptors);
+                        Add(rimg);
 
                         Helper.WriteData(rimg.FileName, rimagedata);
                     }

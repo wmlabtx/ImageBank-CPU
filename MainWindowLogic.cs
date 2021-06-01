@@ -52,7 +52,7 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             DisableElements();
-            await Task.Run(() => { AppVars.Collection.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
@@ -94,10 +94,10 @@ namespace ImageBank
         {
             DisableElements();
             if (!path.Equals(AppConsts.PathHp, StringComparison.OrdinalIgnoreCase)) {
-                await Task.Run(() => { AppVars.Collection.Import(path, maxadd); }).ConfigureAwait(true);
+                await Task.Run(() => { ImgMdf.Import(path, maxadd); }).ConfigureAwait(true);
             }
 
-            await Task.Run(() => { AppVars.Collection.Import(AppConsts.PathHp, maxadd); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Import(AppConsts.PathHp, maxadd); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -210,19 +210,6 @@ namespace ImageBank
                 pLabels[index].Background = scb;
             }
 
-            if (AppVars.ImgPanel[0].Img.AkazePairs >= AppConsts.MaxDescriptors / 2) {
-                var dimX = AppVars.ImgPanel[0].Bitmap.Width * AppVars.ImgPanel[0].Bitmap.Height;
-                var dimY = AppVars.ImgPanel[1].Bitmap.Width * AppVars.ImgPanel[1].Bitmap.Height;
-                if (dimX == dimY) {
-                    if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
-                        pLabels[1].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                    }
-                    else {
-                        pLabels[0].Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
-                    }
-                }
-            }
-
             RedrawCanvas();
         }
 
@@ -292,6 +279,13 @@ namespace ImageBank
             Rotate(RotateFlipType.Rotate270FlipNone);
         }
 
+        private async Task ClusteringClickAsync()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.Clustering(AppConsts.PathHp, 1000); }).ConfigureAwait(true);
+            EnableElements();
+        }
+
         private void WindowClosing()
         {
             DisableElements();
@@ -308,7 +302,7 @@ namespace ImageBank
         {
             while (!_backgroundWorker.CancellationPending) {
                 ImgMdf.Compute(_backgroundWorker);
-                Thread.Sleep(1000);
+                Thread.Sleep(100);
             }
 
             args.Cancel = true;

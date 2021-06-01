@@ -114,6 +114,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ImageHelper.cs" />
+    <Compile Include="ImgMdfClusters.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

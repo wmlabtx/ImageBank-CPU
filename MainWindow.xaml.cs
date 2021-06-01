@@ -96,5 +96,10 @@ namespace ImageBank
         {
             Close();
         }
+
+        private async System.Threading.Tasks.Task ClusteringClickAsync(object sender, RoutedEventArgs e)
+        {
+            await ClusteringClickAsync();
+        }
     }
 }

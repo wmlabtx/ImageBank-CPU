@@ -1,14 +1,13 @@
 ﻿using OpenCvSharp;
 using System;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public void LoadImgs(IProgress<string> progress)
+        public static void LoadImgs(IProgress<string> progress)
         {
             progress.Report("Loading model...");
 
@@ -132,42 +131,6 @@ namespace ImageBank
                 }
                 */
             }
-        }
-
-        public static Mat LoadDescriptors(string field, int id)
-        {
-            var sb = new StringBuilder();
-            sb.Append("SELECT ");
-            sb.Append($"{field} ");
-            sb.Append($"FROM {AppConsts.TableImages} ");
-            sb.Append($"WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}");
-            var sqltext = sb.ToString();
-            lock (_sqllock) {
-#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
-#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        while (reader.Read()) {
-                            var akazedescriptorsblob = (byte[])reader[0];
-                            var akazedescriptors = ImageHelper.ArrayToMat(akazedescriptorsblob);
-                            return akazedescriptors;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        public static Mat LoadAkazeDescriptors(int id)
-        {
-            return LoadDescriptors(AppConsts.AttrAkazeDescriptorsBlob, id);
-        }
-
-        public static Mat LoadAkazeMirrorDescriptors(int id)
-        {
-            return LoadDescriptors(AppConsts.AttrAkazeMirrorDescriptorsBlob, id);
         }
     }
 }
