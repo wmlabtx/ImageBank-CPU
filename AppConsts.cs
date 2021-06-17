@@ -2,16 +2,14 @@
 {
     public static class AppConsts
     {
-        public const string PathRoot = @"D:\Users\Murad\Documents\Sdb\";
-        public const string FileDatabase = PathRoot + @"Db\images.mdf";
-        public const string FileKazeClusters = PathRoot + @"Db\kazeclusters.dat";
-
-        public const string PathHp = PathRoot + @"Hp";
-        public const string PathRw = PathRoot + @"Rw";
-        public const string FolderDefault = "root";
+        public const string PathRw = @"D:\Users\Murad\Documents\Sdb\Rw";
+        public const string FileDatabase = @"M:\Db\images.mdf";
+        public const string FileKazeClusters = @"M:\Db\kazeclusters.dat";
+        public const string PathHp = @"M:\Hp";
+        public const string PathMz = @"M:\Mz";
 
         public const int MaxImages = 100000;
-        public const int MaxAdd = 100000;
+        public const int MaxAdd = 10000001;
 
         public const int MaxDescriptors = 1000;
         public const int DescriptorSize = 61;
@@ -30,25 +28,18 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
-        public const string AttrId = "Id";
-        public const string AttrFolder = "Folder";
+        public const string AttrFileName = "FileName";
         public const string AttrHash = "Hash";
-
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
-
-        public const string AttrAkazeCentroid = "AkazeCentroid";
-        public const string AttrAkazeMirrorCentroid = "AkazeMirrorCentroid";
-        public const string AttrAkazePairs = "AkazePairs";
-
-        public const string AttrLastChanged = "LastChanged";
-        public const string AttrLastView = "LastView";
-        public const string AttrLastCheck = "LastCheck";
+        public const string AttrKazeOne = "KazeOne";
+        public const string AttrKazeTwo = "KazeTwo";
         public const string AttrNextHash = "NextHash";
-        
+        public const string AttrKazeMatch = "KazeMatch";
+        public const string AttrLastChanged = "LastChanged";
+        public const string AttrLastCheck = "LastCheck";
+        public const string AttrLastView = "LastView";
         public const string AttrCounter = "Counter";
-        
-        public const string TableVars = "Vars";
     }
 }

@@ -17,6 +17,8 @@ namespace ImageBank
 {
     public static class Helper
     {
+        private static RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
+
         #region DeleteToRecycleBin
 
         public static void DeleteToRecycleBin(string filename)
@@ -168,43 +170,14 @@ namespace ImageBank
 
         #region FileData
 
-        public static byte[] ReadData(string filename)
-        {
-            try
-            {
-                var encdata = File.ReadAllBytes(filename);
-                var password = Path.GetFileNameWithoutExtension(filename);
-                var imgdata = Decrypt(encdata, password);
-                return imgdata;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                Trace.WriteLine(ex);
-                return null;
-            }
-            catch (FileNotFoundException ex)
-            {
-                Trace.WriteLine(ex);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex);
-                throw;
-            }
-        }
-
         public static void WriteData(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
-            if (!Directory.Exists(directory))
-            {
+            if (!Directory.Exists(directory)) {
                 Directory.CreateDirectory(directory);
             }
 
-            var password = Path.GetFileNameWithoutExtension(filename);
-            var encdata = Encrypt(imgdata, password);
-            File.WriteAllBytes(filename, encdata);
+            File.WriteAllBytes(filename, imgdata);
         }
 
         #endregion
@@ -315,6 +288,31 @@ namespace ImageBank
             }
 
             return decryptedBytes;
+        }
+
+        #endregion
+
+        #region Misc
+
+        public static string GetHpSubFolder()
+        {
+            var buffer = new byte[8];
+            _rng.GetBytes(buffer);
+            var u = BitConverter.ToUInt64(buffer, 0);
+            var folder = (int)((u % 50) + 1);
+            return $"{folder:D2}";
+        }
+
+        public static string GetRandomName()
+        {
+            var buffer = new byte[4];
+            _rng.GetBytes(buffer);
+            var sb = new StringBuilder();
+            for (var i = 0; i < buffer.Length; i++) {
+                sb.Append(buffer[i].ToString("x2"));
+            }
+
+            return sb.ToString();
         }
 
         #endregion

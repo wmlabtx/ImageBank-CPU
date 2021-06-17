@@ -7,17 +7,12 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private static object _sqllock = new object();
         private static SqlConnection _sqlConnection;
-
-        // ReSharper disable once FieldCanBeMadeReadOnly.Local
         private static object _imglock = new object();
-        private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
-        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
-
+        private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
+        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly Random _random = new Random();
-        private static int _id;
 
         public ImgMdf()
         {
@@ -45,6 +40,7 @@ namespace ImageBank
                     .AddSeconds(-1);
             }
         }
+
         public static DateTime GetMinLastCheck()
         {
             lock (_imglock) {
@@ -52,13 +48,6 @@ namespace ImageBank
                     .Min(e => e.Value.LastCheck)
                     .AddSeconds(-1);
             }
-        }
-
-        private static int AllocateId()
-        {
-            _id++;
-            SqlUpdateVar(AppConsts.AttrId, _id);
-            return _id;
         }
     }
 }

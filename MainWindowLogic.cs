@@ -53,7 +53,7 @@ namespace ImageBank
 
             DisableElements();
             await Task.Run(() => { ImgMdf.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(null, null, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
             EnableElements();
@@ -80,25 +80,25 @@ namespace ImageBank
             RedrawCanvas();
         }
 
-        private void ImportRwClick()
+        private void ImportClick()
         {
-            Import(AppConsts.PathRw, AppConsts.MaxAdd);
+            Import();
         }
 
-        private void ImportHpClick()
-        {
-            Import($"{AppConsts.PathHp}", AppConsts.MaxImages);
-        }
-
-        private async void Import(string path, int maxadd)
+        private async void Import()
         {
             DisableElements();
-            if (!path.Equals(AppConsts.PathHp, StringComparison.OrdinalIgnoreCase)) {
-                await Task.Run(() => { ImgMdf.Import(path, maxadd); }).ConfigureAwait(true);
-            }
+            await Task.Run(() => { ImgMdf.Import(AppConsts.MaxAdd); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
 
-            await Task.Run(() => { ImgMdf.Import(AppConsts.PathHp, maxadd); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+        private async void DeleteFolderClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.DeleteFolder(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -116,8 +116,9 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { ImgMdf.Confirm(0); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.UpdateCounter(0); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.UpdateLastView(0); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -159,14 +160,14 @@ namespace ImageBank
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
             for (var index = 0; index < 2; index++) {
-                var id = AppVars.ImgPanel[index].Img.Id;
-                pBoxes[index].Tag = id;
-                pLabels[index].Tag = id;
+                var filename = AppVars.ImgPanel[index].Img.FileName;
+                pBoxes[index].Tag = filename;
+                pLabels[index].Tag = filename;
 
                 pBoxes[index].Source = Helper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Folder:D2}\\{AppVars.ImgPanel[index].Img.Id:D6}");
+                sb.Append(filename);
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" ({AppVars.ImgPanel[index].Img.Counter})");
@@ -185,26 +186,29 @@ namespace ImageBank
                 var scb = System.Windows.Media.Brushes.White;
 
                 if (index == 1) {
-                    if (AppVars.ImgPanel[0].Img.Id == AppVars.ImgPanel[1].Img.Id) {
+                    if (AppVars.ImgPanel[0].Img.FileName.Equals(AppVars.ImgPanel[1].Img.FileName, StringComparison.OrdinalIgnoreCase)) {
                         pLabels[0].Background = System.Windows.Media.Brushes.LightGray;
                         pLabels[1].Background = System.Windows.Media.Brushes.LightGray;
                     }
                 }
 
-                if (AppVars.ImgPanel[index].Img.LastView.Year > 2020) {
-                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 204));
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                    scb = System.Windows.Media.Brushes.Bisque;
                 }
 
-                if ((AppVars.ImgPanel[0].Img.AkazePairs >= AppConsts.MaxDescriptors / 2) &&
-                    AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
+                if (AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 2160 ||
-                    (AppVars.ImgPanel[index].Bitmap.Width == 2180 ||
+                    AppVars.ImgPanel[index].Bitmap.Width == 2180 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 2180 ||
                     AppVars.ImgPanel[index].Bitmap.Width == 2880 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 2880 ||
                     AppVars.ImgPanel[index].Bitmap.Width == 3110 ||
-                    AppVars.ImgPanel[index].Bitmap.Height == 3110)) {
-                    scb = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 204, 204));
+                    AppVars.ImgPanel[index].Bitmap.Height == 3110) {
+                    scb = System.Windows.Media.Brushes.Pink;
+                }
+
+                if (AppVars.ImgPanel[index].Img.FileName.StartsWith(AppConsts.PathMz, StringComparison.OrdinalIgnoreCase)) {
+                    scb = System.Windows.Media.Brushes.LightGreen;
                 }
 
                 pLabels[index].Background = scb;
@@ -249,8 +253,12 @@ namespace ImageBank
         private async void ImgPanelDelete(int index)
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Id); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.FileName); }).ConfigureAwait(true);
+            if (index == 1) {
+                await Task.Run(() => { ImgMdf.UpdateLastView(0); }).ConfigureAwait(true);
+            }
+
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -258,8 +266,8 @@ namespace ImageBank
         private async void Rotate(RotateFlipType rft)
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, 0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.FileName, rft); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -279,11 +287,15 @@ namespace ImageBank
             Rotate(RotateFlipType.Rotate270FlipNone);
         }
 
-        private async Task ClusteringClickAsync()
+        private static Task ClusteringClickAsync()
         {
+            return null;
+
+            /*
             DisableElements();
             await Task.Run(() => { ImgMdf.Clustering(AppConsts.PathHp, 1000); }).ConfigureAwait(true);
             EnableElements();
+            */
         }
 
         private void WindowClosing()

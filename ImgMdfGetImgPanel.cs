@@ -2,21 +2,16 @@
 {
     public partial class ImgMdf
     {
-        private static ImgPanel GetImgPanel(int id)
+        private static ImgPanel GetImgPanel(string filename)
         {
             Img img;
             lock (_imglock) {
-                if (!_imgList.TryGetValue(id, out img)) {
+                if (!_imgList.TryGetValue(filename, out img)) {
                     return null;
                 }
             }
 
-            if (!ImageHelper.GetImageDataFromFile(img.FileName, 
-                out _,
-#pragma warning disable CA2000 // Dispose objects before losing scope
-                out var bitmap,
-#pragma warning restore CA2000 // Dispose objects before losing scope
-                out _)) {
+            if (!ImageHelper.GetImageDataFromFile(img.FileName, out var bitmap)) {
                 return null;
             }
 

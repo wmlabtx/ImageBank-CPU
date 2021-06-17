@@ -6,11 +6,18 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Find(int idX, int idY, IProgress<string> progress)
+        private static int _scopemode = 0;
+
+        public static void Find(string filenameX, string filenameY, IProgress<string> progress)
         {
             Img imgX;
+            _scopemode++;
+            if (_scopemode > 10) {
+                _scopemode = 0;
+            }
+
+            var path = _scopemode == 0 ? AppConsts.PathMz : AppConsts.PathHp;
             var sb = new StringBuilder();
-            var method = string.Empty;
             lock (_imglock) {
                 while (true) {
                     if (_imgList.Count < 2) {
@@ -18,10 +25,10 @@ namespace ImageBank
                         return;
                     }
 
-                    if (idX == 0) {
+                    if (filenameX == null) {
                         imgX = null;
                         var valid = _imgList
-                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash))
+                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && e.Value.FileName.StartsWith(path, StringComparison.OrdinalIgnoreCase))
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -30,60 +37,68 @@ namespace ImageBank
                             return;
                         }
 
-                        var scope = valid.Where(e => e.LastView.Year <= 2020).ToArray();
+                        var scope = valid
+                            .Where(e => e.Counter == 0)
+                            .ToArray();
+
                         if (scope.Length > 0) {
-                            imgX = scope.OrderByDescending(e => e.AkazePairs).FirstOrDefault();
+                            imgX = scope
+                                .OrderBy(e => e.Size)
+                                .FirstOrDefault();
                         }
                         else {
-                            scope = valid.Where(e => e.LastChanged >= e.LastView).ToArray();
-                            if (scope.Length > 0) {
-                                imgX = scope.OrderByDescending(e => e.AkazePairs).FirstOrDefault();
-                            }
-                            else {
-                                imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
-                            }
+                            imgX = valid
+                                .OrderBy(e => e.LastView)
+                                .FirstOrDefault();
                         }
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;
                         }
 
-                        idX = imgX.Id;
-                        idY = imgY.Id;
+                        filenameX = imgX.FileName;
+                        filenameY = imgY.FileName;
                     }
 
-                    AppVars.ImgPanel[0] = GetImgPanel(idX);
+                    AppVars.ImgPanel[0] = GetImgPanel(filenameX);
                     if (AppVars.ImgPanel[0] == null) {
-                        Delete(idX);
-                        progress.Report($"{idX} deleted");
-                        idX = 0;
+                        Delete(filenameX);
+                        progress.Report($"{filenameX} deleted");
+                        filenameX = null;
                         continue;
                     }
 
                     imgX = AppVars.ImgPanel[0].Img;
-                    AppVars.ImgPanel[1] = GetImgPanel(idY);
+                    AppVars.ImgPanel[1] = GetImgPanel(filenameY);
                     if (AppVars.ImgPanel[1] == null) {
-                        Delete(idY);
-                        progress.Report($"{idY} deleted");
-                        idX = 0;
+                        Delete(filenameY);
+                        progress.Report($"{filenameY} deleted");
+                        filenameX = null;
                         continue;
                     }
 
                     break;
                 }
 
-                var zerocounter = _imgList.Count(e => e.Value.LastView.Year == 2020);
+                var zerocounter = _imgList.Count(e => e.Value.Counter == 0);
                 if (zerocounter == 0) {
                     zerocounter = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
                 }
 
-                sb.Append($"{zerocounter}/{_imgList.Count}: ");
-                sb.Append($"{imgX.Folder:D2}\\{imgX.Id:D6}: ");
-                sb.Append($"{method} ");
-                sb.Append($"a:{imgX.AkazePairs} ");
+                var scount = _imgList.Count(e => e.Value.FileName.StartsWith(path, StringComparison.OrdinalIgnoreCase));
+                var code = _scopemode == 0 ? "mz" : "hp";
+
+                sb.Append($"{zerocounter}/{code}:{scount}/{_imgList.Count}: ");
+                sb.Append($"{imgX.FileName}: ");
+                sb.Append($"{imgX.KazeMatch} ");
             }
 
             progress.Report(sb.ToString());
+        }
+
+        public static void Find(IProgress<string> progress)
+        {
+            Find(null, null, progress);
         }
     }
 }

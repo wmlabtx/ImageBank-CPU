@@ -9,7 +9,8 @@ namespace ImageBank
     public partial class ImgMdf
     {
         public static void Clustering(string path, int maxadd)
-        {            
+        {
+            /*
             AppVars.SuspendEvent.Reset();
 
             using (var matsum = new Mat())
@@ -96,6 +97,7 @@ namespace ImageBank
             ((IProgress<string>)AppVars.Progress).Report("Clusterization done");
 
             AppVars.SuspendEvent.Set();
+            */
         }
     }
 }

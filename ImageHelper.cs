@@ -7,7 +7,6 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace ImageBank
 {
@@ -27,9 +26,7 @@ namespace ImageBank
             _kaze = KAZE.Create();
             _bfmatch = new BFMatcher(NormTypes.L2);
             _bow = new BOWImgDescriptorExtractor(_kaze, _bfmatch);
-            var clustersfile = Path.Combine(AppConsts.PathRoot, AppConsts.FileKazeClusters);
-
-            var data = File.ReadAllBytes(clustersfile);
+            var data = File.ReadAllBytes(AppConsts.FileKazeClusters);
             var fdata = new float[data.Length / sizeof(float)];
             Buffer.BlockCopy(data, 0, fdata, 0, data.Length);
             _clusters = new Mat(MAXCLUSTERS, KAZESIZE, MatType.CV_32F);
@@ -76,8 +73,7 @@ namespace ImageBank
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                using (var wrapMode = new ImageAttributes())
-                {
+                using (var wrapMode = new ImageAttributes()) {
                     wrapMode.SetWrapMode(WrapMode.TileFlipXY);
                     graphics.DrawImage(bitmap, destRect, 0, 0, bitmap.Width, bitmap.Height, GraphicsUnit.Pixel, wrapMode);
                 }
@@ -90,53 +86,54 @@ namespace ImageBank
         {
             // https://en.wikipedia.org/wiki/List_of_file_signatures
 
-            if (imagedata[0] == 0xFF && imagedata[1] == 0xD8 && imagedata[2] == 0xFF)
-            {
+            if (imagedata[0] == 0xFF && imagedata[1] == 0xD8 && imagedata[2] == 0xFF) {
                 return MagicFormat.Jpeg;
             }
 
             if (imagedata[0] == 0x52 && imagedata[1] == 0x49 && imagedata[2] == 0x46 && imagedata[3] == 0x46 &&
-                imagedata[8] == 0x57 && imagedata[9] == 0x45 && imagedata[10] == 0x42 && imagedata[11] == 0x50)
-            {
-                if (imagedata[15] == ' ')
-                {
+                imagedata[8] == 0x57 && imagedata[9] == 0x45 && imagedata[10] == 0x42 && imagedata[11] == 0x50) {
+                if (imagedata[15] == ' ') {
                     return MagicFormat.WebP;
                 }
 
-                if (imagedata[15] == 'L')
-                {
+                if (imagedata[15] == 'L') {
                     return MagicFormat.WebPLossLess;
                 }
 
                 return MagicFormat.Unknown;
             }
 
-            if (imagedata[0] == 0x89 && imagedata[1] == 0x50 && imagedata[2] == 0x4E && imagedata[3] == 0x47)
-            {
+            if (imagedata[0] == 0x89 && imagedata[1] == 0x50 && imagedata[2] == 0x4E && imagedata[3] == 0x47) {
                 return MagicFormat.Png;
             }
 
-            if (imagedata[0] == 0x42 && imagedata[1] == 0x4D)
-            {
+            if (imagedata[0] == 0x42 && imagedata[1] == 0x4D) {
                 return MagicFormat.Bmp;
             }
 
             return MagicFormat.Unknown;
         }
 
+        private static void SaveCorruptedImage(string filename, byte[] imagedata)
+        {
+            var newfilename = filename.EndsWith(AppConsts.JpgExtension, StringComparison.OrdinalIgnoreCase) ?
+                $"{filename}{AppConsts.CorruptedExtension}" :
+                $"{Path.ChangeExtension(filename, AppConsts.JpgExtension)}{AppConsts.CorruptedExtension}";
+
+            File.WriteAllBytes(newfilename, imagedata);
+            Helper.DeleteToRecycleBin(filename);
+        }
+
         public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
         {
-            try
-            {
-                using (var mat = bitmap.ToMat())
-                {
+            try {
+                using (var mat = bitmap.ToMat()) {
                     var iep = new ImageEncodingParam(ImwriteFlags.JpegQuality, 95);
                     Cv2.ImEncode(AppConsts.JpgExtension, mat, out imagedata, iep);
                     return true;
                 }
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 imagedata = null;
                 return false;
             }
@@ -144,22 +141,22 @@ namespace ImageBank
 
         public static bool GetImageDataFromFile(
             string filename,
+            out string newfilename,
             out byte[] imagedata,
             out Bitmap bitmap,
             out string message)
         {
+            newfilename = filename;
             imagedata = null;
             bitmap = null;
             message = null;
-            if (!File.Exists(filename))
-            {
+            if (!File.Exists(filename)) {
                 message = "missing file";
                 return false;
             }
 
             var extension = Path.GetExtension(filename);
-            if (string.IsNullOrEmpty(extension))
-            {
+            if (string.IsNullOrEmpty(extension)) {
                 message = "no extention";
                 return false;
             }
@@ -173,73 +170,103 @@ namespace ImageBank
                 !extension.Equals(AppConsts.WebpExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.JpgExtension, StringComparison.OrdinalIgnoreCase) &&
                 !extension.Equals(AppConsts.JpegExtension, StringComparison.OrdinalIgnoreCase)
-                )
-            {
+                ) {
                 message = "unknown extention";
                 return false;
             }
 
             imagedata = File.ReadAllBytes(filename);
-            if (imagedata == null || imagedata.Length == 0)
-            {
+            if (imagedata == null || imagedata.Length == 0) {
                 message = "imgdata == null || imgdata.Length == 0";
+                File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                 return false;
             }
 
-            if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase))
-            {
+            var imagedatachanged = false;
+
+            if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
                 imagedata = Helper.DecryptDat(imagedata, password);
-                if (imagedata == null)
-                {
+                if (imagedata == null) {
                     message = "cannot be decrypted";
+                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                     return false;
                 }
+
+                imagedatachanged = true;
             }
 
-            if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase))
-            {
+            if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
                 imagedata = Helper.Decrypt(imagedata, password);
-                if (imagedata == null)
-                {
+                if (imagedata == null) {
                     message = "cannot be decrypted";
+                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                     return false;
                 }
-            }
 
-            if (!GetBitmapFromImageData(imagedata, out bitmap))
-            {
-                message = "bad image";
-                return false;
+                imagedatachanged = true;
             }
 
             var bitmapchanged = false;
 
-            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb)
-            {
+            var magicformat = GetMagicFormat(imagedata);
+            if (magicformat != MagicFormat.Jpeg) {
+                bitmapchanged = true;
+            }
+            else {
+                if (imagedata[0] != 0xFF || imagedata[1] != 0xD8 ||
+                    imagedata[imagedata.Length - 2] != 0xFF || imagedata[imagedata.Length - 1] != 0xD9) {
+                    message = "bad jpeg";
+                    SaveCorruptedImage(filename, imagedata);
+                    return false;
+                }
+            }
+
+            if (!GetBitmapFromImageData(imagedata, out bitmap)) {
+                SaveCorruptedImage(filename, imagedata);
+                message = "bad image";
+                SaveCorruptedImage(filename, imagedata);
+                return false;
+            }
+
+            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
                 bitmap = RepixelBitmap(bitmap);
                 bitmapchanged = true;
             }
 
-            var magicformat = GetMagicFormat(imagedata);
-            if (magicformat != MagicFormat.Jpeg)
-            {
-                bitmapchanged = true;
-            }
-
-            if (bitmapchanged)
-            {
-                if (!GetImageDataFromBitmap(bitmap, out imagedata))
-                {
+            if (bitmapchanged) {
+                if (!GetImageDataFromBitmap(bitmap, out imagedata)) {
+                    SaveCorruptedImage(filename, imagedata);
                     message = "encode error";
                     return false;
                 }
 
-                File.WriteAllBytes(filename, imagedata);
+                imagedatachanged = true;
+            }
+
+            if (imagedatachanged) {
+                newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
+                var lastmodified = File.GetLastWriteTime(filename);
+                if (lastmodified > DateTime.Now) {
+                    lastmodified = DateTime.Now;
+                }
+
+                File.WriteAllBytes(newfilename, imagedata);
+                File.SetLastWriteTime(newfilename, lastmodified);
+                if (!filename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
+                    Helper.DeleteToRecycleBin(filename);
+                }
             }
 
             return true;
+        }
+
+        public static bool GetImageDataFromFile(
+            string filename,
+            out Bitmap bitmap)
+        {
+            return GetImageDataFromFile(filename, out _, out _, out bitmap, out _);
         }
 
         public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes)

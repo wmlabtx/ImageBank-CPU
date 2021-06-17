@@ -4,26 +4,33 @@ namespace ImageBank
 {
     public class Img
     {
-        public int Id { get; }
-        public int Folder { get; }
-
-        public string FileName => $"{AppConsts.PathHp}\\{Folder:D2}\\{Id:D6}{AppConsts.MzxExtension}";
-
+        public string FileName { get; }
         public string Hash { get; }
+        public int Width { get; }
+        public int Height { get; }
+        public int Size { get; }
+        public byte[] KazeOne { get; }
+        public byte[] KazeTwo { get; }
 
-        public byte[] AkazeCentroid { get; }
-        public byte[] AkazeMirrorCentroid { get; }
-
-        private int _akazepairs;
-        public int AkazePairs {
-            get => _akazepairs;
+        private string _nexthash;
+        public string NextHash {
+            get => _nexthash;
             set {
-                _akazepairs = value;
-                if (_akazepairs < 0 || _akazepairs > AppConsts.MaxDescriptors) {
-                    throw new ArgumentException("_akazepairs < 0 || _akazepairs > AppConsts.MaxDescriptors");
+                _nexthash = value;
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrNextHash, value);
+            }
+        }
+
+        private int _kazematch;
+        public int KazeMatch {
+            get => _kazematch;
+            set {
+                _kazematch = value;
+                if (_kazematch < 0 || _kazematch > AppConsts.MaxDescriptors) {
+                    throw new ArgumentException("_kazematch < 0 || _kazematch > AppConsts.MaxDescriptors");
                 }
 
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrAkazePairs, value);
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrKazeMatch, value);
             }
         }
 
@@ -32,7 +39,7 @@ namespace ImageBank
             get => _lastchanged;
             set {
                 _lastchanged = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastChanged, value);
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastChanged, value);
             }
         }
 
@@ -41,7 +48,7 @@ namespace ImageBank
             get => _lastview;
             set {
                 _lastview = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastView, value);
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastView, value);
             }
         }
 
@@ -50,16 +57,7 @@ namespace ImageBank
             get => _lastcheck;
             set {
                 _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrLastCheck, value);
-            }
-        }
-
-        private string _nexthash;
-        public string NextHash {
-            get => _nexthash;
-            set {
-                _nexthash = value;
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrNextHash, value);
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastCheck, value);
             }
         }
 
@@ -72,99 +70,61 @@ namespace ImageBank
                     throw new ArgumentException("_counter < 0");
                 }
 
-                ImgMdf.SqlUpdateProperty(Id, AppConsts.AttrCounter, value);
+                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrCounter, value);
             }
         }
 
-        public int Width { get; }
-        public int Height { get; }
-        public int Size { get; }
-
         public Img(
-            int id,
+            string filename,
             string hash,
-
             int width,
             int height,
             int size,
-
-            byte[] akazecentroid,
-            byte[] akazemirrorcentroid,
-            int akazepairs,
-
+            byte[] kazeone,
+            byte[] kazetwo,
+            string nexthash,
+            int kazematch,
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
-
-            string nexthash,
             int counter
             ) {
 
-            if (id <= 0) {
-                throw new ArgumentException("id <= 0");
-            }
-
-            Id = id;
-
-            if (string.IsNullOrEmpty(hash) || hash.Length != 32) {
-                throw new ArgumentException("string.IsNullOrEmpty(hash) || hash.Length != 32");
-            }
-
+            FileName = filename;
             Hash = hash;
-            var token  = ulong.Parse(Hash.Substring(0, 16), System.Globalization.NumberStyles.AllowHexSpecifier);
-            Folder = (int)((token % 50) + 1);
-
-            if (width <= 0) {
-                throw new ArgumentException("width <= 0");
-            }
-
             Width = width;
-
-            if (height <= 0) {
-                throw new ArgumentException("height <= 0");
-            }
-
             Height = height;
-
-            if (size <= 0) {
-                throw new ArgumentException("size <= 0");
-            }
-
             Size = size;
-            
-            if (akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors) {
-                throw new ArgumentException("akazepairs < 0 || akazepairs > AppConsts.MaxDescriptors");
-            }
+            KazeOne = kazeone;
+            KazeTwo = kazetwo;
 
-            if (akazecentroid == null || akazecentroid.Length == 0) {
-                throw new ArgumentException("akazecentroid == null || akazecentroid.Length == 0");
-            }
-
-            AkazeCentroid = akazecentroid;
-
-            if (akazemirrorcentroid == null || akazemirrorcentroid.Length == 0) {
-                throw new ArgumentException("akazemirrorcentroid == null || akazemirrorcentroid.Length == 0");
-            }
-
-            AkazeMirrorCentroid = akazemirrorcentroid;
-
-            _akazepairs = akazepairs;
-
+            _nexthash = nexthash;
+            _kazematch = kazematch;
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
-
-            if (string.IsNullOrEmpty(nexthash) || nexthash.Length != 32) {
-                throw new ArgumentException("string.IsNullOrEmpty(nexthash) || nexthash.Length != 32");
-            }
-
-            _nexthash = nexthash;
-
-            if (counter < 0) {
-                throw new ArgumentException("counter < 0");
-            }
-
             _counter = counter;
+        }
+
+        public Img(
+            string filename,
+            Img other
+            )
+        {
+            FileName = filename;
+            Hash = other.Hash;
+            Width = other.Width;
+            Height = other.Height;
+            Size = other.Size;
+            KazeOne = other.KazeOne;
+            KazeTwo = other.KazeTwo;
+
+            _nexthash = other.NextHash;
+            _kazematch = other.KazeMatch;
+            _lastchanged = other.LastChanged;
+            _lastview = other.LastView;
+            _lastcheck = other.LastCheck;
+            _counter = other.Counter;
         }
     }
 }

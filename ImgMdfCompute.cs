@@ -22,6 +22,7 @@ namespace ImageBank
 
                 foreach (var e in _imgList) {
                     var eX = e.Value;
+
                     if (eX.Hash.Equals(eX.NextHash)) {
                         img1 = eX;
                         break;
@@ -39,14 +40,13 @@ namespace ImageBank
 
                 if (!_hashList.ContainsKey(img1.NextHash)) {
                     img1.NextHash = img1.Hash;
-                    if (img1.AkazePairs > 0) {
-                        img1.AkazePairs = 0;
+                    if (img1.KazeMatch > 0) {
+                        img1.KazeMatch = 0;
                     }
                 }
 
                 candidates = _imgList
-                    .Where(e => e.Value.Id != img1.Id)
-                    .OrderBy(e => e.Value.Id)
+                    .Where(e => !e.Value.FileName.Equals(img1.FileName, StringComparison.OrdinalIgnoreCase))
                     .Select(e => e.Value)
                     .ToArray();
             }
@@ -57,16 +57,16 @@ namespace ImageBank
             }
 
             var nexthash = img1.NextHash;
-            var akazepairs = img1.AkazePairs;
+            var kazematch = img1.KazeMatch;
             var lastchanged = img1.LastChanged;
 
             for (var i = 0; i < candidates.Length; i++) {
-                var m = ImageHelper.ComputeKazeMatch(img1.AkazeCentroid, candidates[i].AkazeCentroid, candidates[i].AkazeMirrorCentroid);
-                if (m > akazepairs) {
+                var m = ImageHelper.ComputeKazeMatch(img1.KazeOne, candidates[i].KazeOne, candidates[i].KazeTwo);
+                if (m > kazematch) {
                     lock (_imglock) {
-                        if (_imgList.ContainsKey(img1.Id) && _imgList.ContainsKey(candidates[i].Id)) {
+                        if (_imgList.ContainsKey(img1.FileName) && _imgList.ContainsKey(candidates[i].FileName)) {
                             nexthash = candidates[i].Hash;
-                            akazepairs = m;
+                            kazematch = m;
                             lastchanged = DateTime.Now;
                         }
                     }
@@ -75,36 +75,11 @@ namespace ImageBank
 
             if (!nexthash.Equals(img1.NextHash)) {
                 var sb = new StringBuilder();
-                lock (_imglock) {
-                    var scope = _imgList.Where(e => e.Value.Hash.Equals(e.Value.NextHash) || !_hashList.ContainsKey(e.Value.NextHash)).ToArray();
-                    if (scope.Length > 0) {
-                        sb.Append($"{scope.Length}");
-                    }
-                    else {
-                        scope = _imgList.Where(e => e.Value.LastView <= e.Value.LastChanged).ToArray();
-                        if (scope.Length == 0) {
-                            sb.Append($"nc");
-                        }
-                        else {
-                            var maxap = scope.Max(e => e.Value.AkazePairs);
-                            if (maxap > AppVars.ImgPanel[0].Img.AkazePairs) {
-                                sb.Append($"{maxap}");
-                            }
-                            else {
-                                sb.Append("=");
-                            }
-
-                            sb.Append($"/{scope.Length}");
-                        }
-                    }
-                }
-
-                sb.Append(": ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                sb.Append($"{img1.Id}: ");
-                sb.Append($"{img1.AkazePairs} ");
+                sb.Append($"{img1.FileName}: ");
+                sb.Append($"{img1.KazeMatch} ");
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{akazepairs} ");
+                sb.Append($"{kazematch} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
             }
 
@@ -112,8 +87,8 @@ namespace ImageBank
                 img1.NextHash = nexthash;
             }
 
-            if (img1.AkazePairs != akazepairs) {
-                img1.AkazePairs = akazepairs;
+            if (img1.KazeMatch != kazematch) {
+                img1.KazeMatch = kazematch;
             }
 
             if (img1.LastChanged != lastchanged) {

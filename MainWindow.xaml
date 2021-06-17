@@ -8,7 +8,7 @@
     <DockPanel Name="DockPanel" LastChildFill="true">
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
-                <MenuItem Header="Import Rw" Click="ImportRwClick" />
+                <MenuItem Header="Import" Click="ImportClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>
@@ -16,6 +16,9 @@
                 <MenuItem Header="Rotate 90" Click="Rotate90Click" />
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
+            </MenuItem>
+            <MenuItem Header="Folder">
+                <MenuItem Header="Delete" Click="DeleteFolderClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

@@ -67,15 +67,6 @@ namespace ImageBank
             }
         }
 
-        private void ImportRwClick(object sender, EventArgs e)
-        {
-            ImportRwClick();
-        }
-
-        private void ImportHpClick(object sender, EventArgs e)
-        {
-            ImportHpClick();
-        }
 
         private void Rotate90Click(object sender, EventArgs e)
         {
@@ -97,9 +88,19 @@ namespace ImageBank
             Close();
         }
 
-        private async System.Threading.Tasks.Task ClusteringClickAsync(object sender, RoutedEventArgs e)
+        private static async System.Threading.Tasks.Task ClusteringClickAsync(object sender, RoutedEventArgs e)
         {
             await ClusteringClickAsync();
+        }
+
+        private void ImportClick(object sender, RoutedEventArgs e)
+        {
+            ImportClick();
+        }
+
+        private void DeleteFolderClick(object sender, RoutedEventArgs e)
+        {
+            DeleteFolderClick();
         }
     }
 }

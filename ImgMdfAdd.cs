@@ -6,9 +6,9 @@ namespace ImageBank
     {
         private static void AddToMemory(Img img)
         {
-            lock (_imglock) { 
+            lock (_imglock) {
+                _imgList.Add(img.FileName, img);
                 _hashList.Add(img.Hash, img);
-                _imgList.Add(img.Id, img);
             }
         }
 

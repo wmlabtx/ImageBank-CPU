@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -6,177 +7,232 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Import(string path, int maxadd)
+        public static void Import(int maxadd)
         { 
             AppVars.SuspendEvent.Reset();
 
             var added = 0;
-            var bad = 0;
+            var bad = 0; 
             var found = 0;
             var moved = 0;
             var dt = DateTime.Now;
-            var folder = string.Empty;
-
-            ((IProgress<string>)AppVars.Progress).Report("importing...");
-            var directoryInfo = new DirectoryInfo(path);
-            var fileInfos = 
-                directoryInfo.GetFiles("*.*", SearchOption.AllDirectories)
-                    .OrderBy(e => e.Length)
-                    .ToArray();
-
-            foreach (var fileInfo in fileInfos) {
-                var filename = fileInfo.FullName;
-                var extension = Path.GetExtension(filename);
-                if (extension.Equals(AppConsts.CorruptedExtension)) {
+            var fileinfos = new List<FileInfo>();
+            ((IProgress<string>)AppVars.Progress).Report($"importing {AppConsts.PathHp}...");
+            var directoryInfo = new DirectoryInfo(AppConsts.PathHp);
+            var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
+            fileinfos.AddRange(fs);
+            //((IProgress<string>)AppVars.Progress).Report($"importing {AppConsts.PathMz}...");
+            //directoryInfo = new DirectoryInfo(AppConsts.PathMz);
+            //fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
+            //fileinfos.AddRange(fs);
+            ((IProgress<string>)AppVars.Progress).Report($"importing {AppConsts.PathRw}...");
+            directoryInfo = new DirectoryInfo(AppConsts.PathRw);
+            fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
+            fileinfos.AddRange(fs);
+            fileinfos = fileinfos.OrderBy(e => e.Length).ToList();
+            foreach (var fileinfo in fileinfos) {
+                var orgfilename = fileinfo.FullName;
+                var orgextension = Path.GetExtension(orgfilename);
+                if (orgextension.Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
                     continue;
                 }
 
-                string shortfilename;
-                if (path.Equals(AppConsts.PathHp)) {
-                    shortfilename = filename.Substring(AppConsts.PathHp.Length + 1);
-                    folder = Path.GetDirectoryName(shortfilename);
-                    if (int.TryParse(folder, out var foundfolder)) {
-                        var name = Path.GetFileNameWithoutExtension(filename);
-                        if (int.TryParse(name, out var foundid)) {
-                            if (_imgList.TryGetValue(foundid, out var imgfound)) {
-                                if (foundfolder == imgfound.Folder) {
-                                    continue;
-                                }
-
-                                if (File.Exists(imgfound.FileName)) {
-                                    found++;
-                                    Helper.DeleteToRecycleBin(filename);
-                                    continue;
-                                }
-
-                                Delete(imgfound.Id);
-                            }
-                        }
-                    }
-                }
-
-                shortfilename = filename.Substring(AppConsts.PathRoot.Length);
-
-                if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
-                    dt = DateTime.Now;
-                    ((IProgress<string>)AppVars.Progress).Report($"{shortfilename} (a:{added}/b:{bad}/f:{found}/m:{moved})...");
-                }
-
-                if (!ImageHelper.GetImageDataFromFile(
-                    filename,
-                    out var imagedata,
-                    out var bitmap,
-                    out var message)) {
-                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {shortfilename}: {message}");
-                    bad++;
-                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
+                var orgname = Path.GetFileNameWithoutExtension(orgfilename);
+                if (fileinfo.Attributes.HasFlag(FileAttributes.Hidden)) {
                     continue;
                 }
 
                 lock (_imglock) {
-                    var lastchanged = DateTime.Now;
-                    var lastview = GetMinLastView();
-                    var lastcheck = GetMinLastCheck();
-                    var hash = Helper.ComputeHash(imagedata);
-
-                    if (_hashList.TryGetValue(hash, out var imgfound)) {
-                        lastchanged = imgfound.LastChanged;
-                        lastview = imgfound.LastView;
-                        lastcheck = imgfound.LastCheck;
-                        if (File.Exists(imgfound.FileName)) {
-                            found++;
-                            Helper.DeleteToRecycleBin(filename);
-                        }
-                        else {
-                            var imgreplace = new Img(
-                                id: imgfound.Id,
-                                hash: imgfound.Hash,
-
-                                width: imgfound.Width,
-                                height: imgfound.Height,
-                                size: imgfound.Size,
-
-                                akazecentroid: imgfound.AkazeCentroid,
-                                akazemirrorcentroid: imgfound.AkazeMirrorCentroid,
-                                akazepairs: imgfound.AkazePairs,
-
-                                lastchanged: lastchanged,
-                                lastview: lastview,
-                                lastcheck: lastcheck,
-
-                                nexthash: imgfound.NextHash,
-                                counter: imgfound.Counter);
-
-                            var lastmodifiedfound = File.GetLastWriteTime(imgfound.FileName);
-                            Helper.WriteData(imgreplace.FileName, imagedata);
-                            File.SetLastWriteTime(imgreplace.FileName, lastmodifiedfound);
-                            Helper.DeleteToRecycleBin(filename);
-
-                            Delete(imgfound.Id);
-                            Add(imgreplace);
-                            bitmap.Dispose();
-
-                            moved++;
-                        }
-
+                    if (_imgList.ContainsKey(orgfilename)) {
                         continue;
-                    }
-
-                    ImageHelper.ComputeKazeDescriptors(bitmap, out var indexes, out var mindexes);
-                    if (indexes == null || indexes.Length == 0) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {shortfilename}: {message}");
-                        bad++;
-                        File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
-                        continue;
-                    }
-
-                    var id = AllocateId();
-                    var img = new Img(
-                        id: id,
-                        hash: hash,
-
-                        width: bitmap.Width,
-                        height: bitmap.Height,
-                        size: imagedata.Length,
-
-                        akazecentroid: indexes,
-                        akazemirrorcentroid: mindexes,
-                        akazepairs: 0,
-
-                        lastchanged: lastchanged,
-                        lastview: lastview,
-                        lastcheck: lastcheck,
-
-                        nexthash: hash,
-                        counter: 0);
-
-                    var lastmodified = File.GetLastWriteTime(filename);
-                    if (lastmodified > DateTime.Now) {
-                        lastmodified = DateTime.Now;
-                    }
-
-                    if (!filename.Equals(img.FileName)) {
-                        Helper.WriteData(img.FileName, imagedata);
-                        File.SetLastWriteTime(img.FileName, lastmodified);
-                        Helper.DeleteToRecycleBin(filename);
-                    }
-
-                    Add(img);
-                    bitmap.Dispose();
-
-                    if (_imgList.Count >= AppConsts.MaxImages) {
-                        break;
                     }
                 }
 
-                added++;
-                if (added >= maxadd) {
-                    break;
+                if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
+                    dt = DateTime.Now;
+                    ((IProgress<string>)AppVars.Progress).Report($"{orgfilename} (a:{added}/b:{bad}/f:{found}/m:{moved})...");
+                }
+
+                var path = Path.GetDirectoryName(orgfilename);
+
+                if (!ImageHelper.GetImageDataFromFile(
+                    orgfilename,
+                    out var filename,
+                    out var imagedata,
+                    out var bitmap,
+                    out var message)) {
+                    ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {orgfilename}: {message}");
+                    bad++;
+                    continue;
+                }
+
+                var hash = Helper.ComputeHash(imagedata);
+                lock (_imglock) {
+
+                    if (_hashList.TryGetValue(hash, out var imgfound)) {
+
+                        // we found the same image in a database
+
+                        bitmap.Dispose();
+                        
+                        if (path.StartsWith(AppConsts.PathHp, StringComparison.OrdinalIgnoreCase) ||
+                            path.StartsWith(AppConsts.PathRw, StringComparison.OrdinalIgnoreCase)) {
+
+                            // the new image is coming from a heap
+
+                            if (File.Exists(imgfound.FileName)) {
+
+                                // no reason to add the same image from a heap; we have one
+
+                                found++;
+                                Helper.DeleteToRecycleBin(filename);
+                                continue;
+                            }
+                            else {
+
+                                // found image is gone; restore underlayed file only
+
+                                var dir = Path.GetDirectoryName(imgfound.FileName);
+                                if (!Directory.Exists(dir)) {
+                                    Directory.CreateDirectory(dir);
+                                }
+
+                                File.Move(filename, imgfound.FileName);
+                                continue;
+                            }
+                        }
+                        else {
+
+                            // the new image is coming from a collection;
+
+                            if (File.Exists(imgfound.FileName) && imgfound.FileName.StartsWith(AppConsts.PathMz, StringComparison.OrdinalIgnoreCase)) {
+
+                                // we have the same image but in other collection; we will not delete original file
+
+                                ((IProgress<string>)AppVars.Progress).Report($"{orgfilename} = {imgfound.FileName}");
+                                //AppVars.SuspendEvent.Set();
+                                //return;
+
+                                found++;
+                                continue;
+                            }
+                            else {
+
+                                // we will delete existing image but save its properties
+
+                                moved++;
+                                var mimg = new Img(
+                                    filename: filename,
+                                    other: imgfound);
+
+                                Delete(imgfound.FileName);
+                                Add(mimg);
+                                continue;
+                            }
+                        }
+                    }
+                    else {
+
+                        // it is a new image; we don't have one 
+
+                        if (_imgList.Count >= AppConsts.MaxImages) {
+                            break;
+                        }
+
+                        ImageHelper.ComputeKazeDescriptors(bitmap, out var kazeone, out var kazetwo);
+                        if (kazeone == null || kazeone.Length == 0) {
+                            ((IProgress<string>)AppVars.Progress).Report($"Not enough orbdescriptors: {filename}: {message}");
+                            bad++;
+                            File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
+                            continue;
+                        }
+
+                        var lc = GetMinLastCheck();
+                        var lv = GetMinLastView();
+
+                        if (path.StartsWith(AppConsts.PathRw, StringComparison.OrdinalIgnoreCase)) {
+
+                            // we have to create unique name and a location in Hp folder
+
+                            var hpsubfolder = Helper.GetHpSubFolder();
+                            var newfilename = filename;
+                            do {
+                                var randomname = Helper.GetRandomName();
+                                newfilename = $"{AppConsts.PathHp}\\{hpsubfolder}\\{randomname}{AppConsts.JpgExtension}";
+                            }
+                            while (File.Exists(newfilename));
+
+                            var dir = $"{AppConsts.PathHp}\\{hpsubfolder}";
+                            if (!Directory.Exists(dir)) {
+                                Directory.CreateDirectory(dir);
+                            }
+
+                            added++;
+                            var nimg = new Img(
+                                filename: newfilename,
+                                hash: hash,
+                                width: bitmap.Width,
+                                height: bitmap.Height,
+                                size: imagedata.Length,
+                                kazeone: kazeone,
+                                kazetwo: kazetwo,
+                                nexthash: hash,
+                                kazematch: 0,
+                                lastchanged: lc,
+                                lastview: lv,
+                                lastcheck: lc,
+                                counter: 0);
+
+                            Add(nimg);
+
+                            var lastmodified = File.GetLastWriteTime(filename);
+                            if (lastmodified > DateTime.Now) {
+                                lastmodified = DateTime.Now;
+                            }
+
+                            File.WriteAllBytes(newfilename, imagedata);
+                            File.SetLastWriteTime(newfilename, lastmodified);
+                            if (!filename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
+                                Helper.DeleteToRecycleBin(filename);
+                            }
+                        }
+                        else {
+
+                            // we are adding new image to a database
+
+                            added++;
+                            var nimg = new Img(
+                                filename: filename,
+                                hash: hash,
+                                width: bitmap.Width,
+                                height: bitmap.Height,
+                                size: imagedata.Length,
+                                kazeone: kazeone,
+                                kazetwo: kazetwo,
+                                nexthash: hash,
+                                kazematch: 0,
+                                lastchanged: lc,
+                                lastview: lv,
+                                lastcheck: lc,
+                                counter: 0);
+
+                            Add(nimg);
+                        }
+
+                        bitmap.Dispose();
+                        if (added >= maxadd) {
+                            break;
+                        }
+                    }
                 }
             }
 
-            ((IProgress<string>)AppVars.Progress).Report($"clean-up...");
-            Helper.CleanupDirectories(path, AppVars.Progress);
+            ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathHp}...");
+            Helper.CleanupDirectories(AppConsts.PathHp, AppVars.Progress);
+            ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathMz}...");
+            Helper.CleanupDirectories(AppConsts.PathMz, AppVars.Progress);
+            ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathRw}...");
+            Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
 
             AppVars.SuspendEvent.Set();
         }
