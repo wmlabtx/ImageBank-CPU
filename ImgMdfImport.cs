@@ -21,10 +21,6 @@ namespace ImageBank
             var directoryInfo = new DirectoryInfo(AppConsts.PathHp);
             var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
             fileinfos.AddRange(fs);
-            //((IProgress<string>)AppVars.Progress).Report($"importing {AppConsts.PathMz}...");
-            //directoryInfo = new DirectoryInfo(AppConsts.PathMz);
-            //fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
-            //fileinfos.AddRange(fs);
             ((IProgress<string>)AppVars.Progress).Report($"importing {AppConsts.PathRw}...");
             directoryInfo = new DirectoryInfo(AppConsts.PathRw);
             fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
@@ -68,67 +64,29 @@ namespace ImageBank
 
                 var hash = Helper.ComputeHash(imagedata);
                 lock (_imglock) {
-
                     if (_hashList.TryGetValue(hash, out var imgfound)) {
 
                         // we found the same image in a database
 
                         bitmap.Dispose();
                         
-                        if (path.StartsWith(AppConsts.PathHp, StringComparison.OrdinalIgnoreCase) ||
-                            path.StartsWith(AppConsts.PathRw, StringComparison.OrdinalIgnoreCase)) {
+                        // the new image is coming from a heap
 
-                            // the new image is coming from a heap
+                        if (File.Exists(imgfound.FileName)) {
 
-                            if (File.Exists(imgfound.FileName)) {
+                            // no reason to add the same image from a heap; we have one
 
-                                // no reason to add the same image from a heap; we have one
-
-                                found++;
-                                Helper.DeleteToRecycleBin(filename);
-                                continue;
-                            }
-                            else {
-
-                                // found image is gone; restore underlayed file only
-
-                                var dir = Path.GetDirectoryName(imgfound.FileName);
-                                if (!Directory.Exists(dir)) {
-                                    Directory.CreateDirectory(dir);
-                                }
-
-                                File.Move(filename, imgfound.FileName);
-                                continue;
-                            }
+                            found++;
+                            Helper.DeleteToRecycleBin(filename);
+                            continue;
                         }
                         else {
 
-                            // the new image is coming from a collection;
+                            // found image is gone; delete it
 
-                            if (File.Exists(imgfound.FileName) && imgfound.FileName.StartsWith(AppConsts.PathMz, StringComparison.OrdinalIgnoreCase)) {
-
-                                // we have the same image but in other collection; we will not delete original file
-
-                                ((IProgress<string>)AppVars.Progress).Report($"{orgfilename} = {imgfound.FileName}");
-                                //AppVars.SuspendEvent.Set();
-                                //return;
-
-                                found++;
-                                continue;
-                            }
-                            else {
-
-                                // we will delete existing image but save its properties
-
-                                moved++;
-                                var mimg = new Img(
-                                    filename: filename,
-                                    other: imgfound);
-
-                                Delete(imgfound.FileName);
-                                Add(mimg);
-                                continue;
-                            }
+                            Delete(imgfound.FileName);
+                            moved++;
+                            continue;
                         }
                     }
                     else {
@@ -229,8 +187,6 @@ namespace ImageBank
 
             ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathHp}...");
             Helper.CleanupDirectories(AppConsts.PathHp, AppVars.Progress);
-            ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathMz}...");
-            Helper.CleanupDirectories(AppConsts.PathMz, AppVars.Progress);
             ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathRw}...");
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
 

@@ -97,10 +97,5 @@ namespace ImageBank
         {
             ImportClick();
         }
-
-        private void DeleteFolderClick(object sender, RoutedEventArgs e)
-        {
-            DeleteFolderClick();
-        }
     }
 }

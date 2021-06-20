@@ -94,15 +94,6 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void DeleteFolderClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.DeleteFolder(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
         private void PictureLeftBoxMouseClick()
         {
             ImgPanelDelete(0);
@@ -205,10 +196,6 @@ namespace ImageBank
                     AppVars.ImgPanel[index].Bitmap.Width == 3110 ||
                     AppVars.ImgPanel[index].Bitmap.Height == 3110) {
                     scb = System.Windows.Media.Brushes.Pink;
-                }
-
-                if (AppVars.ImgPanel[index].Img.FileName.StartsWith(AppConsts.PathMz, StringComparison.OrdinalIgnoreCase)) {
-                    scb = System.Windows.Media.Brushes.LightGreen;
                 }
 
                 pLabels[index].Background = scb;

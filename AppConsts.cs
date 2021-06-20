@@ -6,10 +6,9 @@
         public const string FileDatabase = @"M:\Db\images.mdf";
         public const string FileKazeClusters = @"M:\Db\kazeclusters.dat";
         public const string PathHp = @"M:\Hp";
-        public const string PathMz = @"M:\Mz";
 
         public const int MaxImages = 100000;
-        public const int MaxAdd = 10000001;
+        public const int MaxAdd = 100;
 
         public const int MaxDescriptors = 1000;
         public const int DescriptorSize = 61;

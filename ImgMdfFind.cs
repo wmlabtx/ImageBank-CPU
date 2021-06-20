@@ -6,17 +6,9 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static int _scopemode = 0;
-
         public static void Find(string filenameX, string filenameY, IProgress<string> progress)
         {
             Img imgX;
-            _scopemode++;
-            if (_scopemode > 10) {
-                _scopemode = 0;
-            }
-
-            var path = _scopemode == 0 ? AppConsts.PathMz : AppConsts.PathHp;
             var sb = new StringBuilder();
             lock (_imglock) {
                 while (true) {
@@ -26,9 +18,9 @@ namespace ImageBank
                     }
 
                     if (filenameX == null) {
-                        imgX = null;
+                         imgX = null;
                         var valid = _imgList
-                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && e.Value.FileName.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -37,20 +29,14 @@ namespace ImageBank
                             return;
                         }
 
+                        var mincounter = valid.Min(e => e.Counter);
                         var scope = valid
-                            .Where(e => e.Counter == 0)
+                            .Where(e => e.Counter == mincounter)
                             .ToArray();
 
-                        if (scope.Length > 0) {
-                            imgX = scope
-                                .OrderBy(e => e.Size)
-                                .FirstOrDefault();
-                        }
-                        else {
-                            imgX = valid
-                                .OrderBy(e => e.LastView)
-                                .FirstOrDefault();
-                        }
+                        imgX = scope
+                            .OrderBy(e => e.LastView)
+                            .FirstOrDefault();
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;
@@ -85,10 +71,7 @@ namespace ImageBank
                     zerocounter = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
                 }
 
-                var scount = _imgList.Count(e => e.Value.FileName.StartsWith(path, StringComparison.OrdinalIgnoreCase));
-                var code = _scopemode == 0 ? "mz" : "hp";
-
-                sb.Append($"{zerocounter}/{code}:{scount}/{_imgList.Count}: ");
+                sb.Append($"{zerocounter}/{_imgList.Count}: ");
                 sb.Append($"{imgX.FileName}: ");
                 sb.Append($"{imgX.KazeMatch} ");
             }

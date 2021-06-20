@@ -17,8 +17,7 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <MenuItem Header="Folder">
-                <MenuItem Header="Delete" Click="DeleteFolderClick" />
+            <MenuItem Header="Move">
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
