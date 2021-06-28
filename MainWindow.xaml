@@ -58,6 +58,9 @@
         </Grid>
     </DockPanel>
     <Window.Resources>
+        <Style TargetType="ToolTip">
+            <Setter Property="TextBlock.TextAlignment" Value="Left"/>
+        </Style>
         <Style TargetType="TextBlock">
             <Style.Triggers>
                 <Trigger Property="IsEnabled" Value="False">

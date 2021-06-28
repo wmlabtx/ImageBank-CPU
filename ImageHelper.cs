@@ -1,12 +1,16 @@
-﻿using OpenCvSharp;
+﻿using NExifTool;
+using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ImageBank
 {
@@ -34,7 +38,7 @@ namespace ImageBank
             _bow.SetVocabulary(_clusters);
         }
 
-        private static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
+        public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
             bitmap = null;
             
@@ -52,7 +56,7 @@ namespace ImageBank
             return true;
         }
 
-        private static Bitmap RepixelBitmap(Image bitmap)
+        public static Bitmap RepixelBitmap(Image bitmap)
         {
             var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
             using (var g = Graphics.FromImage(bitmap24BppRgb)) {
@@ -82,7 +86,7 @@ namespace ImageBank
             return destImage;
         }
 
-        private static MagicFormat GetMagicFormat(IReadOnlyList<byte> imagedata)
+        public static MagicFormat GetMagicFormat(IReadOnlyList<byte> imagedata)
         {
             // https://en.wikipedia.org/wiki/List_of_file_signatures
 
@@ -114,14 +118,32 @@ namespace ImageBank
             return MagicFormat.Unknown;
         }
 
-        private static void SaveCorruptedImage(string filename, byte[] imagedata)
+        public static void SaveCorruptedFile(string filename)
         {
-            var newfilename = filename.EndsWith(AppConsts.JpgExtension, StringComparison.OrdinalIgnoreCase) ?
-                $"{filename}{AppConsts.CorruptedExtension}" :
-                $"{Path.ChangeExtension(filename, AppConsts.JpgExtension)}{AppConsts.CorruptedExtension}";
+            var baddir = $"{AppConsts.PathHp}\\{AppConsts.CorruptedExtension}";
+            if (!Directory.Exists(baddir)) {
+                Directory.CreateDirectory(baddir);
+            }
 
-            File.WriteAllBytes(newfilename, imagedata);
+            var badname = Path.GetFileName(filename);
+            var badfilename = $"{baddir}\\{badname}{AppConsts.CorruptedExtension}";
+            Helper.DeleteToRecycleBin(badfilename);
+            File.Move(filename, badfilename);
+        }
+
+        public static string SaveCorruptedImage(string filename, byte[] imagedata)
+        {
+            var baddir = $"{AppConsts.PathHp}\\{AppConsts.CorruptedExtension}";
+            if (!Directory.Exists(baddir)) {
+                Directory.CreateDirectory(baddir);
+            }
+
+            var badname = Path.GetFileName(filename);
+            var badfilename = $"{baddir}\\{badname}";
+            Helper.DeleteToRecycleBin(badfilename);
+            File.WriteAllBytes(badfilename, imagedata);
             Helper.DeleteToRecycleBin(filename);
+            return badfilename;
         }
 
         public static bool GetImageDataFromBitmap(Bitmap bitmap, out byte[] imagedata)
@@ -136,6 +158,67 @@ namespace ImageBank
             catch (ArgumentException) {
                 imagedata = null;
                 return false;
+            }
+        }
+
+        private static async Task<IEnumerable<Tag>> GetExifTagsAsync(string filename)
+        {
+            IEnumerable<Tag> tags;
+            try {
+                var et = new ExifTool(new ExifToolOptions());
+                tags = await et.GetTagsAsync(filename);
+            }
+            catch {
+                tags = null;
+            }
+
+            return tags;
+        }
+
+        public static void GetExif(string filename, out DateTime? datetaken, out string metadata)
+        {
+            datetaken = null;
+            metadata = string.Empty;
+            var sb = new StringBuilder();
+            var tagscounter = 0;
+            using (var task = GetExifTagsAsync(filename)) {
+                task.Wait();
+                var tags = task.Result;
+                if (tags != null) {
+                    foreach (var tag in tags) {
+                        if (tag.Group.StartsWith("File", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
+
+                        if (tag.Name.Equals("ExifToolVersion", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("JFIFVersion", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("ResolutionUnit", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("XResolution", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("YResolution", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("ImageSize", StringComparison.OrdinalIgnoreCase) ||
+                            tag.Name.Equals("Megapixels", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
+
+                        tagscounter++;
+                        if (DateTime.TryParseExact(tag.Value, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
+                            if (dt.Year >= 1990 && dt < DateTime.Now) {
+                                if (datetaken == null || dt < datetaken) {
+                                    datetaken = dt;
+                                    sb.AppendLine($"[{tag.Group}{tag.Name}] {tag.Value}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (tagscounter > 0) {
+                sb.Append($"Exif tags: {tagscounter}");
+            }
+
+            if (sb.Length > 0) {
+                metadata = sb.ToString();
             }
         }
 
@@ -176,45 +259,67 @@ namespace ImageBank
             }
 
             imagedata = File.ReadAllBytes(filename);
-            if (imagedata == null || imagedata.Length == 0) {
-                message = "imgdata == null || imgdata.Length == 0";
+            if (imagedata == null || imagedata.Length < 16) {
+                message = "imgdata == null || imgdata.Length < 16";
                 File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                 return false;
             }
 
-            var imagedatachanged = false;
-
             if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
-                imagedata = Helper.DecryptDat(imagedata, password);
-                if (imagedata == null) {
-                    message = "cannot be decrypted";
-                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
-                    return false;
-                }
+                var descrypteddata = Helper.DecryptDat(imagedata, password);
+                if (descrypteddata == null) {
+                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
+                    var directory = Path.GetDirectoryName(filename);
+                    while (File.Exists(newfilename)) {
+                        var randomname = Helper.GetRandomName();
+                        newfilename = $"{directory}\\{randomname}{AppConsts.JpgExtension}";
+                    }
 
-                imagedatachanged = true;
+                    File.Move(filename, newfilename);
+                    filename = newfilename;
+                }
+                else {
+                    imagedata = descrypteddata;
+                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
+                    var lastmodified = File.GetLastWriteTime(filename);
+                    if (lastmodified > DateTime.Now || lastmodified.Year < 1991) {
+                        lastmodified = DateTime.Now;
+                    }
+
+                    File.WriteAllBytes(newfilename, imagedata);
+                    File.SetLastWriteTime(newfilename, lastmodified);
+                    Helper.DeleteToRecycleBin(filename);
+                    File.Move(newfilename, filename);
+                    filename = newfilename;
+                }
             }
 
             if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(filename);
                 imagedata = Helper.Decrypt(imagedata, password);
                 if (imagedata == null) {
-                    message = "cannot be decrypted";
+                    message = "mzx cannot be decrypted";
                     File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
                     return false;
                 }
+                else {
+                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
+                    var lastmodified = File.GetLastWriteTime(filename);
+                    if (lastmodified > DateTime.Now || lastmodified.Year < 1991) {
+                        lastmodified = DateTime.Now;
+                    }
 
-                imagedatachanged = true;
+                    File.WriteAllBytes(newfilename, imagedata);
+                    File.SetLastWriteTime(newfilename, lastmodified);
+                    Helper.DeleteToRecycleBin(filename);
+                    File.Move(newfilename, filename);
+                    filename = newfilename;
+                }
             }
-
-            var bitmapchanged = false;
 
             var magicformat = GetMagicFormat(imagedata);
-            if (magicformat != MagicFormat.Jpeg) {
-                bitmapchanged = true;
-            }
-            else {
+            if (magicformat == MagicFormat.Jpeg) {
                 if (imagedata[0] != 0xFF || imagedata[1] != 0xD8 ||
                     imagedata[imagedata.Length - 2] != 0xFF || imagedata[imagedata.Length - 1] != 0xD9) {
                     message = "bad jpeg";
@@ -224,7 +329,6 @@ namespace ImageBank
             }
 
             if (!GetBitmapFromImageData(imagedata, out bitmap)) {
-                SaveCorruptedImage(filename, imagedata);
                 message = "bad image";
                 SaveCorruptedImage(filename, imagedata);
                 return false;
@@ -232,41 +336,9 @@ namespace ImageBank
 
             if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
                 bitmap = RepixelBitmap(bitmap);
-                bitmapchanged = true;
-            }
-
-            if (bitmapchanged) {
-                if (!GetImageDataFromBitmap(bitmap, out imagedata)) {
-                    SaveCorruptedImage(filename, imagedata);
-                    message = "encode error";
-                    return false;
-                }
-
-                imagedatachanged = true;
-            }
-
-            if (imagedatachanged) {
-                newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
-                var lastmodified = File.GetLastWriteTime(filename);
-                if (lastmodified > DateTime.Now) {
-                    lastmodified = DateTime.Now;
-                }
-
-                File.WriteAllBytes(newfilename, imagedata);
-                File.SetLastWriteTime(newfilename, lastmodified);
-                if (!filename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
-                    Helper.DeleteToRecycleBin(filename);
-                }
             }
 
             return true;
-        }
-
-        public static bool GetImageDataFromFile(
-            string filename,
-            out Bitmap bitmap)
-        {
-            return GetImageDataFromFile(filename, out _, out _, out bitmap, out _);
         }
 
         public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes)

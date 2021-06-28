@@ -9,6 +9,8 @@ namespace ImageBank
         public int Width { get; }
         public int Height { get; }
         public int Size { get; }
+        public DateTime? DateTaken { get; }
+        public string MetaData { get; }
         public byte[] KazeOne { get; }
         public byte[] KazeTwo { get; }
 
@@ -80,6 +82,8 @@ namespace ImageBank
             int width,
             int height,
             int size,
+            DateTime? datetaken,
+            string metadata,
             byte[] kazeone,
             byte[] kazetwo,
             string nexthash,
@@ -95,6 +99,8 @@ namespace ImageBank
             Width = width;
             Height = height;
             Size = size;
+            DateTaken = datetaken;
+            MetaData = metadata;
             KazeOne = kazeone;
             KazeTwo = kazetwo;
 

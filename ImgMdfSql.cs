@@ -87,6 +87,8 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeight}, ");
                     sb.Append($"{AppConsts.AttrSize}, ");
+                    sb.Append($"{AppConsts.AttrDateTaken}, ");
+                    sb.Append($"{AppConsts.AttrMetadata}, ");
                     sb.Append($"{AppConsts.AttrKazeOne}, ");
                     sb.Append($"{AppConsts.AttrKazeTwo}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
@@ -101,6 +103,8 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeight}, ");
                     sb.Append($"@{AppConsts.AttrSize}, ");
+                    sb.Append($"@{AppConsts.AttrDateTaken}, ");
+                    sb.Append($"@{AppConsts.AttrMetadata}, ");
                     sb.Append($"@{AppConsts.AttrKazeOne}, ");
                     sb.Append($"@{AppConsts.AttrKazeTwo}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
@@ -109,13 +113,15 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
                     sb.Append($"@{AppConsts.AttrCounter}");
-                    sb.Append(")");
+                    sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFileName}", img.FileName);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeOne}", img.KazeOne);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeTwo}", img.KazeTwo);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
@@ -144,14 +150,16 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrWidth}, "); // 2
             sb.Append($"{AppConsts.AttrHeight}, "); // 3
             sb.Append($"{AppConsts.AttrSize}, "); // 4
-            sb.Append($"{AppConsts.AttrKazeOne}, "); // 5
-            sb.Append($"{AppConsts.AttrKazeTwo}, "); // 6
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 7
-            sb.Append($"{AppConsts.AttrKazeMatch}, "); // 8
-            sb.Append($"{AppConsts.AttrLastChanged}, "); // 9
-            sb.Append($"{AppConsts.AttrLastView}, "); // 10
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 11
-            sb.Append($"{AppConsts.AttrCounter} "); // 12
+            sb.Append($"{AppConsts.AttrDateTaken}, "); // 5
+            sb.Append($"{AppConsts.AttrMetadata}, "); // 6
+            sb.Append($"{AppConsts.AttrKazeOne}, "); // 7
+            sb.Append($"{AppConsts.AttrKazeTwo}, "); // 8
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 9
+            sb.Append($"{AppConsts.AttrKazeMatch}, "); // 10
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
+            sb.Append($"{AppConsts.AttrLastView}, "); // 12
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
+            sb.Append($"{AppConsts.AttrCounter} "); // 14
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -166,14 +174,21 @@ namespace ImageBank
                             var width = reader.GetInt32(2);
                             var height = reader.GetInt32(3);
                             var size = reader.GetInt32(4);
-                            var kazeone = (byte[])reader[5];
-                            var kazetwo = (byte[])reader[6];
-                            var nexthash = reader.GetString(7);
-                            var kazematch = reader.GetInt32(8);
-                            var lastchanged = reader.GetDateTime(9);
-                            var lastview = reader.GetDateTime(10);
-                            var lastcheck = reader.GetDateTime(11);
-                            var counter = reader.GetInt32(12);
+                            var dt = reader.GetDateTime(5);
+                            DateTime? datetaken = null;
+                            if (dt.Year > 1980) {
+                                datetaken = dt;
+                            }
+
+                            var metadata = reader.GetString(6);
+                            var kazeone = (byte[])reader[7];
+                            var kazetwo = (byte[])reader[8];
+                            var nexthash = reader.GetString(9);
+                            var kazematch = reader.GetInt32(10);
+                            var lastchanged = reader.GetDateTime(11);
+                            var lastview = reader.GetDateTime(12);
+                            var lastcheck = reader.GetDateTime(13);
+                            var counter = reader.GetInt32(14);
 
                             var img = new Img(
                                 filename: filename,
@@ -181,6 +196,8 @@ namespace ImageBank
                                 width: width,
                                 height: height,
                                 size: size,
+                                datetaken: datetaken,
+                                metadata: metadata,
                                 kazeone: kazeone,
                                 kazetwo: kazetwo,
                                 nexthash: nexthash,

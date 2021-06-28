@@ -32,6 +32,8 @@
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
+        public const string AttrDateTaken = "DateTaken";
+        public const string AttrMetadata = "Metadata";
         public const string AttrKazeOne = "KazeOne";
         public const string AttrKazeTwo = "KazeTwo";
         public const string AttrNextHash = "NextHash";

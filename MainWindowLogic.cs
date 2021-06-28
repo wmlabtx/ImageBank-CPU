@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Media;
 
 namespace ImageBank
 {
@@ -88,7 +87,7 @@ namespace ImageBank
         private async void Import()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Import(AppConsts.MaxAdd); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Import(); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -183,8 +182,26 @@ namespace ImageBank
                     }
                 }
 
+                /*
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     scb = System.Windows.Media.Brushes.Bisque;
+                }
+                */
+
+                if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Img.MetaData)) {
+                    pLabels[index].ToolTip = AppVars.ImgPanel[index].Img.MetaData;
+                    scb = System.Windows.Media.Brushes.LightYellow;
+                }
+                else {
+                    pLabels[index].ToolTip = null;
+                }
+
+                if (AppVars.ImgPanel[index].Img.DateTaken.HasValue) {
+                    scb = System.Windows.Media.Brushes.Gold;
+                }
+
+                if (AppVars.ImgPanel[index].Img.FileName.IndexOf(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase) >= 0) {
+                    scb = System.Windows.Media.Brushes.Pink;
                 }
 
                 if (AppVars.ImgPanel[index].Bitmap.Width == 2160 ||
@@ -314,11 +331,11 @@ namespace ImageBank
 
         public void Dispose()
         {
-            Dispose(true);
+            ClassDispose();
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void ClassDispose()
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();

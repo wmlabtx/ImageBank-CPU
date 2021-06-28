@@ -9,7 +9,7 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(filename, out var img)) {
-                    if (!ImageHelper.GetImageDataFromFile(img.FileName, out var bitmap)) {
+                    if (!ImageHelper.GetImageDataFromFile(img.FileName, out _, out _, out var bitmap, out _)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
                         return;
                     }
@@ -27,6 +27,8 @@ namespace ImageBank
                     }
                     else {
                         ImageHelper.ComputeKazeDescriptors(bitmap, out var rindexes, out var rmindexes);
+                        ImageHelper.GetExif(img.FileName, out var rdatetaken, out var rmetadata);
+
                         var minlc = GetMinLastCheck();
                         var rimg = new Img(
                             filename: filename,
@@ -34,6 +36,8 @@ namespace ImageBank
                             width: bitmap.Width,
                             height: bitmap.Height,
                             size: rimagedata.Length,
+                            datetaken: rdatetaken,
+                            metadata: rmetadata,
                             kazeone: rindexes,
                             kazetwo: rmindexes,
                             nexthash: rhash,

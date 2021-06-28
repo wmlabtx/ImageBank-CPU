@@ -29,14 +29,25 @@ namespace ImageBank
                             return;
                         }
 
+                        var scope = valid
+                            .Where(e => e.LastView < e.LastChanged)
+                            .ToArray();
+
+                        imgX = scope.Length > 0 ?
+                            scope.OrderBy(e => e.Size).FirstOrDefault() :
+                            valid.OrderBy(e => e.LastView).FirstOrDefault();
+
+
+                        /*
                         var mincounter = valid.Min(e => e.Counter);
                         var scope = valid
                             .Where(e => e.Counter == mincounter)
                             .ToArray();
 
-                        imgX = scope
-                            .OrderBy(e => e.LastView)
-                            .FirstOrDefault();
+                        imgX = mincounter == 0 ?
+                            scope.OrderBy(e => e.Size).FirstOrDefault() :
+                            scope.OrderBy(e => e.LastView).FirstOrDefault();
+                        */
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;

@@ -1,19 +1,156 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using ImageBank;
+using MetadataExtractor;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NExifTool;
 
 namespace ImageBankTest
 {
     [TestClass()]
     public class ImageHelperTests
     {
-        [TestMethod()]
-        public void ComputeKazeTest()
+        private static string AsciiBytesToString(byte[] buffer, int maxlength)
         {
-            var image = Image.FromFile("org.jpg");
-            ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var b1, out var bm1);
+            for (int i = 0; i < maxlength; i++) {
+                if (buffer[i] != 0) {
+                    continue;
+                }
+
+                return Encoding.ASCII.GetString(buffer, 0, i);
+            }
+
+            return Encoding.ASCII.GetString(buffer, 0, maxlength);
+        }
+
+        private static async Task<IEnumerable<NExifTool.Tag>> GetExifTagsAsync(string filename)
+        {
+            IEnumerable<NExifTool.Tag> tags;
+            try {
+                var et = new ExifTool(new ExifToolOptions());
+                tags = await et.GetTagsAsync(filename);
+            }
+            catch {
+                tags = null;
+            }
+
+            return tags;
+        }
+
+        [TestMethod()]
+        public void ComputeKazeTestAsync()
+        {
+            var filename = "k1024.jpg";
+            DateTime? datetaken = null;
+            using (var image = Image.FromFile(filename)) {
+                ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var b1, out var bm1);
+            }
+
+            var task = GetExifTagsAsync(filename);
+            task.Wait();
+            var tags = task.Result;
+
+
+            try {
+                using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    var bitmapframe = BitmapFrame.Create(fs);
+                    BitmapMetadata md = (BitmapMetadata)bitmapframe.Metadata;
+                    var sdate = md.DateTaken;
+                    if (sdate != null) {
+                        if (DateTime.TryParse(sdate, out var dt)) {
+                            datetaken = dt;
+                        }
+                    }
+                }
+            }
+            catch {
+            }
+
+            if (datetaken == null) {
+                using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                using (var myImage = Image.FromStream(fs, false, false)) {
+                    foreach (var property in myImage.PropertyItems) {
+                        if (property.Id == 0x0132) {
+                            var sdt = AsciiBytesToString(property.Value, 20);
+                            if (DateTime.TryParseExact(sdt, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
+                                datetaken = dt;
+                            }
+                        }
+                    }
+                }
+            }
+
+            try {
+                var directories = ImageMetadataReader.ReadMetadata(filename);
+                if (directories != null && directories.Count > 0) {
+                    var sb = new StringBuilder();
+                    foreach (var directory in directories) {
+                        if (directory.Name.Equals("File type", StringComparison.OrdinalIgnoreCase) ||
+                            directory.Name.Equals("File", StringComparison.OrdinalIgnoreCase) ||
+                            directory.Name.Equals("JPEG", StringComparison.OrdinalIgnoreCase) ||
+                            directory.Name.Equals("JFIF", StringComparison.OrdinalIgnoreCase) ||
+                            directory.Name.Equals("Huffman", StringComparison.OrdinalIgnoreCase)
+                            ) {
+                            continue;
+                        }
+
+                        foreach (var tag in directory.Tags) {
+                            // [ICC Profile] Profile Date/Time - 1998:02:09 06:...
+                            if (datetaken == null) {
+                                if (directory.Name.Equals("ICC Profile", StringComparison.OrdinalIgnoreCase) &&
+                                    tag.HasName && tag.Name.Equals("Profile Date/Time", StringComparison.OrdinalIgnoreCase)) {
+                                    var sdt = tag.Description;
+                                    if (sdt != null) {
+                                        if (DateTime.TryParseExact(sdt, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
+                                            datetaken = dt;
+                                        }
+                                    }
+                                }
+                            }
+
+                            var tagstring = tag.ToString();
+                            if (tagstring.Length > 48) {
+                                tagstring = tagstring.Substring(0, 48) + "...";
+                            }
+
+                            sb.AppendLine(tagstring);
+                        }
+
+                        foreach (var error in directory.Errors) {
+                            var tagstring = error.ToString();
+                            if (tagstring.Length > 48) {
+                                tagstring = tagstring.Substring(0, 48) + "...";
+                            }
+
+                            sb.AppendLine("ERROR: " + tagstring);
+                        }
+                    }
+
+                    string metadata = sb.ToString();
+                }
+            }
+            catch {
+            }
+
+            if (datetaken == null) {
+                var lastmodified = File.GetLastWriteTime(filename);
+                if (lastmodified > DateTime.Now || lastmodified.Year < 1991) {
+                    lastmodified = DateTime.Now;
+                }
+
+                datetaken = lastmodified;
+            }
+
         }
 
         [TestMethod()]

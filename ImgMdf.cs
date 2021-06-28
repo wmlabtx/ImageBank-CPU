@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 
 namespace ImageBank
@@ -13,6 +14,8 @@ namespace ImageBank
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly Random _random = new Random();
+        private static readonly object _rwlock = new object();
+        private static List<FileInfo> _rwList = new List<FileInfo>();
 
         public ImgMdf()
         {
