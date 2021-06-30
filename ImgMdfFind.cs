@@ -33,6 +33,13 @@ namespace ImageBank
                             .Where(e => e.LastView < e.LastChanged)
                             .ToArray();
 
+                        if (scope.Length > 0) {
+                            var mincounter = valid.Min(e => e.Counter);
+                            scope = scope
+                                .Where(e => e.Counter == mincounter)
+                                .ToArray();
+                        }
+
                         imgX = scope.Length > 0 ?
                             scope.OrderBy(e => e.Size).FirstOrDefault() :
                             valid.OrderBy(e => e.LastView).FirstOrDefault();

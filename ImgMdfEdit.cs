@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 
 namespace ImageBank
 {
@@ -9,7 +10,8 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(filename, out var img)) {
-                    if (!ImageHelper.GetImageDataFromFile(img.FileName, out _, out _, out var bitmap, out _)) {
+                    var imagedata = File.ReadAllBytes(img.FileName);
+                    if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                         ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
                         return;
                     }

@@ -175,6 +175,19 @@ namespace ImageBank
             return tags;
         }
 
+        private static string AsciiBytesToString(byte[] buffer, int maxlength)
+        {
+            for (int i = 0; i < maxlength; i++) {
+                if (buffer[i] != 0) {
+                    continue;
+                }
+
+                return Encoding.ASCII.GetString(buffer, 0, i);
+            }
+
+            return Encoding.ASCII.GetString(buffer, 0, maxlength);
+        }
+
         public static void GetExif(string filename, out DateTime? datetaken, out string metadata)
         {
             datetaken = null;
@@ -211,6 +224,21 @@ namespace ImageBank
                         }
                     }
                 }
+                else {
+                    using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                    using (var myImage = Image.FromStream(fs, false, false)) {
+                        foreach (var property in myImage.PropertyItems) {
+                            tagscounter++;
+                            if (property.Id == 0x0132) {
+                                var sdt = AsciiBytesToString(property.Value, 20);
+                                if (DateTime.TryParseExact(sdt, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
+                                    datetaken = dt;
+                                    sb.AppendLine($"[0132] {sdt}");
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             if (tagscounter > 0) {
@@ -222,128 +250,30 @@ namespace ImageBank
             }
         }
 
-        public static bool GetImageDataFromFile(
-            string filename,
-            out string newfilename,
-            out byte[] imagedata,
-            out Bitmap bitmap,
-            out string message)
+        public static byte[] KazePointsToBuffer(KazePoint[] kp)
         {
-            newfilename = filename;
-            imagedata = null;
-            bitmap = null;
-            message = null;
-            if (!File.Exists(filename)) {
-                message = "missing file";
-                return false;
+            var buffer = new byte[kp.Length * 2];
+            for (var i = 0; i < kp.Length; i++) {
+                buffer[i * 2] = kp[i].Angle;
+                buffer[i * 2 + 1] = kp[i].Index;
             }
 
-            var extension = Path.GetExtension(filename);
-            if (string.IsNullOrEmpty(extension)) {
-                message = "no extention";
-                return false;
-            }
-
-            if (
-                !extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.DbxExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.PngExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.BmpExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.WebpExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.JpgExtension, StringComparison.OrdinalIgnoreCase) &&
-                !extension.Equals(AppConsts.JpegExtension, StringComparison.OrdinalIgnoreCase)
-                ) {
-                message = "unknown extention";
-                return false;
-            }
-
-            imagedata = File.ReadAllBytes(filename);
-            if (imagedata == null || imagedata.Length < 16) {
-                message = "imgdata == null || imgdata.Length < 16";
-                File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
-                return false;
-            }
-
-            if (extension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase)) {
-                var password = Path.GetFileNameWithoutExtension(filename);
-                var descrypteddata = Helper.DecryptDat(imagedata, password);
-                if (descrypteddata == null) {
-                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
-                    var directory = Path.GetDirectoryName(filename);
-                    while (File.Exists(newfilename)) {
-                        var randomname = Helper.GetRandomName();
-                        newfilename = $"{directory}\\{randomname}{AppConsts.JpgExtension}";
-                    }
-
-                    File.Move(filename, newfilename);
-                    filename = newfilename;
-                }
-                else {
-                    imagedata = descrypteddata;
-                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
-                    var lastmodified = File.GetLastWriteTime(filename);
-                    if (lastmodified > DateTime.Now || lastmodified.Year < 1991) {
-                        lastmodified = DateTime.Now;
-                    }
-
-                    File.WriteAllBytes(newfilename, imagedata);
-                    File.SetLastWriteTime(newfilename, lastmodified);
-                    Helper.DeleteToRecycleBin(filename);
-                    File.Move(newfilename, filename);
-                    filename = newfilename;
-                }
-            }
-
-            if (extension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
-                var password = Path.GetFileNameWithoutExtension(filename);
-                imagedata = Helper.Decrypt(imagedata, password);
-                if (imagedata == null) {
-                    message = "mzx cannot be decrypted";
-                    File.Move(filename, $"{filename}{AppConsts.CorruptedExtension}");
-                    return false;
-                }
-                else {
-                    newfilename = Path.ChangeExtension(filename, AppConsts.JpgExtension);
-                    var lastmodified = File.GetLastWriteTime(filename);
-                    if (lastmodified > DateTime.Now || lastmodified.Year < 1991) {
-                        lastmodified = DateTime.Now;
-                    }
-
-                    File.WriteAllBytes(newfilename, imagedata);
-                    File.SetLastWriteTime(newfilename, lastmodified);
-                    Helper.DeleteToRecycleBin(filename);
-                    File.Move(newfilename, filename);
-                    filename = newfilename;
-                }
-            }
-
-            var magicformat = GetMagicFormat(imagedata);
-            if (magicformat == MagicFormat.Jpeg) {
-                if (imagedata[0] != 0xFF || imagedata[1] != 0xD8 ||
-                    imagedata[imagedata.Length - 2] != 0xFF || imagedata[imagedata.Length - 1] != 0xD9) {
-                    message = "bad jpeg";
-                    SaveCorruptedImage(filename, imagedata);
-                    return false;
-                }
-            }
-
-            if (!GetBitmapFromImageData(imagedata, out bitmap)) {
-                message = "bad image";
-                SaveCorruptedImage(filename, imagedata);
-                return false;
-            }
-
-            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                bitmap = RepixelBitmap(bitmap);
-            }
-
-            return true;
+            return buffer;
         }
 
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes)
+        public static KazePoint[] KazePointsFromBuffer(byte[] buffer)
         {
-            indexes = null;
+            var kp = new KazePoint[buffer.Length / 2];
+            for (var i = 0; i < kp.Length; i++) {
+                kp[i] = new KazePoint() { Angle = buffer[i * 2], Index = buffer[i * 2 + 1] };
+            }
+
+            return kp;
+        }
+
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out KazePoint[] kp)
+        {
+            kp = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat()) {
                 var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
@@ -356,42 +286,66 @@ namespace ImageBank
                         using (var matdescriptors = new Mat())
                         using (var matbow = new Mat()) {
                             _bow.Compute(mat, ref keypoints, matbow, out var idx, matdescriptors);
-                            indexes = new byte[keypoints.Length];
+
+                            /*
+                            using (var matkeypoints = new Mat()) {
+                                Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                                matkeypoints.SaveImage("akeypoints.png");
+                            }
+                            */
+
+                            kp = new KazePoint[keypoints.Length];
+                            for (var i = 0; i < keypoints.Length; i++) {
+                                var angle = (byte)(keypoints[i].Angle * 16f / 360f);
+                                kp[i] = new KazePoint() { Angle = angle, Index = 0 };
+                            }
+
                             for (var i = 0; i < idx.Length; i++) {
                                 for (var j = 0; j < idx[i].Length; j++) {
-                                    indexes[idx[i][j]] = (byte)i;
+                                    var k = idx[i][j];
+                                    kp[k].Index = (byte)i;
                                 }
                             }
 
-                            Array.Sort(indexes);
+                            kp = kp.OrderBy(e => e.Index).ThenBy(e => e.Angle).ToArray();
                         }
                     }
                 }
             }
         }
 
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out byte[] indexes, out byte[] mindexes)
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out KazePoint[] kp, out KazePoint[] mkp)
         {
-            ComputeKazeDescriptors(bitmap, out indexes);
+            ComputeKazeDescriptors(bitmap, out kp);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                ComputeKazeDescriptors(brft, out mindexes);
+                ComputeKazeDescriptors(brft, out mkp);
             }
         }
 
-        public static int ComputeKazeMatch(byte[] cx, byte[] cy)
+        public static int ComputeKazeMatch(KazePoint[] cx, KazePoint[] cy)
         {
             var match = 0;
             var i = 0;
             var j = 0;
             while (i < cx.Length && j < cy.Length) {
-                if (cx[i] == cy[j]) {
-                    match++;
-                    i++;
-                    j++;
+                if (cx[i].Index == cy[j].Index) {
+                    if (cx[i].Angle == cy[j].Angle) {
+                        match++;
+                        i++;
+                        j++;
+                    }
+                    else {
+                        if (cx[i].Angle < cy[j].Angle) {
+                            i++;
+                        }
+                        else {
+                            j++;
+                        }
+                    }
                 }
                 else {
-                    if (cx[i] < cy[j]) {
+                    if (cx[i].Index < cy[j].Index) {
                         i++;
                     }
                     else {
@@ -403,7 +357,7 @@ namespace ImageBank
             return match;
         }
 
-        public static int ComputeKazeMatch(byte[] x, byte[] y, byte[] ym)
+        public static int ComputeKazeMatch(KazePoint[] x, KazePoint[] y, KazePoint[] ym)
         {
             if (x == null || y == null || ym == null) {
                 return 0;

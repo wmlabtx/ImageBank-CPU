@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+﻿using System.IO;
 
 namespace ImageBank
 {
@@ -13,12 +13,8 @@ namespace ImageBank
                 }
             }
 
-            if (!ImageHelper.GetImageDataFromFile(
-                img.FileName,
-                out _,
-                out _,
-                out Bitmap bitmap,
-                out _)) {
+            var imagedata = File.ReadAllBytes(filename);
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                 return null;
             }
 

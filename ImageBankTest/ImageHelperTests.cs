@@ -20,6 +20,7 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
+        /*
         private static string AsciiBytesToString(byte[] buffer, int maxlength)
         {
             for (int i = 0; i < maxlength; i++) {
@@ -46,20 +47,21 @@ namespace ImageBankTest
 
             return tags;
         }
+        */
 
         [TestMethod()]
         public void ComputeKazeTestAsync()
         {
             var filename = "k1024.jpg";
-            DateTime? datetaken = null;
             using (var image = Image.FromFile(filename)) {
                 ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var b1, out var bm1);
             }
 
+            /*
+            DateTime? datetaken = null;
             var task = GetExifTagsAsync(filename);
             task.Wait();
             var tags = task.Result;
-
 
             try {
                 using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read)) {
@@ -150,7 +152,7 @@ namespace ImageBankTest
 
                 datetaken = lastmodified;
             }
-
+            */
         }
 
         [TestMethod()]
