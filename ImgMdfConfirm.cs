@@ -4,10 +4,10 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void UpdateCounter(int index)
+        public static void UpdateGeneration(int index)
         {
             lock (_imglock) {
-                AppVars.ImgPanel[index].Img.Counter += 1;
+                AppVars.ImgPanel[index].Img.Generation += 1;
             }
         }
 

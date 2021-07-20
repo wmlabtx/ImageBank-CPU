@@ -1,19 +1,22 @@
-﻿using System.IO;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static ImgPanel GetImgPanel(string filename)
+        private static ImgPanel GetImgPanel(string name)
         {
             Img img;
             lock (_imglock) {
-                if (!_imgList.TryGetValue(filename, out img)) {
+                if (!_imgList.TryGetValue(name, out img)) {
                     return null;
                 }
             }
 
-            var imagedata = File.ReadAllBytes(filename);
+            var filename = Helper.GetFileName(name);
+            var imagedata = Helper.ReadData(filename);
+            if (imagedata == null) {
+                return null;
+            }
+
             if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                 return null;
             }

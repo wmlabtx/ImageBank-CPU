@@ -4,7 +4,7 @@ namespace ImageBank
 {
     public class Img
     {
-        public string FileName { get; }
+        public string Name { get; }
         public string Hash { get; }
         public int Width { get; }
         public int Height { get; }
@@ -19,7 +19,7 @@ namespace ImageBank
             get => _nexthash;
             set {
                 _nexthash = value;
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrNextHash, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNextHash, value);
             }
         }
 
@@ -32,7 +32,7 @@ namespace ImageBank
                     throw new ArgumentException("_kazematch < 0 || _kazematch > AppConsts.MaxDescriptors");
                 }
 
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrKazeMatch, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrKazeMatch, value);
             }
         }
 
@@ -41,7 +41,7 @@ namespace ImageBank
             get => _lastchanged;
             set {
                 _lastchanged = value;
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastChanged, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastChanged, value);
             }
         }
 
@@ -50,7 +50,7 @@ namespace ImageBank
             get => _lastview;
             set {
                 _lastview = value;
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastView, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastView, value);
             }
         }
 
@@ -59,25 +59,27 @@ namespace ImageBank
             get => _lastcheck;
             set {
                 _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrLastCheck, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
             }
         }
 
-        private int _counter;
-        public int Counter {
-            get => _counter;
+        private int _generation;
+        public int Generation {
+            get => _generation;
             set {
-                _counter = value;
-                if (_counter < 0) {
-                    throw new ArgumentException("_counter < 0");
+                _generation = value;
+                if (_generation < 0) {
+                    throw new ArgumentException("_generation < 0");
                 }
 
-                ImgMdf.SqlUpdateProperty(FileName, AppConsts.AttrCounter, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrGeneration, value);
             }
         }
 
+        public float Sim => (float)KazeMatch / KazeOne.Length;
+
         public Img(
-            string filename,
+            string name,
             string hash,
             int width,
             int height,
@@ -91,10 +93,10 @@ namespace ImageBank
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
-            int counter
+            int generation
             ) {
 
-            FileName = filename;
+            Name = name;
             Hash = hash;
             Width = width;
             Height = height;
@@ -109,15 +111,15 @@ namespace ImageBank
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
-            _counter = counter;
+            _generation = generation;
         }
 
         public Img(
-            string filename,
+            string name,
             Img other
             )
         {
-            FileName = filename;
+            Name = name;
             Hash = other.Hash;
             Width = other.Width;
             Height = other.Height;
@@ -130,7 +132,7 @@ namespace ImageBank
             _lastchanged = other.LastChanged;
             _lastview = other.LastView;
             _lastcheck = other.LastCheck;
-            _counter = other.Counter;
+            _generation = other.Generation;
         }
     }
 }

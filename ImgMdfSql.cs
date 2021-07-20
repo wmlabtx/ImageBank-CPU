@@ -6,15 +6,15 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void SqlUpdateProperty(string filename, string key, object val)
+        public static void SqlUpdateProperty(string name, string key, object val)
         {
             lock (_sqllock) {
                 try {
                     using (var sqlCommand = _sqlConnection.CreateCommand()) {
                         sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableImages} SET {key} = @{key} WHERE {AppConsts.AttrFileName} = @{AppConsts.AttrFileName}";
+                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableImages} SET {key} = @{key} WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}";
                         sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFileName}", filename);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
                         sqlCommand.ExecuteNonQuery();
                     }
                 }
@@ -23,13 +23,13 @@ namespace ImageBank
             }
         }
 
-        private static void SqlDelete(string filename)
+        private static void SqlDelete(string name)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
                     sqlCommand.Connection = _sqlConnection;
-                    sqlCommand.CommandText = $"DELETE FROM {AppConsts.TableImages} WHERE {AppConsts.AttrFileName} = @{AppConsts.AttrFileName}";
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFileName}", filename);
+                    sqlCommand.CommandText = $"DELETE FROM {AppConsts.TableImages} WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}";
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -37,8 +37,8 @@ namespace ImageBank
 
         private static void SqlAdd(Img img)
         {
-            if (img.FileName == null || img.FileName.Length == 0 || img.FileName.Length > 128) {
-                throw new ArgumentException("filename == null || filename.Length == 0 || filename.Length > 128");
+            if (img.Name == null || img.Name.Length == 0 || img.Name.Length != 10) {
+                throw new ArgumentException("name == null || name.Length == 0 || name.Length != 10");
             }
 
             if (img.Hash == null || img.Hash.Length != 32) {
@@ -73,8 +73,8 @@ namespace ImageBank
                 throw new ArgumentException("kazematch < 0 || kazematch > AppConsts.MaxDescriptors");
             }
 
-            if (img.Counter < 0) {
-                throw new ArgumentException("counter < 0");
+            if (img.Generation < 0 || img.Generation > 99) {
+                throw new ArgumentException("generation < 0 || generation > 99");
             }
 
             lock (_sqllock) {
@@ -82,7 +82,7 @@ namespace ImageBank
                     sqlCommand.Connection = _sqlConnection;
                     var sb = new StringBuilder();
                     sb.Append($"INSERT INTO {AppConsts.TableImages} (");
-                    sb.Append($"{AppConsts.AttrFileName}, ");
+                    sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrWidth}, ");
                     sb.Append($"{AppConsts.AttrHeight}, ");
@@ -96,9 +96,9 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
-                    sb.Append($"{AppConsts.AttrCounter} ");
+                    sb.Append($"{AppConsts.AttrGeneration} ");
                     sb.Append(") VALUES (");
-                    sb.Append($"@{AppConsts.AttrFileName}, ");
+                    sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrWidth}, ");
                     sb.Append($"@{AppConsts.AttrHeight}, ");
@@ -112,16 +112,16 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
-                    sb.Append($"@{AppConsts.AttrCounter}");
+                    sb.Append($"@{AppConsts.AttrGeneration}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFileName}", img.FileName);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrWidth}", img.Width);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(1000, img.MetaData.Length)));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeOne}", ImageHelper.KazePointsToBuffer(img.KazeOne));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeTwo}", ImageHelper.KazePointsToBuffer(img.KazeTwo));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
@@ -129,7 +129,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrGeneration}", img.Generation);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -145,7 +145,7 @@ namespace ImageBank
 
             var sb = new StringBuilder();
             sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrFileName}, "); // 0
+            sb.Append($"{AppConsts.AttrName}, "); // 0
             sb.Append($"{AppConsts.AttrHash}, "); // 1
             sb.Append($"{AppConsts.AttrWidth}, "); // 2
             sb.Append($"{AppConsts.AttrHeight}, "); // 3
@@ -159,7 +159,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
             sb.Append($"{AppConsts.AttrLastView}, "); // 12
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
-            sb.Append($"{AppConsts.AttrCounter} "); // 14
+            sb.Append($"{AppConsts.AttrGeneration} "); // 14
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -169,7 +169,7 @@ namespace ImageBank
                     using (var reader = sqlCommand.ExecuteReader()) {
                         var dtn = DateTime.Now;
                         while (reader.Read()) {
-                            var filename = reader.GetString(0);
+                            var name = reader.GetString(0);
                             var hash = reader.GetString(1);
                             var width = reader.GetInt32(2);
                             var height = reader.GetInt32(3);
@@ -188,10 +188,10 @@ namespace ImageBank
                             var lastchanged = reader.GetDateTime(11);
                             var lastview = reader.GetDateTime(12);
                             var lastcheck = reader.GetDateTime(13);
-                            var counter = reader.GetInt32(14);
+                            var generation = reader.GetInt32(14);
 
                             var img = new Img(
-                                filename: filename,
+                                name: name,
                                 hash: hash,
                                 width: width,
                                 height: height,
@@ -205,7 +205,7 @@ namespace ImageBank
                                 lastchanged: lastchanged,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
-                                counter: counter
+                                generation: generation
                                );
 
                             AddToMemory(img);

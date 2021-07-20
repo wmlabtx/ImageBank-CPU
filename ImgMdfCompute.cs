@@ -9,7 +9,10 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static int _computedcounter = 0; 
+        private static int _added = 0;
+        private static int _found = 0;
+        private static int _sim = 0;
+        private static int _bad = 0;
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
@@ -47,13 +50,19 @@ namespace ImageBank
                 }
 
                 candidates = _imgList
-                    .Where(e => !e.Value.FileName.Equals(img1.FileName, StringComparison.OrdinalIgnoreCase))
+                    .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
                     .Select(e => e.Value)
                     .ToArray();
             }
 
             if (candidates.Length == 0) {
-                backgroundworker.ReportProgress(0, "no candidates");
+                if (!img1.NextHash.Equals(img1.Hash, StringComparison.OrdinalIgnoreCase)) {
+                    img1.NextHash = img1.Hash;
+                    img1.KazeMatch = 0;
+                    img1.LastChanged = DateTime.Now;
+                }
+
+                img1.LastCheck = DateTime.Now;
                 return;
             }
 
@@ -61,17 +70,19 @@ namespace ImageBank
             var kazematch = img1.KazeMatch;
             var lastchanged = img1.LastChanged;
             var dmax = img1.KazeOne.Length;
+            var img2 = img1;
 
             for (var i = 0; i < candidates.Length; i++) {
                 var m = ImageHelper.ComputeKazeMatch(img1.KazeOne, candidates[i].KazeOne, candidates[i].KazeTwo);
                 var d = Math.Abs(img1.KazeOne.Length - candidates[i].KazeOne.Length);
                 if (m > kazematch || (m == kazematch && d < dmax)) {
                     lock (_imglock) {
-                        if (_imgList.ContainsKey(img1.FileName) && _imgList.ContainsKey(candidates[i].FileName)) {
+                        if (_imgList.ContainsKey(img1.Name) && _imgList.ContainsKey(candidates[i].Name)) {
                             nexthash = candidates[i].Hash;
                             kazematch = m;
                             lastchanged = DateTime.Now;
                             dmax = d;
+                            img2 = candidates[i];
                         }
                     }
                 }
@@ -79,15 +90,16 @@ namespace ImageBank
 
             if (!nexthash.Equals(img1.NextHash)) {
                 var sb = new StringBuilder();
+                sb.Append($"a{_added}/f{_found}/s{_sim}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                sb.Append($"{img1.FileName}: ");
+                sb.Append($"{img1.Name}[{img1.Generation}]: ");
                 sb.Append($"{img1.KazeMatch} ");
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
                 sb.Append($"{kazematch} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
             }
 
-            if (!nexthash.Equals(img1.NextHash)) {
+            if (!nexthash.Equals(img1.NextHash, StringComparison.OrdinalIgnoreCase)) {
                 img1.NextHash = nexthash;
             }
 
@@ -104,6 +116,19 @@ namespace ImageBank
 
         private static void ImportInternal(BackgroundWorker backgroundworker)
         {
+            lock (_imglock) {
+                if (_imgList.Count >= AppConsts.MaxImages) {
+                    return;
+                }
+
+                /*
+                var g0 = GetGenerationSize(0);
+                if (g0 >= AppConsts.MaxImagesInGeneration) {
+                    return;
+                }
+                */
+            }
+
             FileInfo fileinfo;
             lock (_rwlock) {
                 if (_rwList.Count == 0) {
@@ -133,200 +158,170 @@ namespace ImageBank
                 return;
             }
 
-            lock (_imglock) {
-                if (_imgList.ContainsKey(orgfilename)) {
-                    return;
-                }
-            }
-
             var imagedata = File.ReadAllBytes(orgfilename);
             if (imagedata == null || imagedata.Length < 16) {
                 File.Move(orgfilename, $"{orgfilename}{AppConsts.CorruptedExtension}");
+                _bad++;
                 return;
             }
 
             if (orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ||
                 orgextension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
-                string newfilename;
                 var password = Path.GetFileNameWithoutExtension(orgfilename);
-                var descrypteddata = orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ?
+                var decrypteddata = orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ?
                     Helper.DecryptDat(imagedata, password) :
                     Helper.Decrypt(imagedata, password);
 
-                if (descrypteddata == null) {
-                    newfilename = Path.ChangeExtension(orgfilename, AppConsts.JpgExtension);
-                    var directory = Path.GetDirectoryName(orgfilename);
-                    while (File.Exists(newfilename)) {
-                        var randomname = Helper.GetRandomName();
-                        newfilename = $"{directory}\\{randomname}{AppConsts.JpgExtension}";
-                    }
-
-                    File.Move(orgfilename, newfilename);
+                if (decrypteddata != null) {
+                    imagedata = decrypteddata;
                 }
-                else {
-                    imagedata = descrypteddata;
-                    newfilename = Path.ChangeExtension(orgfilename, AppConsts.JpgExtension);
-                    File.WriteAllBytes(newfilename, imagedata);
-                    Helper.DeleteToRecycleBin(orgfilename);
-                }
-
-                orgfilename = newfilename;
             }
 
             var magicformat = ImageHelper.GetMagicFormat(imagedata);
             if (magicformat == MagicFormat.Jpeg) {
                 if (imagedata[0] != 0xFF || imagedata[1] != 0xD8 || imagedata[imagedata.Length - 2] != 0xFF || imagedata[imagedata.Length - 1] != 0xD9) {
                     if (!ImageHelper.GetBitmapFromImageData(imagedata, out var corruptedbitmap)) {
-                        ImageHelper.SaveCorruptedFile(orgfilename);
+                        var badname = Path.GetFileName(orgfilename);
+                        var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                        Helper.DeleteToRecycleBin(badfilename);
+                        File.Move(orgfilename, badfilename);
+                        _bad++;
                         return;
                     }
                     else {
                         if (!ImageHelper.GetImageDataFromBitmap(corruptedbitmap, out var fixedimagedata)) {
-                            ImageHelper.SaveCorruptedFile(orgfilename);
-                            corruptedbitmap.Dispose();
+                            var badname = Path.GetFileName(orgfilename);
+                            var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                            Helper.DeleteToRecycleBin(badfilename);
+                            File.Move(orgfilename, badfilename);
+                            _bad++;
                             return;
                         }
                         else {
-                            orgfilename = ImageHelper.SaveCorruptedImage(orgfilename, fixedimagedata);
-                            imagedata = fixedimagedata;
-                            corruptedbitmap.Dispose();
+                            var badname = Path.GetFileNameWithoutExtension(orgfilename);
+                            var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
+                            Helper.DeleteToRecycleBin(badfilename);
+                            File.WriteAllBytes(badfilename, fixedimagedata);
+                            Helper.DeleteToRecycleBin(orgfilename);
+                            _bad++;
+                            return;
                         }
                     }
                 }
             }
 
             var hash = Helper.ComputeHash(imagedata);
+            bool found;
+            Img imgfound;
             lock (_imglock) {
-                if (_hashList.TryGetValue(hash, out var imgfound)) {
+                found = _hashList.TryGetValue(hash, out imgfound);
+            }
 
-                    // we found the same image in a database
-                    if (File.Exists(imgfound.FileName)) {
-                        // no reason to add the same image from a heap; we have one
-                        Helper.DeleteToRecycleBin(orgfilename);
-                        return;
-                    }
-                    else {
-                        // found image is gone; delete it
-                        Delete(imgfound.FileName);
-                    }
-                }
+            if (found) {
 
-                // it is a new image; we don't have one 
-                if (_imgList.Count >= AppConsts.MaxImages) {
+                // we found the same image in a database
+                var filenamefound = Helper.GetFileName(imgfound.Name);
+                if (File.Exists(filenamefound)) {
+                    // no reason to add the same image from a heap; we have one
+                    Helper.DeleteToRecycleBin(orgfilename);
+                    _found++;
                     return;
-                }
-
-                if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                    ImageHelper.SaveCorruptedFile(orgfilename);
-                    return;
-                }
-
-                if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                    bitmap = ImageHelper.RepixelBitmap(bitmap);
-                }
-
-                ImageHelper.ComputeKazeDescriptors(bitmap, out var kazeone, out var kazetwo);
-                if (kazeone == null || kazeone.Length == 0) {
-                    var baddir = $"{AppConsts.PathHp}\\{AppConsts.CorruptedExtension}";
-                    if (!Directory.Exists(baddir)) {
-                        Directory.CreateDirectory(baddir);
-                    }
-
-                    var badname = Path.GetFileName(orgfilename);
-                    var badfilename = $"{baddir}\\{badname}{AppConsts.CorruptedExtension}";
-                    File.Move(orgfilename, badfilename);
-                    return;
-                }
-
-                ImageHelper.GetExif(orgfilename, out var datetaken, out var metadata);
-
-                var lc = GetMinLastCheck();
-                var lv = GetMinLastView();
-
-                var orgpath = Path.GetDirectoryName(orgfilename);
-                if (orgpath.StartsWith(AppConsts.PathRw, StringComparison.OrdinalIgnoreCase)) {
-
-                    // we have to create unique name and a location in Hp folder
-                    var hpsubfolder = hash.Substring(hash.Length - 2, 2);
-                    var newfilename = orgfilename;
-                    var extension = Path.GetExtension(orgfilename);
-                    do {
-                        var randomname = Helper.GetRandomName();
-                        newfilename = $"{AppConsts.PathHp}\\{hpsubfolder}\\{randomname}{extension}";
-                    }
-                    while (File.Exists(newfilename));
-
-                    var dir = $"{AppConsts.PathHp}\\{hpsubfolder}";
-                    if (!Directory.Exists(dir)) {
-                        Directory.CreateDirectory(dir);
-                    }
-
-                    var nimg = new Img(
-                        filename: newfilename,
-                        hash: hash,
-                        width: bitmap.Width,
-                        height: bitmap.Height,
-                        size: imagedata.Length,
-                        datetaken: datetaken,
-                        metadata: metadata,
-                        kazeone: kazeone,
-                        kazetwo: kazetwo,
-                        nexthash: hash,
-                        kazematch: 0,
-                        lastchanged: lc,
-                        lastview: lv,
-                        lastcheck: lc,
-                        counter: 0);
-
-                    Add(nimg);
-
-                    var lastmodified = File.GetLastWriteTime(orgfilename);
-                    if (lastmodified > DateTime.Now) {
-                        lastmodified = DateTime.Now;
-                    }
-
-                    File.WriteAllBytes(newfilename, imagedata);
-                    File.SetLastWriteTime(newfilename, lastmodified);
-                    if (!orgfilename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
-                        Helper.DeleteToRecycleBin(orgfilename);
-                    }
                 }
                 else {
-
-                    // we are adding new image to a database
-                    var nimg = new Img(
-                        filename: orgfilename,
-                        hash: hash,
-                        width: bitmap.Width,
-                        height: bitmap.Height,
-                        size: imagedata.Length,
-                        datetaken: datetaken,
-                        metadata: metadata,
-                        kazeone: kazeone,
-                        kazetwo: kazetwo,
-                        nexthash: hash,
-                        kazematch: 0,
-                        lastchanged: lc,
-                        lastview: lv,
-                        lastcheck: lc,
-                        counter: 0);
-
-                    Add(nimg);
+                    // found image is gone; delete it
+                    Delete(imgfound.Name);
                 }
-
-                bitmap.Dispose();
             }
+
+            // it is a new image; we don't have one 
+
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                var badname = Path.GetFileName(orgfilename);
+                var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                Helper.DeleteToRecycleBin(badfilename);
+                File.Move(orgfilename, badfilename);
+                return;
+            }
+
+            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                bitmap = ImageHelper.RepixelBitmap(bitmap);
+            }
+
+            ImageHelper.ComputeKazeDescriptors(bitmap, out var kazeone, out var kazetwo);
+            if (kazeone == null || kazeone.Length == 0) {
+                var badname = Path.GetFileNameWithoutExtension(orgfilename);
+                var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
+                Helper.DeleteToRecycleBin(badfilename);
+                File.WriteAllBytes(badfilename, imagedata);
+                Helper.DeleteToRecycleBin(orgfilename);
+                _bad++;
+                return;
+            }
+
+            MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
+
+            var lc = GetMinLastCheck();
+            var lv = DateTime.Now/*GetMinLastView()*/;
+
+            // we have to create unique name and a location in Hp folder
+            string newname;
+            string newfilename;
+            var iteration = -1;
+            do {
+                iteration++;
+                newname = Helper.GetName(hash, iteration);
+                newfilename = Helper.GetFileName(newname);
+            } while (File.Exists(newfilename));
+
+            var nimg = new Img(
+                name: newname,
+                hash: hash,
+                width: bitmap.Width,
+                height: bitmap.Height,
+                size: imagedata.Length,
+                datetaken: datetaken,
+                metadata: metadata,
+                kazeone: kazeone,
+                kazetwo: kazetwo,
+                nexthash: hash,
+                kazematch: 0,
+                lastchanged: lc, 
+                lastview: lv,
+                lastcheck: lc,
+                generation: 0);
+
+            Add(nimg);
+
+            var lastmodified = File.GetLastWriteTime(orgfilename);
+            if (lastmodified > DateTime.Now) {
+                lastmodified = DateTime.Now;
+            }
+
+            Helper.WriteData(newfilename, imagedata);
+            File.SetLastWriteTime(newfilename, lastmodified);
+            if (!orgfilename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
+                Helper.DeleteToRecycleBin(orgfilename);
+            }
+
+            bitmap.Dispose();
+            _added++;
         }
+
+        private static float _importsum = 0f;
+        private static int _importcnt = 0;
 
         public static void Compute(BackgroundWorker backgroundworker)
         {
-            if (_computedcounter >= 2) {
-                ImportInternal(backgroundworker);
-                _computedcounter = 0;
-            }
-            else {
+            var dt = DateTime.Now;
+            ImportInternal(backgroundworker);
+            var st = (float)DateTime.Now.Subtract(dt).TotalSeconds;
+            _importsum += st;
+            _importcnt++;
+            var avg = _importsum / _importcnt;
+            backgroundworker.ReportProgress(0, $"a{_added}/f{_found}/b{_bad}/{avg:F2}s");
+
+            for (var i = 0; i < 0; i++) {
                 ComputeInternal(backgroundworker);
-                _computedcounter++;
             }
         }
     }

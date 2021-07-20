@@ -1,54 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Globalization;
+﻿using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using ImageBank;
-using MetadataExtractor;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NExifTool;
 
 namespace ImageBankTest
 {
     [TestClass()]
     public class ImageHelperTests
     {
-        /*
-        private static string AsciiBytesToString(byte[] buffer, int maxlength)
-        {
-            for (int i = 0; i < maxlength; i++) {
-                if (buffer[i] != 0) {
-                    continue;
-                }
-
-                return Encoding.ASCII.GetString(buffer, 0, i);
-            }
-
-            return Encoding.ASCII.GetString(buffer, 0, maxlength);
-        }
-
-        private static async Task<IEnumerable<NExifTool.Tag>> GetExifTagsAsync(string filename)
-        {
-            IEnumerable<NExifTool.Tag> tags;
-            try {
-                var et = new ExifTool(new ExifToolOptions());
-                tags = await et.GetTagsAsync(filename);
-            }
-            catch {
-                tags = null;
-            }
-
-            return tags;
-        }
-        */
-
         [TestMethod()]
         public void ComputeKazeTestAsync()
         {
@@ -56,6 +16,8 @@ namespace ImageBankTest
             using (var image = Image.FromFile(filename)) {
                 ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var b1, out var bm1);
             }
+
+
 
             /*
             DateTime? datetaken = null;

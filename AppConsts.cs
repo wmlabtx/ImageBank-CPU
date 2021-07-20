@@ -3,12 +3,13 @@
     public static class AppConsts
     {
         public const string PathRw = @"D:\Users\Murad\Documents\Sdb\Rw";
-        public const string FileDatabase = @"M:\Db\images.mdf";
-        public const string FileKazeClusters = @"M:\Db\kazeclusters.dat";
-        public const string PathHp = @"M:\Hp";
+        public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
+        public const string FileKazeClusters = @"D:\Users\Murad\Documents\Sdb\Db\kazeclusters.dat";
+        public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
+        public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
 
-        public const int MaxImages = 100000;
-        public const int MaxAdd = 100;
+        public const int MaxImages = 200000;
+        public const int MaxImagesInGeneration = 100000;
 
         public const int MaxDescriptors = 1000;
         public const int DescriptorSize = 61;
@@ -27,7 +28,7 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
-        public const string AttrFileName = "FileName";
+        public const string AttrName = "Name";
         public const string AttrHash = "Hash";
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
@@ -41,6 +42,6 @@
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";
-        public const string AttrCounter = "Counter";
+        public const string AttrGeneration = "Generation";
     }
 }

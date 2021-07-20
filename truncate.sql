@@ -5,5 +5,5 @@ GO
 --INSERT INTO Vars (Id) VALUES (0);
 --GO
 
-DBCC SHRINKDATABASE(N'M:\Db\IMAGES.MDF')
+DBCC SHRINKDATABASE(N'D:\Users\Murad\Documents\Sdb\Db\images.mdf')
 GO

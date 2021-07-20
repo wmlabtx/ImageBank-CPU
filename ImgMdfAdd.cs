@@ -1,13 +1,11 @@
-﻿using OpenCvSharp;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
         private static void AddToMemory(Img img)
         {
             lock (_imglock) {
-                _imgList.Add(img.FileName, img);
+                _imgList.Add(img.Name, img);
                 _hashList.Add(img.Hash, img);
             }
         }

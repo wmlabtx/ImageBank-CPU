@@ -15,9 +15,21 @@ namespace ImageBank
                 var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
                 lock (_imglock) {
                     foreach (var e in fs) {
-                        if (!_imgList.ContainsKey(e.FullName)) {
-                            _rwList.Add(e);
+                        var orgfilename = e.FullName;
+                        var p1 = Path.GetDirectoryName(orgfilename).Substring(AppConsts.PathHp.Length + 1);
+                        if (p1.Length == 2) {
+                            var p2 = Path.GetFileNameWithoutExtension(orgfilename);
+                            if (p2.Length == 8) {
+                                var key = $"{p1}{p2}";
+                                lock (_imglock) {
+                                    if (_imgList.ContainsKey(key)) {
+                                        continue;
+                                    }
+                                }
+                            }
                         }
+
+                        _rwList.Add(e);
                     }
                 }
 
@@ -31,6 +43,9 @@ namespace ImageBank
                 }
 
                 _rwList = _rwList.OrderBy(e => e.Length).ToList();
+                _added = 0;
+                _found = 0;
+                _bad = 0;
             }
 
             ((IProgress<string>)AppVars.Progress).Report($"clean-up {AppConsts.PathHp}...");

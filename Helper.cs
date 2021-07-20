@@ -2,22 +2,15 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ImageBank
 {
     public static class Helper
     {
-        private static RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
+        //private static readonly RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
 
         #region DeleteToRecycleBin
 
@@ -41,6 +34,10 @@ namespace ImageBank
 
         public static string ComputeHash(byte[] array)
         {
+            if (array == null) {
+                return null;
+            }
+
             using (var md5 = MD5.Create()) {
                 var hashmd5 = md5.ComputeHash(array);
                 var sb = new StringBuilder();
@@ -100,53 +97,6 @@ namespace ImageBank
 
         #endregion
 
-        #region Image
-
-        public static Bitmap RepixelBitmap(Bitmap bitmap)
-        {
-            Contract.Requires(bitmap != null);
-            var bitmap24bppRgb = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var g = Graphics.FromImage(bitmap24bppRgb)) {
-                g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
-            }
-
-            return bitmap24bppRgb;
-        }
-
-        public static Bitmap ResizeBitmap(Bitmap bitmap, int width, int height)
-        {
-            Contract.Requires(bitmap != null);
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var graphics = Graphics.FromImage(destImage)) {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                using (var wrapMode = new ImageAttributes()) {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(bitmap, destRect, 0, 0, bitmap.Width, bitmap.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-
-            return destImage;
-        }
-
-        public static ImageSource ImageSourceFromBitmap(Bitmap bitmap)
-        {
-            Contract.Requires(bitmap != null);
-            var handle = bitmap.GetHbitmap();
-            try {
-                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            }
-            finally {
-                NativeMethods.DeleteObject(handle);
-            }
-        }
-
-        #endregion
-
         #region CleanupDirectories
         public static void CleanupDirectories(string startLocation, IProgress<string> progress)
         {
@@ -170,14 +120,28 @@ namespace ImageBank
 
         #region FileData
 
+        public static byte[] ReadData(string filename)
+        {
+            if (!File.Exists(filename)) {
+                return null;
+            }
+
+            var earray = File.ReadAllBytes(filename);
+            var password = Path.GetFileNameWithoutExtension(filename);
+            var imgdata = Decrypt(earray, password);
+            return imgdata;
+        }
+
         public static void WriteData(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
-            if (!Directory.Exists(directory)) {
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllBytes(filename, imgdata);
+            var password = Path.GetFileNameWithoutExtension(filename);
+            var earray = Encrypt(imgdata, password);
+            File.WriteAllBytes(filename, earray);
         }
 
         #endregion
@@ -294,25 +258,21 @@ namespace ImageBank
 
         #region Misc
 
-        public static string GetHpSubFolder()
+        public static string GetName(string hash, int iteration)
         {
-            var buffer = new byte[8];
-            _rng.GetBytes(buffer);
-            var u = BitConverter.ToUInt64(buffer, 0);
-            var folder = (int)((u % 50) + 1);
-            return $"{folder:D2}";
+            var name = hash.Substring(iteration + 2, 10);
+            return name;
         }
 
-        public static string GetRandomName()
+        public static string GetFileName(string name)
         {
-            var buffer = new byte[4];
-            _rng.GetBytes(buffer);
-            var sb = new StringBuilder();
-            for (var i = 0; i < buffer.Length; i++) {
-                sb.Append(buffer[i].ToString("x2"));
+            if (name == null || name.Length != 10) {
+                return null;
             }
 
-            return sb.ToString();
+            var f = name.Substring(0, 2);
+            var n = name.Substring(2, 8);
+            return $"{AppConsts.PathHp}\\{f}\\{n}{AppConsts.MzxExtension}";
         }
 
         #endregion

@@ -52,5 +52,12 @@ namespace ImageBank
                     .AddSeconds(-1);
             }
         }
+
+        public static int GetGenerationSize(int generation)
+        {
+            lock (_imglock) {
+                return _imgList.Count == 0 ? 0 : _imgList.Count(e => e.Value.Generation == generation);
+            }
+        }
     }
 }

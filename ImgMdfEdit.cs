@@ -6,55 +6,58 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Rotate(string filename, RotateFlipType rft)
+        public static void Rotate(string name, RotateFlipType rft)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(filename, out var img)) {
-                    var imagedata = File.ReadAllBytes(img.FileName);
-                    if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
-                        return;
+                if (_imgList.TryGetValue(name, out var img)) {
+                    var filename = Helper.GetFileName(name);
+                    var imagedata = Helper.ReadData(filename);
+                    if (imagedata != null) {
+                        if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                            ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
+                            return;
+                        }
+
+                        bitmap.RotateFlip(rft);
+                        if (!ImageHelper.GetImageDataFromBitmap(bitmap, out var rimagedata)) {
+                            ((IProgress<string>)AppVars.Progress).Report($"Encode error: {filename}");
+                            return;
+                        }
+
+                        var rhash = Helper.ComputeHash(rimagedata);
+                        if (_hashList.ContainsKey(rhash)) {
+                            ((IProgress<string>)AppVars.Progress).Report($"Dup found for {filename}");
+                            return;
+                        }
+                        else {
+                            ImageHelper.ComputeKazeDescriptors(bitmap, out var rindexes, out var rmindexes);
+                            MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
+
+                            var minlc = GetMinLastCheck();
+                            var rimg = new Img(
+                                name: name,
+                                hash: rhash,
+                                width: bitmap.Width,
+                                height: bitmap.Height,
+                                size: rimagedata.Length,
+                                datetaken: rdatetaken,
+                                metadata: rmetadata,
+                                kazeone: rindexes,
+                                kazetwo: rmindexes,
+                                nexthash: rhash,
+                                kazematch: 0,
+                                lastchanged: img.LastChanged,
+                                lastview: img.LastView,
+                                lastcheck: minlc,
+                                generation: img.Generation);
+
+                            Delete(name);
+                            Add(rimg);
+                            Helper.WriteData(filename, rimagedata);
+                        }
+
+                        bitmap.Dispose();
                     }
-
-                    bitmap.RotateFlip(rft);
-                    if (!ImageHelper.GetImageDataFromBitmap(bitmap, out var rimagedata)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Encode error: {filename}");
-                        return;
-                    }
-
-                    var rhash = Helper.ComputeHash(rimagedata);
-                    if (_hashList.ContainsKey(rhash)) {
-                        ((IProgress<string>)AppVars.Progress).Report($"Dup found for {filename}");
-                        return;
-                    }
-                    else {
-                        ImageHelper.ComputeKazeDescriptors(bitmap, out var rindexes, out var rmindexes);
-                        ImageHelper.GetExif(img.FileName, out var rdatetaken, out var rmetadata);
-
-                        var minlc = GetMinLastCheck();
-                        var rimg = new Img(
-                            filename: filename,
-                            hash: rhash,
-                            width: bitmap.Width,
-                            height: bitmap.Height,
-                            size: rimagedata.Length,
-                            datetaken: rdatetaken,
-                            metadata: rmetadata,
-                            kazeone: rindexes,
-                            kazetwo: rmindexes,
-                            nexthash: rhash,
-                            kazematch: 0,
-                            lastchanged: img.LastChanged,
-                            lastview: img.LastView,
-                            lastcheck: minlc,
-                            counter: 0);
-
-                        Delete(img.FileName);
-                        Add(rimg);
-                        Helper.WriteData(rimg.FileName, rimagedata);
-                    }
-
-                    bitmap.Dispose();
                 }
             }
         }

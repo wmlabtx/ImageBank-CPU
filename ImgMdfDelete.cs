@@ -1,15 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Delete(string filename)
+        public static void Delete(string name)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(filename, out var img)) {
+                if (_imgList.TryGetValue(name, out var img)) {
                     if (_hashList.ContainsKey(img.Hash)) {
                         _hashList.Remove(img.Hash);
                     }
@@ -22,15 +18,14 @@ namespace ImageBank
                         }
                     }
 
-                    _imgList.Remove(filename);
+                    _imgList.Remove(name);
 
-                    if (File.Exists(filename)) {
-                        Helper.DeleteToRecycleBin(img.FileName);
-                    }
+                    var filename = Helper.GetFileName(img.Name);
+                    Helper.DeleteToRecycleBin(filename);
                 }
             }
 
-            SqlDelete(filename);
+            SqlDelete(name);
         }
     }
 }

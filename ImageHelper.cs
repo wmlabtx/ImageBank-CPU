@@ -1,8 +1,8 @@
-﻿using NExifTool;
-using OpenCvSharp;
+﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -11,6 +11,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ImageBank
 {
@@ -58,7 +62,7 @@ namespace ImageBank
 
         public static Bitmap RepixelBitmap(Image bitmap)
         {
-            var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
+            var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             using (var g = Graphics.FromImage(bitmap24BppRgb)) {
                 g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }
@@ -69,7 +73,7 @@ namespace ImageBank
         public static Bitmap ResizeBitmap(Image bitmap, int width, int height)
         {
             var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+            var destImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             using (var graphics = Graphics.FromImage(destImage))
             {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
@@ -86,7 +90,19 @@ namespace ImageBank
             return destImage;
         }
 
-        public static MagicFormat GetMagicFormat(IReadOnlyList<byte> imagedata)
+        public static ImageSource ImageSourceFromBitmap(Bitmap bitmap)
+        {
+            Contract.Requires(bitmap != null);
+            var handle = bitmap.GetHbitmap();
+            try {
+                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally {
+                NativeMethods.DeleteObject(handle);
+            }
+        }
+
+        public static MagicFormat GetMagicFormat(byte[] imagedata)
         {
             // https://en.wikipedia.org/wiki/List_of_file_signatures
 
@@ -120,13 +136,8 @@ namespace ImageBank
 
         public static void SaveCorruptedFile(string filename)
         {
-            var baddir = $"{AppConsts.PathHp}\\{AppConsts.CorruptedExtension}";
-            if (!Directory.Exists(baddir)) {
-                Directory.CreateDirectory(baddir);
-            }
-
             var badname = Path.GetFileName(filename);
-            var badfilename = $"{baddir}\\{badname}{AppConsts.CorruptedExtension}";
+            var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
             Helper.DeleteToRecycleBin(badfilename);
             File.Move(filename, badfilename);
         }
@@ -158,95 +169,6 @@ namespace ImageBank
             catch (ArgumentException) {
                 imagedata = null;
                 return false;
-            }
-        }
-
-        private static async Task<IEnumerable<Tag>> GetExifTagsAsync(string filename)
-        {
-            IEnumerable<Tag> tags;
-            try {
-                var et = new ExifTool(new ExifToolOptions());
-                tags = await et.GetTagsAsync(filename);
-            }
-            catch {
-                tags = null;
-            }
-
-            return tags;
-        }
-
-        private static string AsciiBytesToString(byte[] buffer, int maxlength)
-        {
-            for (int i = 0; i < maxlength; i++) {
-                if (buffer[i] != 0) {
-                    continue;
-                }
-
-                return Encoding.ASCII.GetString(buffer, 0, i);
-            }
-
-            return Encoding.ASCII.GetString(buffer, 0, maxlength);
-        }
-
-        public static void GetExif(string filename, out DateTime? datetaken, out string metadata)
-        {
-            datetaken = null;
-            metadata = string.Empty;
-            var sb = new StringBuilder();
-            var tagscounter = 0;
-            using (var task = GetExifTagsAsync(filename)) {
-                task.Wait();
-                var tags = task.Result;
-                if (tags != null) {
-                    foreach (var tag in tags) {
-                        if (tag.Group.StartsWith("File", StringComparison.OrdinalIgnoreCase)) {
-                            continue;
-                        }
-
-                        if (tag.Name.Equals("ExifToolVersion", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("JFIFVersion", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("ResolutionUnit", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("XResolution", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("YResolution", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("ImageSize", StringComparison.OrdinalIgnoreCase) ||
-                            tag.Name.Equals("Megapixels", StringComparison.OrdinalIgnoreCase)) {
-                            continue;
-                        }
-
-                        tagscounter++;
-                        if (DateTime.TryParseExact(tag.Value, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
-                            if (dt.Year >= 1990 && dt < DateTime.Now) {
-                                if (datetaken == null || dt < datetaken) {
-                                    datetaken = dt;
-                                    sb.AppendLine($"[{tag.Group}{tag.Name}] {tag.Value}");
-                                }
-                            }
-                        }
-                    }
-                }
-                else {
-                    using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
-                    using (var myImage = Image.FromStream(fs, false, false)) {
-                        foreach (var property in myImage.PropertyItems) {
-                            tagscounter++;
-                            if (property.Id == 0x0132) {
-                                var sdt = AsciiBytesToString(property.Value, 20);
-                                if (DateTime.TryParseExact(sdt, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) {
-                                    datetaken = dt;
-                                    sb.AppendLine($"[0132] {sdt}");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (tagscounter > 0) {
-                sb.Append($"Exif tags: {tagscounter}");
-            }
-
-            if (sb.Length > 0) {
-                metadata = sb.ToString();
             }
         }
 
