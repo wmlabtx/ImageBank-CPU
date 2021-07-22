@@ -19,6 +19,9 @@
             </MenuItem>
             <MenuItem Header="Move">
             </MenuItem>
+            <MenuItem Header="Train">
+                <MenuItem Header="Get Descriptors" Click="GetDescriptorsClick" />
+            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

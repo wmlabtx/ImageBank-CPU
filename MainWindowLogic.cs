@@ -84,6 +84,13 @@ namespace ImageBank
             Import();
         }
 
+        private async void GetDescriptorsClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.Clustering(); }).ConfigureAwait(true);
+            EnableElements();
+        }
+
         private async void Import()
         {
             DisableElements();

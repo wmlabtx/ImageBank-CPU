@@ -6,11 +6,8 @@ using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -20,9 +17,9 @@ namespace ImageBank
 {
     public static class ImageHelper
     {
-        const int MAXDIM = 1024;
+        const int MAXDIM = 500;
         const int KAZESIZE = 64;
-        const int MAXCLUSTERS = 256;
+        const int MAXCLUSTERS = 16 * 1024;
 
         private static readonly KAZE _kaze;
         private static readonly BFMatcher _bfmatch;
@@ -172,28 +169,21 @@ namespace ImageBank
             }
         }
 
-        public static byte[] KazePointsToBuffer(KazePoint[] kp)
+        public static byte[] KpToBuffer(int[] kp)
         {
-            var buffer = new byte[kp.Length * 2];
-            for (var i = 0; i < kp.Length; i++) {
-                buffer[i * 2] = kp[i].Angle;
-                buffer[i * 2 + 1] = kp[i].Index;
-            }
-
+            var buffer = new byte[kp.Length * sizeof(int)];
+            Buffer.BlockCopy(kp, 0, buffer, 0, buffer.Length);
             return buffer;
         }
 
-        public static KazePoint[] KazePointsFromBuffer(byte[] buffer)
+        public static int[] KpFromBuffer(byte[] buffer)
         {
-            var kp = new KazePoint[buffer.Length / 2];
-            for (var i = 0; i < kp.Length; i++) {
-                kp[i] = new KazePoint() { Angle = buffer[i * 2], Index = buffer[i * 2 + 1] };
-            }
-
+            var kp = new int[buffer.Length / sizeof(int)];
+            Buffer.BlockCopy(buffer, 0, kp, 0, buffer.Length);
             return kp;
         }
 
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out KazePoint[] kp)
+        public static void ComputeKpDescriptors(Bitmap bitmap, out int[] kp)
         {
             kp = null;
             using (var matsource = bitmap.ToMat())
@@ -212,62 +202,69 @@ namespace ImageBank
                             /*
                             using (var matkeypoints = new Mat()) {
                                 Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                                matkeypoints.SaveImage("akeypoints.png");
+                                matkeypoints.SaveImage("ki500x500.png");
                             }
                             */
 
-                            kp = new KazePoint[keypoints.Length];
-                            for (var i = 0; i < keypoints.Length; i++) {
-                                var angle = (byte)(keypoints[i].Angle * 16f / 360f);
-                                kp[i] = new KazePoint() { Angle = angle, Index = 0 };
-                            }
-
+                            var ki = new short[keypoints.Length];
                             for (var i = 0; i < idx.Length; i++) {
                                 for (var j = 0; j < idx[i].Length; j++) {
                                     var k = idx[i][j];
-                                    kp[k].Index = (byte)i;
+                                    ki[k] = (short)i;
                                 }
+                            } 
+
+                            kp = new int[keypoints.Length];
+                            for (var i = 0; i < keypoints.Length; i++) {
+                                var dmin = float.MaxValue;
+                                var jmin = 0;
+                                for (var j = 0; j < keypoints.Length; j++) {
+                                    if (i == j) {
+                                        continue;
+                                    }
+
+                                    var xd = keypoints[i].Pt.X - keypoints[j].Pt.X;
+                                    var yd = keypoints[i].Pt.Y - keypoints[j].Pt.Y;
+                                    var d2 = xd * xd + yd * yd;
+                                    if (d2 < dmin) {
+                                        dmin = d2;
+                                        jmin = j;
+                                    }
+                                }
+
+                                var kpv = ki[i] <= ki[jmin] ? (ki[i] << 14) | (int)ki[jmin] : (ki[jmin] << 14) | (int)ki[i];
+                                kp[i] = kpv;
                             }
 
-                            kp = kp.OrderBy(e => e.Index).ThenBy(e => e.Angle).ToArray();
+                            Array.Sort(kp);
                         }
                     }
                 }
             }
         }
 
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out KazePoint[] kp, out KazePoint[] mkp)
+        public static void ComputeKpDescriptors(Bitmap bitmap, out int[] kp, out int[] mkp)
         {
-            ComputeKazeDescriptors(bitmap, out kp);
+            ComputeKpDescriptors(bitmap, out kp);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                ComputeKazeDescriptors(brft, out mkp);
+                ComputeKpDescriptors(brft, out mkp);
             }
         }
 
-        public static int ComputeKazeMatch(KazePoint[] cx, KazePoint[] cy)
+        public static int ComputeKpMatch(int[] cx, int[] cy)
         {
             var match = 0;
             var i = 0;
             var j = 0;
             while (i < cx.Length && j < cy.Length) {
-                if (cx[i].Index == cy[j].Index) {
-                    if (cx[i].Angle == cy[j].Angle) {
-                        match++;
-                        i++;
-                        j++;
-                    }
-                    else {
-                        if (cx[i].Angle < cy[j].Angle) {
-                            i++;
-                        }
-                        else {
-                            j++;
-                        }
-                    }
+                if (cx[i] == cy[j]) {
+                    match++;
+                    i++;
+                    j++;
                 }
                 else {
-                    if (cx[i].Index < cy[j].Index) {
+                    if (cx[i] < cy[j]) {
                         i++;
                     }
                     else {
@@ -279,14 +276,14 @@ namespace ImageBank
             return match;
         }
 
-        public static int ComputeKazeMatch(KazePoint[] x, KazePoint[] y, KazePoint[] ym)
+        public static int ComputeKpMatch(int[] x, int[] y, int[] ym)
         {
             if (x == null || y == null || ym == null) {
                 return 0;
             }
 
-            var m1 = ComputeKazeMatch(x, y);
-            var m2 = ComputeKazeMatch(x, ym);
+            var m1 = ComputeKpMatch(x, y);
+            var m2 = ComputeKpMatch(x, ym);
             var m = Math.Max(m1, m2);
             return m;
         }

@@ -19,7 +19,7 @@ namespace ImageBank
                         return;
                     }
 
-                    if (nameX == null) {
+                     if (nameX == null) {
                         imgX = null;
                         var valid = _imgList
                             .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
@@ -31,16 +31,18 @@ namespace ImageBank
                             return;
                         }
 
+                        var mingeneration = valid.Min(e => e.Generation);
+                        imgX = valid.Where(e => e.Generation == mingeneration).OrderByDescending(e => e.LastChanged).FirstOrDefault();
 
+                        /*
                         var scope = valid.Where(e => e.LastView <= e.LastChanged).ToArray();
                         if (scope.Length > 0) {
-                            var mingeneration = scope.Min(e => e.Generation);
-                            imgX = scope.Where(e => e.Generation == mingeneration).OrderByDescending(e => e.Sim).FirstOrDefault();
                         }
                         else {
                             var mingeneration = valid.Min(e => e.Generation);
                             imgX = valid.Where(e => e.Generation == mingeneration).OrderBy(e => e.LastView).FirstOrDefault();
                         }
+                        */
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;

@@ -30,7 +30,7 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.ComputeKazeDescriptors(bitmap, out var rindexes, out var rmindexes);
+                            ImageHelper.ComputeKpDescriptors(bitmap, out var rindexes, out var rmindexes);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
 
                             var minlc = GetMinLastCheck();

@@ -11,7 +11,6 @@ namespace ImageBank
     {
         private static int _added = 0;
         private static int _found = 0;
-        private static int _sim = 0;
         private static int _bad = 0;
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
@@ -73,7 +72,7 @@ namespace ImageBank
             var img2 = img1;
 
             for (var i = 0; i < candidates.Length; i++) {
-                var m = ImageHelper.ComputeKazeMatch(img1.KazeOne, candidates[i].KazeOne, candidates[i].KazeTwo);
+                var m = ImageHelper.ComputeKpMatch(img1.KazeOne, candidates[i].KazeOne, candidates[i].KazeTwo);
                 var d = Math.Abs(img1.KazeOne.Length - candidates[i].KazeOne.Length);
                 if (m > kazematch || (m == kazematch && d < dmax)) {
                     lock (_imglock) {
@@ -90,7 +89,7 @@ namespace ImageBank
 
             if (!nexthash.Equals(img1.NextHash)) {
                 var sb = new StringBuilder();
-                sb.Append($"a{_added}/f{_found}/s{_sim}/b{_bad}/{_rwList.Count / 1024}K ");
+                sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                 sb.Append($"{img1.Name}[{img1.Generation}]: ");
                 sb.Append($"{img1.KazeMatch} ");
@@ -120,13 +119,6 @@ namespace ImageBank
                 if (_imgList.Count >= AppConsts.MaxImages) {
                     return;
                 }
-
-                /*
-                var g0 = GetGenerationSize(0);
-                if (g0 >= AppConsts.MaxImagesInGeneration) {
-                    return;
-                }
-                */
             }
 
             FileInfo fileinfo;
@@ -247,7 +239,7 @@ namespace ImageBank
                 bitmap = ImageHelper.RepixelBitmap(bitmap);
             }
 
-            ImageHelper.ComputeKazeDescriptors(bitmap, out var kazeone, out var kazetwo);
+            ImageHelper.ComputeKpDescriptors(bitmap, out var kazeone, out var kazetwo);
             if (kazeone == null || kazeone.Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
@@ -261,7 +253,7 @@ namespace ImageBank
             MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
 
             var lc = GetMinLastCheck();
-            var lv = DateTime.Now/*GetMinLastView()*/;
+            var lv = DateTime.Now;
 
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -307,20 +299,10 @@ namespace ImageBank
             _added++;
         }
 
-        private static float _importsum = 0f;
-        private static int _importcnt = 0;
-
         public static void Compute(BackgroundWorker backgroundworker)
         {
-            var dt = DateTime.Now;
             ImportInternal(backgroundworker);
-            var st = (float)DateTime.Now.Subtract(dt).TotalSeconds;
-            _importsum += st;
-            _importcnt++;
-            var avg = _importsum / _importcnt;
-            backgroundworker.ReportProgress(0, $"a{_added}/f{_found}/b{_bad}/{avg:F2}s");
-
-            for (var i = 0; i < 0; i++) {
+            for (var i = 0; i < 2; i++) {
                 ComputeInternal(backgroundworker);
             }
         }

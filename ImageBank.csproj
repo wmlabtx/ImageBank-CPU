@@ -137,7 +137,6 @@
     <Compile Include="ImgMdfConfirm.cs" />
     <Compile Include="ImgMdfSql.cs" />
     <Compile Include="ImgPanel.cs" />
-    <Compile Include="KazePoint.cs" />
     <Compile Include="MagicFormat.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -96,6 +95,11 @@ namespace ImageBank
         private void ImportClick(object sender, RoutedEventArgs e)
         {
             ImportClick();
+        }
+
+        private void GetDescriptorsClick(object sender, RoutedEventArgs e)
+        {
+            GetDescriptorsClick();
         }
     }
 }

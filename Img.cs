@@ -11,8 +11,8 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public KazePoint[] KazeOne { get; }
-        public KazePoint[] KazeTwo { get; }
+        public int[] KazeOne { get; }
+        public int[] KazeTwo { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -86,8 +86,8 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            KazePoint[] kazeone,
-            KazePoint[] kazetwo,
+            int[] kazeone,
+            int[] kazetwo,
             string nexthash,
             int kazematch,
             DateTime lastchanged,

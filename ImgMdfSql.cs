@@ -122,8 +122,8 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(1000, img.MetaData.Length)));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeOne}", ImageHelper.KazePointsToBuffer(img.KazeOne));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeTwo}", ImageHelper.KazePointsToBuffer(img.KazeTwo));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeOne}", ImageHelper.KpToBuffer(img.KazeOne));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeTwo}", ImageHelper.KpToBuffer(img.KazeTwo));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeMatch}", img.KazeMatch);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
@@ -181,8 +181,8 @@ namespace ImageBank
                             }
 
                             var metadata = reader.GetString(6);
-                            var kazeone = ImageHelper.KazePointsFromBuffer((byte[])reader[7]);
-                            var kazetwo = ImageHelper.KazePointsFromBuffer((byte[])reader[8]);
+                            var kazeone = ImageHelper.KpFromBuffer((byte[])reader[7]);
+                            var kazetwo = ImageHelper.KpFromBuffer((byte[])reader[8]);
                             var nexthash = reader.GetString(9);
                             var kazematch = reader.GetInt32(10);
                             var lastchanged = reader.GetDateTime(11);

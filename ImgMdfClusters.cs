@@ -1,6 +1,9 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
@@ -8,9 +11,93 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        public static void Clustering()
+        {
+            AppVars.SuspendEvent.Reset();
+
+            const int MAXDIM = 500;
+            var _kaze = KAZE.Create();
+
+            using (var matsum = new Mat()) {
+                List<string> list;
+                lock (_imglock) {
+                    list = _imgList.Select(e => e.Value.Name).ToList();
+                }
+
+                var added = 0;
+                var dt = DateTime.Now;
+
+                while (matsum.Rows < 16 * 1024 * 50) {
+                    var index = _random.Next(list.Count);
+                    var name = list[index];
+                    list.RemoveAt(index);
+                    var filename = Helper.GetFileName(name);
+
+                    if (DateTime.Now.Subtract(dt).TotalMilliseconds > AppConsts.TimeLapse) {
+                        dt = DateTime.Now;
+                        ((IProgress<string>)AppVars.Progress).Report($"a:{added}/m:{matsum.Rows / 1024}K");
+                    }
+
+                    var imagedata = File.ReadAllBytes(filename);
+                    var password = Path.GetFileNameWithoutExtension(filename);
+                    var decrypteddata = Helper.Decrypt(imagedata, password);
+                    if (decrypteddata == null) {
+                        continue;
+                    }
+
+                    imagedata = decrypteddata;
+                    if (!ImageHelper.GetBitmapFromImageData(imagedata, out Bitmap bitmap)) {
+                        continue;
+                    }
+
+                    if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                        bitmap = ImageHelper.RepixelBitmap(bitmap);
+                    }
+
+                    using (var matsource = bitmap.ToMat())
+                    using (var matcolor = new Mat()) {
+                        var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
+                        Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
+                        using (var mat = new Mat()) {
+                            Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
+                            var keypoints = _kaze.Detect(mat);
+                            if (keypoints.Length > 0) {
+                                keypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
+                                using (var matdescriptors = new Mat()) {
+                                    _kaze.Compute(mat, ref keypoints, matdescriptors);
+                                    matsum.PushBack(matdescriptors);
+                                    added++;
+                                    /*
+                                    using (var matkeypoints = new Mat()) {
+                                        Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                                        matkeypoints.SaveImage("keypoints500x500.png");
+                                    }
+                                    */
+                                }
+                            }
+                        }
+                    }
+                }
+
+                using (var bestlabels = new Mat())
+                using (var dictionary = new Mat()) {
+                    var tm = new TermCriteria(CriteriaTypes.MaxIter, 3, 1.0);
+                    Cv2.Kmeans(matsum, 16 * 1024, bestlabels, tm, 1, KMeansFlags.PpCenters, dictionary);
+                    dictionary.GetArray<float>(out var fdata);
+                    var data = new byte[fdata.Length * sizeof(float)];
+                    Buffer.BlockCopy(fdata, 0, data, 0, data.Length);
+                    File.WriteAllBytes(AppConsts.FileKazeClusters, data);
+                }
+            }
+
+            ((IProgress<string>)AppVars.Progress).Report("Clusterization done");
+
+            AppVars.SuspendEvent.Set();
+        }
+
+        /*
         public static void Clustering(string path, int maxadd)
         {
-            /*
             AppVars.SuspendEvent.Reset();
 
             using (var matsum = new Mat())
@@ -97,7 +184,7 @@ namespace ImageBank
             ((IProgress<string>)AppVars.Progress).Report("Clusterization done");
 
             AppVars.SuspendEvent.Set();
-            */
         }
+        */
     }
 }
