@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Text;
 using ImageBank;
@@ -9,20 +10,22 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
+        /*
         [TestMethod()]
-        public void ComputeKpDescriptors()
+        public void ComputeKazeDescriptors()
         {
             var filename = "k1024.jpg";
             using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeKpDescriptors((Bitmap)image, out var b1, out var bm1);
+                ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var ki, out var kn);
             }
         }
+        */
 
         [TestMethod()]
-        public void KpBulkTest()
+        public void KazeBulkTest()
         {
-            var image1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeKpDescriptors((Bitmap)image1, out var b1, out var _);
+            var img1 = Image.FromFile("org.jpg");
+            ImageHelper.ComputeKazeDescriptors((Bitmap)img1, out var ki1, out var kx1, out var ky1);
 
             var files = new[] {
                 "org_png.jpg",
@@ -44,50 +47,15 @@ namespace ImageBankTest
             var sb = new StringBuilder();
             foreach (var filename in files)
             {
-                var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeKpDescriptors((Bitmap)image2, out var b2, out var bm2);
+                var img2 = Image.FromFile(filename);
+                ImageHelper.ComputeKazeDescriptors((Bitmap)img2, out var ki2, out var kx2, out var ky2, out var ki2mirror, out var kx2mirror, out var ky2mirror);
 
-                var m = ImageHelper.ComputeKpMatch(b1, b2, bm2);
-
+                var sim = ImageHelper.GetSim(ki1, kx1, ky1, ki2, kx2, ky2, ki2mirror, kx2mirror, ky2mirror);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: m={m}");
-            }
-
-            sb.AppendLine();
-
-            image1 = Image.FromFile("000817-01-27.jpg");
-            ImageHelper.ComputeKpDescriptors((Bitmap)image1, out b1, out var _);
-            files = new[] {
-                "000817-01-29.jpg",
-                "000817-01-31.jpg",
-                "000817-01-32.jpg",
-                "000817-01-33.jpg",
-                "000817-01-34.jpg",
-                "000809-01-32.jpg",
-                "020808-036.jpg",
-                "020808-106.jpg",
-                "020808-107.jpg",
-                "020808-108.jpg",
-                "2816-2893.jpg",
-                "2816-2938.jpg",
-                "7e8f4c20.jpg",
-                "k1024.jpg"
-            };
-
-            foreach (var filename in files) {
-                var image2 = Image.FromFile(filename);
-                ImageHelper.ComputeKpDescriptors((Bitmap)image2, out var b2, out var bm2);
-
-                var m = ImageHelper.ComputeKpMatch(b1, b2, bm2);
-
-                if (sb.Length > 0) {
-                    sb.AppendLine();
-                }
-
-                sb.Append($"{filename}: m={m}");
+                sb.Append($"{filename}: sim={sim:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

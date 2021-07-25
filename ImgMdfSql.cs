@@ -57,20 +57,36 @@ namespace ImageBank
                 throw new ArgumentException("size <= 0");
             }
 
-            if (img.KazeOne == null || img.KazeOne.Length == 0 || img.KazeOne.Length > AppConsts.MaxDescriptors) {
-                throw new ArgumentException("kazeone == null || kazeone.Length == 0 || kazeone.Length > AppConsts.MaxDescriptors");
+            if (img.Ki == null || img.Ki.Length == 0 || img.Ki.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("ki == null || ki.Length == 0 || ki.Length > AppConsts.MaxDescriptors");
             }
 
-            if (img.KazeTwo == null || img.KazeTwo.Length == 0 || img.KazeTwo.Length > AppConsts.MaxDescriptors) {
-                throw new ArgumentException("kazetwo == null || kazetwo.Length == 0 || kazetwo.Length > AppConsts.MaxDescriptors");
+            if (img.Kx == null || img.Kx.Length == 0 || img.Kx.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("kx == null || kx.Length == 0 || kx.Length > AppConsts.MaxDescriptors");
+            }
+
+            if (img.Ky == null || img.Ky.Length == 0 || img.Ky.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("ky == null || ky.Length == 0 || ky.Length > AppConsts.MaxDescriptors");
+            }
+
+            if (img.KiMirror == null || img.KiMirror.Length == 0 || img.KiMirror.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("img.KiMirror == null || img.KiMirror.Length == 0 || img.KiMirror.Length > AppConsts.MaxDescriptors");
+            }
+
+            if (img.KxMirror == null || img.KxMirror.Length == 0 || img.KxMirror.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("img.KxMirror == null || img.KxMirror.Length == 0 || img.KxMirror.Length > AppConsts.MaxDescriptors");
+            }
+
+            if (img.KyMirror == null || img.KyMirror.Length == 0 || img.KyMirror.Length > AppConsts.MaxDescriptors) {
+                throw new ArgumentException("img.KyMirror == null || img.KyMirror.Length == 0 || img.KyMirror.Length > AppConsts.MaxDescriptors");
             }
 
             if (img.NextHash == null || img.NextHash.Length != 32) {
                 throw new ArgumentException("nexthash == null || nexthash.Length != 32");
             }
 
-            if (img.KazeMatch < 0 || img.KazeMatch > AppConsts.MaxDescriptors) {
-                throw new ArgumentException("kazematch < 0 || kazematch > AppConsts.MaxDescriptors");
+            if (img.Sim < 0f || img.Sim > 1f) {
+                throw new ArgumentException("img.Sim < 0f || img.Sim > 1f");
             }
 
             if (img.Generation < 0 || img.Generation > 99) {
@@ -89,10 +105,14 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrSize}, ");
                     sb.Append($"{AppConsts.AttrDateTaken}, ");
                     sb.Append($"{AppConsts.AttrMetadata}, ");
-                    sb.Append($"{AppConsts.AttrKazeOne}, ");
-                    sb.Append($"{AppConsts.AttrKazeTwo}, ");
+                    sb.Append($"{AppConsts.AttrKi}, ");
+                    sb.Append($"{AppConsts.AttrKx}, ");
+                    sb.Append($"{AppConsts.AttrKy}, ");
+                    sb.Append($"{AppConsts.AttrKiMirror}, ");
+                    sb.Append($"{AppConsts.AttrKxMirror}, ");
+                    sb.Append($"{AppConsts.AttrKyMirror}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
-                    sb.Append($"{AppConsts.AttrKazeMatch}, ");
+                    sb.Append($"{AppConsts.AttrSim}, ");
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
@@ -105,10 +125,14 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrSize}, ");
                     sb.Append($"@{AppConsts.AttrDateTaken}, ");
                     sb.Append($"@{AppConsts.AttrMetadata}, ");
-                    sb.Append($"@{AppConsts.AttrKazeOne}, ");
-                    sb.Append($"@{AppConsts.AttrKazeTwo}, ");
+                    sb.Append($"@{AppConsts.AttrKi}, ");
+                    sb.Append($"@{AppConsts.AttrKx}, ");
+                    sb.Append($"@{AppConsts.AttrKy}, ");
+                    sb.Append($"@{AppConsts.AttrKiMirror}, ");
+                    sb.Append($"@{AppConsts.AttrKxMirror}, ");
+                    sb.Append($"@{AppConsts.AttrKyMirror}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
-                    sb.Append($"@{AppConsts.AttrKazeMatch}, ");
+                    sb.Append($"@{AppConsts.AttrSim}, ");
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
@@ -121,11 +145,15 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHeight}", img.Height);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(1000, img.MetaData.Length)));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeOne}", ImageHelper.KpToBuffer(img.KazeOne));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeTwo}", ImageHelper.KpToBuffer(img.KazeTwo));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(250, img.MetaData.Length)));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKi}", Helper.ShortToBuffer(img.Ki));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKx}", Helper.ShortToBuffer(img.Kx));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKy}", Helper.ShortToBuffer(img.Ky));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKiMirror}", Helper.ShortToBuffer(img.KiMirror));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKxMirror}", Helper.ShortToBuffer(img.KxMirror));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKyMirror}", Helper.ShortToBuffer(img.KyMirror));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKazeMatch}", img.KazeMatch);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSim}", img.Sim);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
@@ -152,14 +180,18 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrSize}, "); // 4
             sb.Append($"{AppConsts.AttrDateTaken}, "); // 5
             sb.Append($"{AppConsts.AttrMetadata}, "); // 6
-            sb.Append($"{AppConsts.AttrKazeOne}, "); // 7
-            sb.Append($"{AppConsts.AttrKazeTwo}, "); // 8
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 9
-            sb.Append($"{AppConsts.AttrKazeMatch}, "); // 10
-            sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
-            sb.Append($"{AppConsts.AttrLastView}, "); // 12
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
-            sb.Append($"{AppConsts.AttrGeneration} "); // 14
+            sb.Append($"{AppConsts.AttrKi}, "); // 7
+            sb.Append($"{AppConsts.AttrKx}, "); // 8
+            sb.Append($"{AppConsts.AttrKy}, "); // 9
+            sb.Append($"{AppConsts.AttrKiMirror}, "); // 10
+            sb.Append($"{AppConsts.AttrKxMirror}, "); // 11
+            sb.Append($"{AppConsts.AttrKyMirror}, "); // 12
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 13
+            sb.Append($"{AppConsts.AttrSim}, "); // 14
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 15
+            sb.Append($"{AppConsts.AttrLastView}, "); // 16
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 17
+            sb.Append($"{AppConsts.AttrGeneration} "); // 18
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -181,14 +213,18 @@ namespace ImageBank
                             }
 
                             var metadata = reader.GetString(6);
-                            var kazeone = ImageHelper.KpFromBuffer((byte[])reader[7]);
-                            var kazetwo = ImageHelper.KpFromBuffer((byte[])reader[8]);
-                            var nexthash = reader.GetString(9);
-                            var kazematch = reader.GetInt32(10);
-                            var lastchanged = reader.GetDateTime(11);
-                            var lastview = reader.GetDateTime(12);
-                            var lastcheck = reader.GetDateTime(13);
-                            var generation = reader.GetInt32(14);
+                            var ki = Helper.ShortFromBuffer((byte[])reader[7]);
+                            var kx = Helper.ShortFromBuffer((byte[])reader[8]);
+                            var ky = Helper.ShortFromBuffer((byte[])reader[9]);
+                            var kimirror = Helper.ShortFromBuffer((byte[])reader[10]);
+                            var kxmirror = Helper.ShortFromBuffer((byte[])reader[11]);
+                            var kymirror = Helper.ShortFromBuffer((byte[])reader[12]);
+                            var nexthash = reader.GetString(13);
+                            var sim = reader.GetFloat(14);
+                            var lastchanged = reader.GetDateTime(15);
+                            var lastview = reader.GetDateTime(16);
+                            var lastcheck = reader.GetDateTime(17);
+                            var generation = reader.GetInt32(18);
 
                             var img = new Img(
                                 name: name,
@@ -198,10 +234,14 @@ namespace ImageBank
                                 size: size,
                                 datetaken: datetaken,
                                 metadata: metadata,
-                                kazeone: kazeone,
-                                kazetwo: kazetwo,
+                                ki: ki,
+                                kx: kx,
+                                ky: ky,
+                                kimirror: kimirror,
+                                kxmirror: kxmirror,
+                                kymirror: kymirror,
                                 nexthash: nexthash,
-                                kazematch: kazematch,
+                                sim: sim,
                                 lastchanged: lastchanged,
                                 lastview: lastview,
                                 lastcheck: lastcheck,

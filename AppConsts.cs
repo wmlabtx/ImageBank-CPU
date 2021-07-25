@@ -11,8 +11,11 @@
         public const int MaxImages = 200000;
         public const int MaxImagesInGeneration = 100000;
 
-        public const int MaxDescriptors = 1000;
+        public const int MaxDescriptors = 2000;
         public const int DescriptorSize = 61;
+
+        public const int MinDescriptorsInArea = 10;
+        public const int MaxAttempts = 100;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -35,10 +38,14 @@
         public const string AttrSize = "Size";
         public const string AttrDateTaken = "DateTaken";
         public const string AttrMetadata = "Metadata";
-        public const string AttrKazeOne = "KazeOne";
-        public const string AttrKazeTwo = "KazeTwo";
+        public const string AttrKi = "Ki";
+        public const string AttrKx = "Kx";
+        public const string AttrKy = "Ky";
+        public const string AttrKiMirror = "KiMirror";
+        public const string AttrKxMirror = "KxMirror";
+        public const string AttrKyMirror = "KyMirror";
         public const string AttrNextHash = "NextHash";
-        public const string AttrKazeMatch = "KazeMatch";
+        public const string AttrSim = "Sim";
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";

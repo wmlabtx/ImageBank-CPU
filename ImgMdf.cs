@@ -8,12 +8,11 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static object _sqllock = new object();
+        private static readonly object _sqllock = new object();
         private static SqlConnection _sqlConnection;
-        private static object _imglock = new object();
+        private static readonly object _imglock = new object();
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Random _random = new Random();
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 

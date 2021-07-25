@@ -17,11 +17,13 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
+            <!--
             <MenuItem Header="Move">
             </MenuItem>
             <MenuItem Header="Train">
                 <MenuItem Header="Get Descriptors" Click="GetDescriptorsClick" />
             </MenuItem>
+            -->
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

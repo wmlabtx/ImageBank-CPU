@@ -13,7 +13,7 @@
                     foreach (var e in _imgList) {
                         if (e.Value.NextHash.Equals(img.Hash)) {
                             e.Value.NextHash = e.Value.Hash;
-                            e.Value.KazeMatch = 0;
+                            e.Value.Sim = 0f;
                             e.Value.LastCheck = GetMinLastCheck();
                         }
                     }

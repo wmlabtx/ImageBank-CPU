@@ -6,8 +6,6 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        //private static int _showmode = 0;
-
         public static void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
@@ -31,18 +29,15 @@ namespace ImageBank
                             return;
                         }
 
-                        var mingeneration = valid.Min(e => e.Generation);
-                        imgX = valid.Where(e => e.Generation == mingeneration).OrderByDescending(e => e.LastChanged).FirstOrDefault();
-
-                        /*
                         var scope = valid.Where(e => e.LastView <= e.LastChanged).ToArray();
                         if (scope.Length > 0) {
+                            var mingeneration = scope.Min(e => e.Generation);
+                            imgX = scope.Where(e => e.Generation == mingeneration).OrderByDescending(e => e.LastChanged).FirstOrDefault();
                         }
                         else {
                             var mingeneration = valid.Min(e => e.Generation);
                             imgX = valid.Where(e => e.Generation == mingeneration).OrderBy(e => e.LastView).FirstOrDefault();
                         }
-                        */
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;
@@ -72,10 +67,13 @@ namespace ImageBank
                     break;
                 }
 
-                var zero = _imgList.Count( e => e.Value.LastView <= e.Value.LastChanged);
-                sb.Append($"0:{zero}/{_imgList.Count}: ");
+                var changed = _imgList
+                    .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
+                    .Count( e => e.Value.LastView <= e.Value.LastChanged);
+
+                sb.Append($"{changed}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Name}: ");
-                sb.Append($"{imgX.KazeMatch} ");
+                sb.Append($"{imgX.Sim:F2} ");
             }
 
             progress.Report(sb.ToString());

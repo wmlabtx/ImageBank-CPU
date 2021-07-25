@@ -10,8 +10,6 @@ namespace ImageBank
 {
     public static class Helper
     {
-        //private static readonly RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
-
         #region DeleteToRecycleBin
 
         public static void DeleteToRecycleBin(string filename)
@@ -273,6 +271,24 @@ namespace ImageBank
             var f = name.Substring(0, 2);
             var n = name.Substring(2, 8);
             return $"{AppConsts.PathHp}\\{f}\\{n}{AppConsts.MzxExtension}";
+        }
+
+        #endregion
+
+        #region Buffers
+
+        public static byte[] ShortToBuffer(short[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(short)];
+            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
+            return buffer;
+        }
+
+        public static short[] ShortFromBuffer(byte[] buffer)
+        {
+            var array = new short[buffer.Length / sizeof(short)];
+            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            return array;
         }
 
         #endregion

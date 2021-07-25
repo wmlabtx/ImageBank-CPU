@@ -21,14 +21,15 @@ namespace ImageBank
             using (var matsum = new Mat()) {
                 List<string> list;
                 lock (_imglock) {
-                    list = _imgList.Select(e => e.Value.Name).ToList();
+                    list = _imgList.Select(e => e.Value.Name).Take(32000).ToList();
                 }
 
                 var added = 0;
                 var dt = DateTime.Now;
 
+                var random = new CryptoRandom();
                 while (matsum.Rows < 16 * 1024 * 50) {
-                    var index = _random.Next(list.Count);
+                    var index =  random.Next(0, (short)(list.Count - 1));
                     var name = list[index];
                     list.RemoveAt(index);
                     var filename = Helper.GetFileName(name);

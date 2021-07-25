@@ -11,8 +11,12 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public int[] KazeOne { get; }
-        public int[] KazeTwo { get; }
+        public short[] Ki { get; }
+        public short[] Kx { get; }
+        public short[] Ky { get; }
+        public short[] KiMirror { get; }
+        public short[] KxMirror { get; }
+        public short[] KyMirror { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -23,16 +27,16 @@ namespace ImageBank
             }
         }
 
-        private int _kazematch;
-        public int KazeMatch {
-            get => _kazematch;
+        private float _sim;
+        public float Sim {
+            get => _sim;
             set {
-                _kazematch = value;
-                if (_kazematch < 0 || _kazematch > AppConsts.MaxDescriptors) {
-                    throw new ArgumentException("_kazematch < 0 || _kazematch > AppConsts.MaxDescriptors");
+                _sim = value;
+                if (_sim < 0f || _sim > 1f) {
+                    throw new ArgumentException("_sim < 0f || _sim > 1f");
                 }
 
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrKazeMatch, value);
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSim, value);
             }
         }
 
@@ -76,8 +80,6 @@ namespace ImageBank
             }
         }
 
-        public float Sim => (float)KazeMatch / KazeOne.Length;
-
         public Img(
             string name,
             string hash,
@@ -86,10 +88,14 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            int[] kazeone,
-            int[] kazetwo,
+            short[] ki,
+            short[] kx,
+            short[] ky,
+            short[] kimirror,
+            short[] kxmirror,
+            short[] kymirror,
             string nexthash,
-            int kazematch,
+            float sim,
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
@@ -103,17 +109,23 @@ namespace ImageBank
             Size = size;
             DateTaken = datetaken;
             MetaData = metadata;
-            KazeOne = kazeone;
-            KazeTwo = kazetwo;
+
+            Ki = ki;
+            Kx = kx;
+            Ky = ky;
+            KiMirror = kimirror;
+            KxMirror = kxmirror;
+            KyMirror = kymirror;
 
             _nexthash = nexthash;
-            _kazematch = kazematch;
+            _sim = sim;
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
             _generation = generation;
         }
 
+        /*
         public Img(
             string name,
             Img other
@@ -124,15 +136,19 @@ namespace ImageBank
             Width = other.Width;
             Height = other.Height;
             Size = other.Size;
-            KazeOne = other.KazeOne;
-            KazeTwo = other.KazeTwo;
+
+            Ki = other.Ki;
+            Kn = other.Kn;
+            KiMirror = other.KiMirror;
+            KnMirror = other.KnMirror;
 
             _nexthash = other.NextHash;
-            _kazematch = other.KazeMatch;
+            _sim = other.Sim;
             _lastchanged = other.LastChanged;
             _lastview = other.LastView;
             _lastcheck = other.LastCheck;
             _generation = other.Generation;
         }
+        */
     }
 }

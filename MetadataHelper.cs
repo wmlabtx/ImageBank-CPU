@@ -20,8 +20,8 @@ namespace ImageBank
     public static class MetadataHelper
     {
         private static readonly StringBuilder _sb = new StringBuilder();
-        private static int _tagscounter = 0;
-        private static DateTime? _datetaken = null;
+        private static int _tagscounter;
+        private static DateTime? _datetaken;
 
         private static void CaptureMetadata(ImageMetadata imageMetadata, string query)
         {

@@ -30,9 +30,8 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.ComputeKpDescriptors(bitmap, out var rindexes, out var rmindexes);
+                            ImageHelper.ComputeKazeDescriptors(bitmap, out var rki, out var rkx, out var rky, out var rkimirror, out var rkxmirror, out var rkymirror);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
-
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
                                 name: name,
@@ -42,10 +41,14 @@ namespace ImageBank
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                kazeone: rindexes,
-                                kazetwo: rmindexes,
+                                ki: rki,
+                                kx: rkx,
+                                ky: rky,
+                                kimirror: rkimirror,
+                                kxmirror: rkxmirror,
+                                kymirror: rkymirror,
                                 nexthash: rhash,
-                                kazematch: 0,
+                                sim: 0f,
                                 lastchanged: img.LastChanged,
                                 lastview: img.LastView,
                                 lastcheck: minlc,

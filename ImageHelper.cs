@@ -17,7 +17,7 @@ namespace ImageBank
 {
     public static class ImageHelper
     {
-        const int MAXDIM = 500;
+        const int MAXDIM = 750;
         const int KAZESIZE = 64;
         const int MAXCLUSTERS = 16 * 1024;
 
@@ -25,6 +25,7 @@ namespace ImageBank
         private static readonly BFMatcher _bfmatch;
         private static readonly BOWImgDescriptorExtractor _bow;
         private static readonly Mat _clusters;
+        private static readonly CryptoRandom _random;
 
         static ImageHelper()
         {
@@ -37,6 +38,7 @@ namespace ImageBank
             _clusters = new Mat(MAXCLUSTERS, KAZESIZE, MatType.CV_32F);
             _clusters.SetArray(fdata);
             _bow.SetVocabulary(_clusters);
+            _random = new CryptoRandom();
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -169,23 +171,11 @@ namespace ImageBank
             }
         }
 
-        public static byte[] KpToBuffer(int[] kp)
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out short[] ki, out short[] kx, out short[] ky)
         {
-            var buffer = new byte[kp.Length * sizeof(int)];
-            Buffer.BlockCopy(kp, 0, buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        public static int[] KpFromBuffer(byte[] buffer)
-        {
-            var kp = new int[buffer.Length / sizeof(int)];
-            Buffer.BlockCopy(buffer, 0, kp, 0, buffer.Length);
-            return kp;
-        }
-
-        public static void ComputeKpDescriptors(Bitmap bitmap, out int[] kp)
-        {
-            kp = null;
+            ki = null;
+            kx = null;
+            ky = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat()) {
                 var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
@@ -195,6 +185,10 @@ namespace ImageBank
                     var keypoints = _kaze.Detect(mat);
                     if (keypoints.Length > 0) {
                         keypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
+                        if (keypoints.Length < AppConsts.MinDescriptorsInArea) {
+                            return;
+                        }
+
                         using (var matdescriptors = new Mat())
                         using (var matbow = new Mat()) {
                             _bow.Compute(mat, ref keypoints, matbow, out var idx, matdescriptors);
@@ -202,69 +196,50 @@ namespace ImageBank
                             /*
                             using (var matkeypoints = new Mat()) {
                                 Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                                matkeypoints.SaveImage("ki500x500.png");
+                                matkeypoints.SaveImage("mat.png");
                             }
                             */
 
-                            var ki = new short[keypoints.Length];
+                            var kazapoints = new Tuple<short, short, short>[keypoints.Length];
                             for (var i = 0; i < idx.Length; i++) {
                                 for (var j = 0; j < idx[i].Length; j++) {
                                     var k = idx[i][j];
-                                    ki[k] = (short)i;
+                                    kazapoints[k] = new Tuple<short, short, short>((short)i, (short)Math.Round(keypoints[k].Pt.X), (short)Math.Round(keypoints[k].Pt.Y));
                                 }
-                            } 
-
-                            kp = new int[keypoints.Length];
-                            for (var i = 0; i < keypoints.Length; i++) {
-                                var dmin = float.MaxValue;
-                                var jmin = 0;
-                                for (var j = 0; j < keypoints.Length; j++) {
-                                    if (i == j) {
-                                        continue;
-                                    }
-
-                                    var xd = keypoints[i].Pt.X - keypoints[j].Pt.X;
-                                    var yd = keypoints[i].Pt.Y - keypoints[j].Pt.Y;
-                                    var d2 = xd * xd + yd * yd;
-                                    if (d2 < dmin) {
-                                        dmin = d2;
-                                        jmin = j;
-                                    }
-                                }
-
-                                var kpv = ki[i] <= ki[jmin] ? (ki[i] << 14) | (int)ki[jmin] : (ki[jmin] << 14) | (int)ki[i];
-                                kp[i] = kpv;
                             }
 
-                            Array.Sort(kp);
+                            var kp = kazapoints.OrderBy(e => e.Item1).ToArray();
+                            ki = kp.Select(e => e.Item1).ToArray();
+                            kx = kp.Select(e => e.Item2).ToArray();
+                            ky = kp.Select(e => e.Item3).ToArray();
                         }
                     }
                 }
             }
         }
 
-        public static void ComputeKpDescriptors(Bitmap bitmap, out int[] kp, out int[] mkp)
+        public static void ComputeKazeDescriptors(Bitmap bitmap, out short[] ki, out short[] kx, out short[] ky, out short[] kimirror, out short[] kxmirror, out short[] kymirror)
         {
-            ComputeKpDescriptors(bitmap, out kp);
+            ComputeKazeDescriptors(bitmap, out ki, out kx, out ky);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                ComputeKpDescriptors(brft, out mkp);
+                ComputeKazeDescriptors(brft, out kimirror, out kxmirror, out kymirror);
             }
         }
 
-        public static int ComputeKpMatch(int[] cx, int[] cy)
+        public static int GetMatch(short[] k1, short[] k2)
         {
-            var match = 0;
+            var m = 0;
             var i = 0;
             var j = 0;
-            while (i < cx.Length && j < cy.Length) {
-                if (cx[i] == cy[j]) {
-                    match++;
+            while (i < k1.Length && j < k2.Length) {
+                if (k1[i] == k2[j]) {
+                    m++;
                     i++;
                     j++;
                 }
                 else {
-                    if (cx[i] < cy[j]) {
+                    if (k1[i] < k2[j]) {
                         i++;
                     }
                     else {
@@ -273,19 +248,78 @@ namespace ImageBank
                 }
             }
 
-            return match;
+            return m;
         }
 
-        public static int ComputeKpMatch(int[] x, int[] y, int[] ym)
+        public static short[] GetRandomVector(short[] ki, short[] kx, short[] ky)
         {
-            if (x == null || y == null || ym == null) {
-                return 0;
+            var xmin = kx.Min();
+            var xmax = kx.Max();
+            var ymin = ky.Min();
+            var ymax = ky.Max();
+            var diffmax = Math.Min(xmax - xmin, ymax - ymin);
+            short x1, x2, y1, y2;
+            if (diffmax < 64) {
+                x1 = xmin;
+                x2 = xmax;
+                y1 = ymin;
+                y2 = ymax;
+            }
+            else {
+                var diff = _random.Next(64, (short)diffmax);
+                x1 = _random.Next(xmin, (short)(xmax - diff));
+                x2 = (short)(x1 + diff);
+                y1 = _random.Next(ymin, (short)(ymax - diff));
+                y2 = (short)(y1 + diff);
             }
 
-            var m1 = ComputeKpMatch(x, y);
-            var m2 = ComputeKpMatch(x, ym);
-            var m = Math.Max(m1, m2);
-            return m;
+            var list = new List<short>();
+            for (var i = 0; i < ki.Length; i++) {
+                if (kx[i] < x1 || kx[i] > x2 || ky[i] < y1 || ky[i] > y2) {
+                    continue;
+                }
+
+                list.Add(ki[i]);
+            }
+
+            return list.ToArray();
+        }
+
+        public static float GetSim(
+            short[] ki1, short[] kx1, short[] ky1,
+            short[] ki2, short[] kx2, short[] ky2)
+        {
+            var simmax = 0f;
+            var v1 = GetRandomVector(ki1, kx1, ky1);
+            if (v1.Length < AppConsts.MinDescriptorsInArea) {
+                return simmax;
+            }
+
+            for (var i = 0; i < AppConsts.MaxAttempts; i++) {
+                var v2 = GetRandomVector(ki2, kx2, ky2);
+                if (v2.Length < AppConsts.MinDescriptorsInArea) {
+                    continue;
+                }
+
+                var match = GetMatch(v1, v2);
+                var sim = (float)match / ki1.Length;
+                if (sim > simmax) {
+                    simmax = sim;
+                }
+            }
+
+            return simmax;
+        }
+
+        public static float GetSim(
+            short[] ki1, short[] kx1, short[] ky1,
+            short[] ki2, short[] kx2, short[] ky2,
+            short[] ki2mirror, short[] kx2mirror, short[] ky2mirror)
+        {
+            var sim1 = GetSim(ki1, kx1, ky1, ki2, kx2, ky2);
+            var sim1mirror = GetSim(ki1, kx1, ky1, ki2mirror, kx2mirror, ky2mirror);
+            var sim = Math.Max(sim1, sim1mirror);
+            return sim;
         }
     }
 }

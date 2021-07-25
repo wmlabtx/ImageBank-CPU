@@ -49,5 +49,14 @@ namespace ImageBankTest
             File.Delete(filename);
             Assert.IsTrue(Enumerable.SequenceEqual(a1, a2));
         }
+
+        [TestMethod()]
+        public void TestBuffer()
+        {
+            var array1 = new short[] { 7, 25, 2021, 11111 };
+            var buffer1 = Helper.ShortToBuffer(array1);
+            var array2 = Helper.ShortFromBuffer(buffer1);
+            Assert.IsTrue(array1.SequenceEqual(array2));
+        }
     }
 }

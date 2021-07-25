@@ -8,14 +8,15 @@ using System.Text;
 namespace ImageBank
 {
     public partial class ImgMdf
-    {
-        private static int _added = 0;
-        private static int _found = 0;
-        private static int _bad = 0;
+    {        
+        private static int _added;
+        private static int _found;
+        private static int _bad;
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
             Img img1 = null;
+            Img img2 = null;
             Img[] candidates;
             lock (_imglock) {
                 if (_imgList.Count < 2) {
@@ -41,10 +42,11 @@ namespace ImageBank
                     }
                 }
 
-                if (!_hashList.ContainsKey(img1.NextHash)) {
+                if (!_hashList.TryGetValue(img1.NextHash, out img2)) {
+                    img2 = img1;
                     img1.NextHash = img1.Hash;
-                    if (img1.KazeMatch > 0) {
-                        img1.KazeMatch = 0;
+                    if (img1.Sim > 0f) {
+                        img1.Sim = 0f;
                     }
                 }
 
@@ -57,7 +59,7 @@ namespace ImageBank
             if (candidates.Length == 0) {
                 if (!img1.NextHash.Equals(img1.Hash, StringComparison.OrdinalIgnoreCase)) {
                     img1.NextHash = img1.Hash;
-                    img1.KazeMatch = 0;
+                    img1.Sim = 0f;
                     img1.LastChanged = DateTime.Now;
                 }
 
@@ -66,24 +68,16 @@ namespace ImageBank
             }
 
             var nexthash = img1.NextHash;
-            var kazematch = img1.KazeMatch;
+            var sim = img1.Sim;
             var lastchanged = img1.LastChanged;
-            var dmax = img1.KazeOne.Length;
-            var img2 = img1;
 
             for (var i = 0; i < candidates.Length; i++) {
-                var m = ImageHelper.ComputeKpMatch(img1.KazeOne, candidates[i].KazeOne, candidates[i].KazeTwo);
-                var d = Math.Abs(img1.KazeOne.Length - candidates[i].KazeOne.Length);
-                if (m > kazematch || (m == kazematch && d < dmax)) {
-                    lock (_imglock) {
-                        if (_imgList.ContainsKey(img1.Name) && _imgList.ContainsKey(candidates[i].Name)) {
-                            nexthash = candidates[i].Hash;
-                            kazematch = m;
-                            lastchanged = DateTime.Now;
-                            dmax = d;
-                            img2 = candidates[i];
-                        }
-                    }
+                var xsim = ImageHelper.GetSim(img1.Ki, img1.Kx, img1.Ky, candidates[i].Ki, candidates[i].Kx, candidates[i].Ky, candidates[i].KiMirror, candidates[i].KxMirror, candidates[i].KyMirror);
+                if (xsim > sim) {
+                    img2 = candidates[i];
+                    nexthash = img2.Hash;
+                    sim = xsim;
+                    lastchanged = DateTime.Now;
                 }
             }
 
@@ -92,9 +86,9 @@ namespace ImageBank
                 sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                 sb.Append($"{img1.Name}[{img1.Generation}]: ");
-                sb.Append($"{img1.KazeMatch} ");
+                sb.Append($"{img1.Sim:F2} ");
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{kazematch} ");
+                sb.Append($"{sim:F2} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
             }
 
@@ -102,8 +96,8 @@ namespace ImageBank
                 img1.NextHash = nexthash;
             }
 
-            if (img1.KazeMatch != kazematch) {
-                img1.KazeMatch = kazematch;
+            if (img1.Sim != sim) {
+                img1.Sim = sim;
             }
 
             if (img1.LastChanged != lastchanged) {
@@ -239,8 +233,8 @@ namespace ImageBank
                 bitmap = ImageHelper.RepixelBitmap(bitmap);
             }
 
-            ImageHelper.ComputeKpDescriptors(bitmap, out var kazeone, out var kazetwo);
-            if (kazeone == null || kazeone.Length == 0) {
+            ImageHelper.ComputeKazeDescriptors(bitmap, out var ki, out var kx, out var ky, out var kimirror, out var kxmirror, out var kymirror);
+            if (ki == null || ki.Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
@@ -273,10 +267,14 @@ namespace ImageBank
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                kazeone: kazeone,
-                kazetwo: kazetwo,
+                ki: ki,
+                kx: kx,
+                ky: ky,
+                kimirror: kimirror,
+                kxmirror: kxmirror,
+                kymirror: kymirror,
                 nexthash: hash,
-                kazematch: 0,
+                sim: 0f,
                 lastchanged: lc, 
                 lastview: lv,
                 lastcheck: lc,
