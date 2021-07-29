@@ -29,7 +29,7 @@ namespace ImageBank
 
                 var random = new CryptoRandom();
                 while (matsum.Rows < 16 * 1024 * 50) {
-                    var index =  random.Next(0, (short)(list.Count - 1));
+                    var index =  random.NextShort(0, (short)(list.Count - 1));
                     var name = list[index];
                     list.RemoveAt(index);
                     var filename = Helper.GetFileName(name);

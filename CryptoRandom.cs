@@ -46,7 +46,20 @@ namespace ImageBank
             }
         }
 
-        public short Next(short minvalue, short maxvalue)
+        public short NextShort(short minvalue, short maxvalue)
+        {
+            if (minvalue > maxvalue) {
+                throw new ArgumentOutOfRangeException(nameof(minvalue));
+            }
+
+            ulong diff = (ulong)(maxvalue - minvalue + 1);
+            var random64 = GetRandom64();
+            var remainder = (short)(random64 % diff);
+            var randomnext = (short)(minvalue + remainder);
+            return randomnext;
+        }
+
+        public int NextInt(int minvalue, int maxvalue)
         {
             if (minvalue > maxvalue) {
                 throw new ArgumentOutOfRangeException(nameof(minvalue));

@@ -29,7 +29,7 @@ namespace ImageBank
 
         static ImageHelper()
         {
-            _kaze = KAZE.Create();
+            _kaze = KAZE.Create(threshold: 0.0001f);
             _bfmatch = new BFMatcher(NormTypes.L2);
             _bow = new BOWImgDescriptorExtractor(_kaze, _bfmatch);
             var data = File.ReadAllBytes(AppConsts.FileKazeClusters);
@@ -185,7 +185,7 @@ namespace ImageBank
                     var keypoints = _kaze.Detect(mat);
                     if (keypoints.Length > 0) {
                         keypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
-                        if (keypoints.Length < AppConsts.MinDescriptorsInArea) {
+                        if (keypoints.Length < AppConsts.MinDescriptors) {
                             return;
                         }
 
@@ -253,35 +253,43 @@ namespace ImageBank
 
         public static short[] GetRandomVector(short[] ki, short[] kx, short[] ky)
         {
+            if (ki.Length < AppConsts.MinDescriptors) {
+                throw new ArgumentOutOfRangeException(nameof(ki));
+            }
+
             var xmin = kx.Min();
             var xmax = kx.Max();
             var ymin = ky.Min();
             var ymax = ky.Max();
-            var diffmax = Math.Min(xmax - xmin, ymax - ymin);
             short x1, x2, y1, y2;
-            if (diffmax < 64) {
-                x1 = xmin;
-                x2 = xmax;
-                y1 = ymin;
-                y2 = ymax;
-            }
-            else {
-                var diff = _random.Next(64, (short)diffmax);
-                x1 = _random.Next(xmin, (short)(xmax - diff));
-                x2 = (short)(x1 + diff);
-                y1 = _random.Next(ymin, (short)(ymax - diff));
-                y2 = (short)(y1 + diff);
-            }
-
             var list = new List<short>();
-            for (var i = 0; i < ki.Length; i++) {
-                if (kx[i] < x1 || kx[i] > x2 || ky[i] < y1 || ky[i] > y2) {
-                    continue;
+            do {
+                x1 = _random.NextShort(xmin, xmax);
+                x2 = _random.NextShort(xmin, xmax);
+                if (x1 > x2) {
+                    var temp = x1;
+                    x1 = x2;
+                    x2 = temp;
                 }
 
-                list.Add(ki[i]);
-            }
+                y1 = _random.NextShort(ymin, ymax);
+                y2 = _random.NextShort(ymin, ymax);
+                if (y1 > y2) {
+                    var temp = y1;
+                    y1 = y2;
+                    y2 = temp;
+                }
 
+                list.Clear();
+                for (var i = 0; i < ki.Length; i++) {
+                    if (kx[i] < x1 || kx[i] > x2 || ky[i] < y1 || ky[i] > y2) {
+                        continue;
+                    }
+
+                    list.Add(ki[i]);
+                }
+            }
+            while (list.Count < AppConsts.MinDescriptors);
             return list.ToArray();
         }
 
@@ -289,15 +297,16 @@ namespace ImageBank
             short[] ki1, short[] kx1, short[] ky1,
             short[] ki2, short[] kx2, short[] ky2)
         {
-            var simmax = 0f;
+            var matchmax = GetMatch(ki1, ki2);
+            var simmax = (float)matchmax / ki1.Length;
             var v1 = GetRandomVector(ki1, kx1, ky1);
-            if (v1.Length < AppConsts.MinDescriptorsInArea) {
+            if (v1.Length < AppConsts.MinDescriptors) {
                 return simmax;
             }
 
             for (var i = 0; i < AppConsts.MaxAttempts; i++) {
                 var v2 = GetRandomVector(ki2, kx2, ky2);
-                if (v2.Length < AppConsts.MinDescriptorsInArea) {
+                if (v2.Length < AppConsts.MinDescriptors) {
                     continue;
                 }
 

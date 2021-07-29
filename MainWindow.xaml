@@ -17,9 +17,42 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <!--
-            <MenuItem Header="Move">
+            <MenuItem Name="Family" Header="Family">
+                <MenuItem Header="Reset" Tag="" Click="SetFamilyClick" />
+                <Separator/>
+                <MenuItem Header="Adult">
+                    <MenuItem Header="Alina" Tag="Adult.Alina" Click="SetFamilyClick" />
+                </MenuItem>
+                <MenuItem Header="Classic">
+                    <MenuItem Header="Alexandra" Tag="Classic.Alexandra" Click="SetFamilyClick" />
+                    <MenuItem Header="Chertenok" Tag="Classic.Chertenok" Click="SetFamilyClick" />
+                </MenuItem>
+                <MenuItem Header="Japan">
+                    <MenuItem Header="Nami" Tag="Japan.Nami" Click="SetFamilyClick" />
+                </MenuItem>
+                <MenuItem Header="Nudism">
+                    <MenuItem Header="Alica" Tag="Nudism.Alica" Click="SetFamilyClick" />
+                    <MenuItem Header="Emely" Tag="Nudism.Emely" Click="SetFamilyClick" />
+                    <MenuItem Header="Gerda" Tag="Nudism.Gerda" Click="SetFamilyClick" />
+                </MenuItem>
+                <MenuItem Header="Vintage">
+                    <MenuItem Header="Anette" Tag="Vintage.Anette" Click="SetFamilyClick" />
+                    <MenuItem Header="Dennis.Elley" Tag="Vintage.Dennis.Elley" Click="SetFamilyClick" />
+                    <MenuItem Header="Edna" Tag="Vintage.Edna" Click="SetFamilyClick" />
+                    <MenuItem Header="Fatima" Tag="Vintage.Fatima" Click="SetFamilyClick" />
+                    <MenuItem Header="Francine" Tag="Vintage.Francine" Click="SetFamilyClick" />
+                    <MenuItem Header="Janet" Tag="Vintage.Janet" Click="SetFamilyClick" />
+                    <MenuItem Header="Janne" Tag="Vintage.Janne" Click="SetFamilyClick" />
+                    <MenuItem Header="Monique" Tag="Vintage.Monique" Click="SetFamilyClick" />
+                    <MenuItem Header="Patty.Pam" Tag="Vintage.Patty.Pam" Click="SetFamilyClick" />
+                    <MenuItem Header="Sophia" Tag="Vintage.Sophia" Click="SetFamilyClick" />
+                    <MenuItem Header="Yvonne.Peter" Tag="Vintage.Yvonne.Peter" Click="SetFamilyClick" />
+                </MenuItem>
+                <MenuItem Header="Scan">
+                    <MenuItem Header="Laura" Tag="Scan.Laura" Click="SetFamilyClick" />
+                </MenuItem>
             </MenuItem>
+            <!--
             <MenuItem Header="Train">
                 <MenuItem Header="Get Descriptors" Click="GetDescriptorsClick" />
             </MenuItem>

@@ -80,6 +80,19 @@ namespace ImageBank
             }
         }
 
+        private int _family;
+        public int Family {
+            get => _family;
+            set {
+                _family = value;
+                if (_family < 0) {
+                    throw new ArgumentException("_family < 0");
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFamily, value);
+            }
+        }
+
         public Img(
             string name,
             string hash,
@@ -99,6 +112,7 @@ namespace ImageBank
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
+            int family,
             int generation
             ) {
 
@@ -122,33 +136,8 @@ namespace ImageBank
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
+            _family = family;
             _generation = generation;
         }
-
-        /*
-        public Img(
-            string name,
-            Img other
-            )
-        {
-            Name = name;
-            Hash = other.Hash;
-            Width = other.Width;
-            Height = other.Height;
-            Size = other.Size;
-
-            Ki = other.Ki;
-            Kn = other.Kn;
-            KiMirror = other.KiMirror;
-            KnMirror = other.KnMirror;
-
-            _nexthash = other.NextHash;
-            _sim = other.Sim;
-            _lastchanged = other.LastChanged;
-            _lastview = other.LastView;
-            _lastcheck = other.LastCheck;
-            _generation = other.Generation;
-        }
-        */
     }
 }

@@ -24,9 +24,12 @@ namespace ImageBank
                     return;
                 }
 
-                foreach (var e in _imgList) {
-                    var eX = e.Value;
+                var valid = _imgList
+                    .OrderBy(e => e.Value.LastView)
+                    .Select(e => e.Value)
+                    .ToArray();
 
+                foreach (var eX in valid) {
                     if (eX.Hash.Equals(eX.NextHash)) {
                         img1 = eX;
                         break;
@@ -37,7 +40,12 @@ namespace ImageBank
                         break;
                     }
 
-                    if (img1 == null || eX.LastCheck < img1.LastCheck) {
+                    if (DateTime.Now.Subtract(eX.LastCheck).TotalHours > 1.0) {
+                        img1 = eX;
+                        break;
+                    }
+
+                    if (img1 == null || (img1 != null && img1.LastCheck > eX.LastCheck)) {
                         img1 = eX;
                     }
                 }
@@ -49,11 +57,49 @@ namespace ImageBank
                         img1.Sim = 0f;
                     }
                 }
+                else {
+                    if (img1.Family != 0 && img2.Family != 0 && img1.Family != img2.Family) {
+                        var familysize = GetFamilySize(img1.Family);
+                        if (familysize > 1) {
+                            img2 = img1;
+                            img1.NextHash = img1.Hash;
+                            if (img1.Sim > 0f) {
+                                img1.Sim = 0f;
+                            }
+                        }
+                    }
+                }
 
-                candidates = _imgList
-                    .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => e.Value)
-                    .ToArray();
+                /*
+                var fullcandidates = !string.IsNullOrEmpty(img1.Family) && GetFamilySize(img1.Family) > 1 ?
+                    _imgList
+                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase) && img1.Family.Equals(e.Value.Family, StringComparison.OrdinalIgnoreCase))
+                        .Select(e => e.Value)
+                        .ToList() :
+                    _imgList
+                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
+                        .Select(e => e.Value)
+                        .ToList();
+
+                var limitcandidates = new List<Img>();
+                while (fullcandidates.Count > 0 && limitcandidates.Count < AppConsts.MaxCandidates) {
+                    var index = _random.NextInt(0, fullcandidates.Count - 1);
+                    limitcandidates.Add(fullcandidates.ElementAt(index));
+                    fullcandidates.RemoveAt(index);
+                }
+
+                candidates = limitcandidates.ToArray();
+                */
+
+                candidates = img1.Family != 0 && GetFamilySize(img1.Family) > 1 ?
+                    _imgList
+                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase) && img1.Family == e.Value.Family)
+                        .Select(e => e.Value)
+                        .ToArray() :
+                    _imgList
+                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
+                        .Select(e => e.Value)
+                        .ToArray();
             }
 
             if (candidates.Length == 0) {
@@ -81,7 +127,7 @@ namespace ImageBank
                 }
             }
 
-            if (!nexthash.Equals(img1.NextHash)) {
+            if (!nexthash.Equals(img1.NextHash) || img1.Sim != sim) {
                 var sb = new StringBuilder();
                 sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
@@ -204,7 +250,6 @@ namespace ImageBank
             }
 
             if (found) {
-
                 // we found the same image in a database
                 var filenamefound = Helper.GetFileName(imgfound.Name);
                 if (File.Exists(filenamefound)) {
@@ -220,7 +265,6 @@ namespace ImageBank
             }
 
             // it is a new image; we don't have one 
-
             if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                 var badname = Path.GetFileName(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
@@ -247,7 +291,7 @@ namespace ImageBank
             MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
 
             var lc = GetMinLastCheck();
-            var lv = DateTime.Now;
+            var lv = GetMinLastView();
 
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -278,6 +322,7 @@ namespace ImageBank
                 lastchanged: lc, 
                 lastview: lv,
                 lastcheck: lc,
+                family: 0,
                 generation: 0);
 
             Add(nimg);

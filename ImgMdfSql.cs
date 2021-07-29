@@ -89,6 +89,10 @@ namespace ImageBank
                 throw new ArgumentException("img.Sim < 0f || img.Sim > 1f");
             }
 
+            if (img.Family < 0) {
+                throw new ArgumentException("img.Family < 0");
+            }
+
             if (img.Generation < 0 || img.Generation > 99) {
                 throw new ArgumentException("generation < 0 || generation > 99");
             }
@@ -116,6 +120,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"{AppConsts.AttrFamily}, ");
                     sb.Append($"{AppConsts.AttrGeneration} ");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrName}, ");
@@ -136,6 +141,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}, ");
+                    sb.Append($"@{AppConsts.AttrFamily}, ");
                     sb.Append($"@{AppConsts.AttrGeneration}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
@@ -157,6 +163,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrGeneration}", img.Generation);
                     sqlCommand.ExecuteNonQuery();
                 }
@@ -191,7 +198,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrLastChanged}, "); // 15
             sb.Append($"{AppConsts.AttrLastView}, "); // 16
             sb.Append($"{AppConsts.AttrLastCheck}, "); // 17
-            sb.Append($"{AppConsts.AttrGeneration} "); // 18
+            sb.Append($"{AppConsts.AttrFamily}, "); // 18
+            sb.Append($"{AppConsts.AttrGeneration} "); // 19
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -224,7 +232,8 @@ namespace ImageBank
                             var lastchanged = reader.GetDateTime(15);
                             var lastview = reader.GetDateTime(16);
                             var lastcheck = reader.GetDateTime(17);
-                            var generation = reader.GetInt32(18);
+                            var family = reader.GetInt32(18);
+                            var generation = reader.GetInt32(19);
 
                             var img = new Img(
                                 name: name,
@@ -245,6 +254,7 @@ namespace ImageBank
                                 lastchanged: lastchanged,
                                 lastview: lastview,
                                 lastcheck: lastcheck,
+                                family: family,
                                 generation: generation
                                );
 

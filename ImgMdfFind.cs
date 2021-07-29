@@ -29,6 +29,9 @@ namespace ImageBank
                             return;
                         }
 
+                        imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
+
+                        /*
                         var scope = valid.Where(e => e.LastView <= e.LastChanged).ToArray();
                         if (scope.Length > 0) {
                             var mingeneration = scope.Min(e => e.Generation);
@@ -38,6 +41,7 @@ namespace ImageBank
                             var mingeneration = valid.Min(e => e.Generation);
                             imgX = valid.Where(e => e.Generation == mingeneration).OrderBy(e => e.LastView).FirstOrDefault();
                         }
+                        */
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;

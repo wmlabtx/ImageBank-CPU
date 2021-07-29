@@ -84,10 +84,21 @@ namespace ImageBank
             Import();
         }
 
-        private async void GetDescriptorsClick()
+        private void GetDescriptorsClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Clustering(); }).ConfigureAwait(true);
+            //await Task.Run(() => { ImgMdf.Clustering(); }).ConfigureAwait(true);
+            EnableElements();
+        }
+
+        private async void SetFamily(int family)
+        {
+            DisableElements();
+            if (AppVars.ImgPanel[0].Img.Family != family) {
+                await Task.Run(() => { ImgMdf.SetFamily(AppVars.ImgPanel[0].Img, family); }).ConfigureAwait(true);
+                DrawCanvas();
+            }
+                
             EnableElements();
         }
 
@@ -166,9 +177,21 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append(name);
 
+                /*
                 var generation = AppVars.ImgPanel[index].Img.Generation;
                 var generationsize = ImgMdf.GetGenerationSize(generation);
                 sb.Append($" [{generation}:{generationsize}]");
+                */
+                
+                if (AppVars.ImgPanel[index].Img.Family != 0) {
+                    var familysize = ImgMdf.GetFamilySize(AppVars.ImgPanel[index].Img.Family);
+                    sb.Append($" [{ImgMdf.Family[AppVars.ImgPanel[index].Img.Family]}:{familysize}]");
+                }
+                else {
+                    var familysize = ImgMdf.GetFamilySize(0);
+                    sb.Append($" [{familysize}]");
+                }
+
                 sb.AppendLine($" {AppVars.ImgPanel[index].Img.Sim:F2}");
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Img.Size)} ");
@@ -187,6 +210,7 @@ namespace ImageBank
                         pLabels[1].Background = System.Windows.Media.Brushes.LightGray;
                     }
 
+                    /*
                     if (AppVars.ImgPanel[0].Img.Size >= AppVars.ImgPanel[1].Img.Size && pLabels[0].Background == System.Windows.Media.Brushes.White) {
                         pLabels[0].Background = System.Windows.Media.Brushes.Pink;
                     }
@@ -194,6 +218,11 @@ namespace ImageBank
                     if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
                         scb = System.Windows.Media.Brushes.Pink;
                     }
+                    */
+                }
+
+                if (AppVars.ImgPanel[index].Img.LastView < AppVars.ImgPanel[index].Img.LastChanged) {
+                    scb = System.Windows.Media.Brushes.Bisque;
                 }
 
                 if (!string.IsNullOrEmpty(AppVars.ImgPanel[index].Img.MetaData)) {
