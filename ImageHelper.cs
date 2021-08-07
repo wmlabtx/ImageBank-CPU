@@ -204,7 +204,12 @@ namespace ImageBank
                             for (var i = 0; i < idx.Length; i++) {
                                 for (var j = 0; j < idx[i].Length; j++) {
                                     var k = idx[i][j];
-                                    kazapoints[k] = new Tuple<short, short, short>((short)i, (short)Math.Round(keypoints[k].Pt.X), (short)Math.Round(keypoints[k].Pt.Y));
+                                    kazapoints[k] = 
+                                        new Tuple<short, short, short>(
+                                            (short)i, 
+                                            (short)Math.Round(keypoints[k].Pt.X), 
+                                            (short)Math.Round(keypoints[k].Pt.Y)
+                                            );
                                 }
                             }
 
@@ -218,6 +223,24 @@ namespace ImageBank
             }
         }
 
+        /*
+        public static short GetAverageAngle(short[] ka)
+        {
+            var sinavg = ka.Sum(a => Math.Sin(a * Math.PI / 180.0)) / ka.Length;
+            var cosavg = ka.Sum(a => Math.Cos(a * Math.PI / 180.0)) / ka.Length;
+            var avgangle = (short)Math.Round(Math.Atan2(sinavg, cosavg) * 180.0 / Math.PI);
+            if (avgangle < 0) {
+                avgangle += 360;
+            }
+
+            if (avgangle >= 360) {
+                avgangle -= 360;
+            }
+
+            return avgangle;
+        }
+        */
+
         public static void ComputeKazeDescriptors(Bitmap bitmap, out short[] ki, out short[] kx, out short[] ky, out short[] kimirror, out short[] kxmirror, out short[] kymirror)
         {
             ComputeKazeDescriptors(bitmap, out ki, out kx, out ky);
@@ -227,19 +250,35 @@ namespace ImageBank
             }
         }
 
-        public static int GetMatch(short[] k1, short[] k2)
+        /*
+        public static int AngleCompareTo(short a1, short a2)
+        {
+            var diff = Math.Abs(a1 - a2);
+            if (diff > 180) {
+                diff = 360 - diff;
+            }
+
+            if (diff < 20) {
+                return 0;
+            }
+
+            return a1.CompareTo(a2);
+        }
+        */
+
+        public static int GetMatch(short[] ki1, short[] ki2)
         {
             var m = 0;
             var i = 0;
             var j = 0;
-            while (i < k1.Length && j < k2.Length) {
-                if (k1[i] == k2[j]) {
+            while (i < ki1.Length && j < ki2.Length) {
+                if (ki1[i] == ki2[j]) {
                     m++;
                     i++;
                     j++;
                 }
                 else {
-                    if (k1[i] < k2[j]) {
+                    if (ki1[i] < ki2[j]) {
                         i++;
                     }
                     else {
@@ -257,76 +296,37 @@ namespace ImageBank
                 throw new ArgumentOutOfRangeException(nameof(ki));
             }
 
-            var xmin = kx.Min();
-            var xmax = kx.Max();
-            var ymin = ky.Min();
-            var ymax = ky.Max();
-            short x1, x2, y1, y2;
-            var list = new List<short>();
-            do {
-                x1 = _random.NextShort(xmin, xmax);
-                x2 = _random.NextShort(xmin, xmax);
-                if (x1 > x2) {
-                    var temp = x1;
-                    x1 = x2;
-                    x2 = temp;
-                }
-
-                y1 = _random.NextShort(ymin, ymax);
-                y2 = _random.NextShort(ymin, ymax);
-                if (y1 > y2) {
-                    var temp = y1;
-                    y1 = y2;
-                    y2 = temp;
-                }
-
-                list.Clear();
-                for (var i = 0; i < ki.Length; i++) {
-                    if (kx[i] < x1 || kx[i] > x2 || ky[i] < y1 || ky[i] > y2) {
-                        continue;
-                    }
-
-                    list.Add(ki[i]);
-                }
-            }
-            while (list.Count < AppConsts.MinDescriptors);
-            return list.ToArray();
-        }
-
-        public static float GetSim(
-            short[] ki1, short[] kx1, short[] ky1,
-            short[] ki2, short[] kx2, short[] ky2)
-        {
-            var matchmax = GetMatch(ki1, ki2);
-            var simmax = (float)matchmax / ki1.Length;
-            var v1 = GetRandomVector(ki1, kx1, ky1);
-            if (v1.Length < AppConsts.MinDescriptors) {
-                return simmax;
-            }
-
-            for (var i = 0; i < AppConsts.MaxAttempts; i++) {
-                var v2 = GetRandomVector(ki2, kx2, ky2);
-                if (v2.Length < AppConsts.MinDescriptors) {
+            var j = _random.NextShort(0, (short)(ki.Length - 1));
+            var list = new List<Tuple<short, float>>();
+            for (var i = 0; i < ki.Length; i++) {
+                if (i == j) {
                     continue;
                 }
 
-                var match = GetMatch(v1, v2);
-                var sim = (float)match / ki1.Length;
-                if (sim > simmax) {
-                    simmax = sim;
-                }
+                var dx = (float)(kx[i] - kx[j]);
+                var dy = (float)(ky[i] - ky[j]);
+                var distance = dx * dx + dy * dy;
+                list.Add(new Tuple<short, float>(ki[i], distance));
             }
 
+            list = list.OrderBy(e => e.Item2).ToList();
+            var nmax = _random.NextShort(100, (short)(ki.Length - 1));
+            list = list.Take(nmax).OrderBy(e => e.Item1).ToList();
+            var randomki = list.Select(e => e.Item1).ToArray();
+            return randomki;
+        }
+
+        public static float GetSim(short[] ki1, short[] ki2)
+        {
+            var matchmax = GetMatch(ki1, ki2);
+            var simmax = (float)matchmax / ki1.Length;
             return simmax;
         }
 
-        public static float GetSim(
-            short[] ki1, short[] kx1, short[] ky1,
-            short[] ki2, short[] kx2, short[] ky2,
-            short[] ki2mirror, short[] kx2mirror, short[] ky2mirror)
+        public static float GetSim(short[] ki1, short[] ki2, short[] ki2mirror)
         {
-            var sim1 = GetSim(ki1, kx1, ky1, ki2, kx2, ky2);
-            var sim1mirror = GetSim(ki1, kx1, ky1, ki2mirror, kx2mirror, ky2mirror);
+            var sim1 = GetSim(ki1, ki2);
+            var sim1mirror = GetSim(ki1, ki2mirror);
             var sim = Math.Max(sim1, sim1mirror);
             return sim;
         }

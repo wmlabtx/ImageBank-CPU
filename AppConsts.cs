@@ -8,14 +8,15 @@
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
 
-        public const int MaxImages = 100000;
-        public const int MaxImagesInGeneration = 10000;
+        public const int MaxImages = 200000;
 
         public const int MinDescriptors = 100;
         public const int MaxDescriptors = 2000;
         public const int DescriptorSize = 61;
 
-        //public const int MaxCandidates = 10000;
+        public const int MaxGeneration = 4;
+
+        public const int MaxCandidates = 1;
         public const int MaxAttempts = 1;
 
         public const string MzxExtension = ".mzx";
@@ -51,6 +52,5 @@
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";
         public const string AttrGeneration = "Generation";
-        public const string AttrFamily = "Family";
     }
 }

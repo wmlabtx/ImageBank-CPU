@@ -12,14 +12,30 @@ namespace ImageBankTest
     {
         /*
         [TestMethod()]
-        public void ComputeKazeDescriptors()
+        public void GetAverageAngleTest()
+        {
+            var ka1 = new short[] { 10, 10 };
+            var avg1 = ImageHelper.GetAverageAngle(ka1);
+            Assert.AreEqual(avg1, 10);
+
+            var ka2 = new short[] { 0, 10, 350 };
+            var avg2 = ImageHelper.GetAverageAngle(ka2);
+            Assert.AreEqual(avg2, 0);
+
+            var ka3 = new short[] { 90, 180, 270, 360 };
+            var avg3 = ImageHelper.GetAverageAngle(ka3);
+            Assert.AreEqual(avg3, 270);
+        }
+        */
+
+        [TestMethod()]
+        public void ComputeKazeDescriptorsTest()
         {
             var filename = "k1024.jpg";
             using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var ki, out var kn);
+                ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var ki, out var kx, out var ky);
             }
         }
-        */
 
         [TestMethod()]
         public void KazeBulkTest()
@@ -50,7 +66,7 @@ namespace ImageBankTest
                 var img2 = Image.FromFile(filename);
                 ImageHelper.ComputeKazeDescriptors((Bitmap)img2, out var ki2, out var kx2, out var ky2, out var ki2mirror, out var kx2mirror, out var ky2mirror);
 
-                var sim = ImageHelper.GetSim(ki1, kx1, ky1, ki2, kx2, ky2, ki2mirror, kx2mirror, ky2mirror);
+                var sim = ImageHelper.GetSimRandom(ki1, kx1, ky1, ki2, kx2, ky2, ki2mirror, kx2mirror, ky2mirror);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }

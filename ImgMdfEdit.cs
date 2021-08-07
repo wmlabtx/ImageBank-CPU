@@ -52,7 +52,6 @@ namespace ImageBank
                                 lastchanged: img.LastChanged,
                                 lastview: img.LastView,
                                 lastcheck: minlc,
-                                family: img.Family,
                                 generation: img.Generation);
 
                             Delete(name);

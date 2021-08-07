@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
@@ -24,31 +25,10 @@ namespace ImageBank
                     return;
                 }
 
-                var valid = _imgList
-                    .OrderBy(e => e.Value.LastView)
-                    .Select(e => e.Value)
-                    .ToArray();
-
-                foreach (var eX in valid) {
-                    if (eX.Hash.Equals(eX.NextHash)) {
-                        img1 = eX;
-                        break;
-                    }
-
-                    if (!_hashList.TryGetValue(eX.NextHash, out var eY)) {
-                        img1 = eX;
-                        break;
-                    }
-
-                    if (DateTime.Now.Subtract(eX.LastCheck).TotalHours > 1.0) {
-                        img1 = eX;
-                        break;
-                    }
-
-                    if (img1 == null || (img1 != null && img1.LastCheck > eX.LastCheck)) {
-                        img1 = eX;
-                    }
-                }
+                img1 = _imgList
+                    .OrderBy(e => e.Value.LastCheck)
+                    .FirstOrDefault()
+                    .Value;
 
                 if (!_hashList.TryGetValue(img1.NextHash, out img2)) {
                     img2 = img1;
@@ -57,49 +37,11 @@ namespace ImageBank
                         img1.Sim = 0f;
                     }
                 }
-                else {
-                    if (img1.Family != 0 && img2.Family != 0 && img1.Family != img2.Family) {
-                        var familysize = GetFamilySize(img1.Family);
-                        if (familysize > 1) {
-                            img2 = img1;
-                            img1.NextHash = img1.Hash;
-                            if (img1.Sim > 0f) {
-                                img1.Sim = 0f;
-                            }
-                        }
-                    }
-                }
 
-                /*
-                var fullcandidates = !string.IsNullOrEmpty(img1.Family) && GetFamilySize(img1.Family) > 1 ?
-                    _imgList
-                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase) && img1.Family.Equals(e.Value.Family, StringComparison.OrdinalIgnoreCase))
-                        .Select(e => e.Value)
-                        .ToList() :
-                    _imgList
-                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
-                        .Select(e => e.Value)
-                        .ToList();
-
-                var limitcandidates = new List<Img>();
-                while (fullcandidates.Count > 0 && limitcandidates.Count < AppConsts.MaxCandidates) {
-                    var index = _random.NextInt(0, fullcandidates.Count - 1);
-                    limitcandidates.Add(fullcandidates.ElementAt(index));
-                    fullcandidates.RemoveAt(index);
-                }
-
-                candidates = limitcandidates.ToArray();
-                */
-
-                candidates = img1.Family != 0 && GetFamilySize(img1.Family) > 1 ?
-                    _imgList
-                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase) && img1.Family == e.Value.Family)
-                        .Select(e => e.Value)
-                        .ToArray() :
-                    _imgList
-                        .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
-                        .Select(e => e.Value)
-                        .ToArray();
+                candidates = _imgList
+                    .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
+                    .Select(e => e.Value)
+                    .ToArray();
             }
 
             if (candidates.Length == 0) {
@@ -117,8 +59,11 @@ namespace ImageBank
             var sim = img1.Sim;
             var lastchanged = img1.LastChanged;
 
+            img1.RandomKi = ImageHelper.GetRandomVector(img1.Ki, img1.Kx, img1.Ky);
+            img1.RandomKiMirror = ImageHelper.GetRandomVector(img1.KiMirror, img1.KxMirror, img1.KyMirror);
+
             for (var i = 0; i < candidates.Length; i++) {
-                var xsim = ImageHelper.GetSim(img1.Ki, img1.Kx, img1.Ky, candidates[i].Ki, candidates[i].Kx, candidates[i].Ky, candidates[i].KiMirror, candidates[i].KxMirror, candidates[i].KyMirror);
+                var xsim = ImageHelper.GetSim(img1.RandomKi, candidates[i].RandomKi, candidates[i].RandomKiMirror);
                 if (xsim > sim) {
                     img2 = candidates[i];
                     nexthash = img2.Hash;
@@ -291,7 +236,7 @@ namespace ImageBank
             MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
 
             var lc = GetMinLastCheck();
-            var lv = GetMinLastView();
+            var lv = new DateTime(2021, 1, 1);
 
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -322,7 +267,6 @@ namespace ImageBank
                 lastchanged: lc, 
                 lastview: lv,
                 lastcheck: lc,
-                family: 0,
                 generation: 0);
 
             Add(nimg);

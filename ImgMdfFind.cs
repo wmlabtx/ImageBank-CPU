@@ -9,6 +9,7 @@ namespace ImageBank
         public static void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
+            var hist = new int[AppConsts.MaxGeneration + 1];
             var sb = new StringBuilder();
             lock (_imglock) {
                 while (true) {
@@ -29,7 +30,22 @@ namespace ImageBank
                             return;
                         }
 
+                        /*
                         imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
+                        */
+                        
+                        foreach (var e in valid) {
+                            hist[e.Generation]++;
+                        }
+
+                        var ig = 0;
+                        for (var i = hist.Length - 1; i >= 0; i--) {
+                            if (hist[i] > hist[ig]) {
+                                ig = i;
+                            }
+                        }
+
+                        imgX = valid.Where(e => e.Generation == ig).OrderBy(e => e.LastView).ThenByDescending(e => e.LastCheck).FirstOrDefault();
 
                         /*
                         var scope = valid.Where(e => e.LastView <= e.LastChanged).ToArray();
@@ -71,11 +87,15 @@ namespace ImageBank
                     break;
                 }
 
+                for (var i = 0; i < hist.Length; i++) {
+                    sb.Append($"{i}:{hist[i]}/");
+                }
+
                 var changed = _imgList
                     .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
                     .Count( e => e.Value.LastView <= e.Value.LastChanged);
 
-                sb.Append($"{changed}/{_imgList.Count}: ");
+                sb.Append($"c:{changed}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Name}: ");
                 sb.Append($"{imgX.Sim:F2} ");
             }

@@ -80,18 +80,8 @@ namespace ImageBank
             }
         }
 
-        private int _family;
-        public int Family {
-            get => _family;
-            set {
-                _family = value;
-                if (_family < 0) {
-                    throw new ArgumentException("_family < 0");
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrFamily, value);
-            }
-        }
+        public short[] RandomKi;
+        public short[] RandomKiMirror;
 
         public Img(
             string name,
@@ -112,7 +102,6 @@ namespace ImageBank
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
-            int family,
             int generation
             ) {
 
@@ -136,8 +125,10 @@ namespace ImageBank
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;
-            _family = family;
             _generation = generation;
+
+            RandomKi = ImageHelper.GetRandomVector(Ki, Kx, Ky);
+            RandomKiMirror = ImageHelper.GetRandomVector(KiMirror, KxMirror, KyMirror);
         }
     }
 }
