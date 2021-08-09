@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using ImageBank;
@@ -29,11 +29,27 @@ namespace ImageBankTest
         */
 
         [TestMethod()]
+        public void ComputeVectorTest()
+        {
+            float[] v1, v2;
+
+            var filename = "org.jpg";
+            using (var image = Image.FromFile(filename)) {
+                ImageHelper.ComputeVector((Bitmap)image, out v1);
+            }
+
+            filename = "org_png.jpg";
+            using (var image = Image.FromFile(filename)) {
+                ImageHelper.ComputeVector((Bitmap)image, out v2);
+            }
+        }
+
+        [TestMethod()]
         public void ComputeKazeDescriptorsTest()
         {
             var filename = "k1024.jpg";
             using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeKazeDescriptors((Bitmap)image, out var ki, out var kx, out var ky);
+                ImageHelper.ComputeFeaturePoints((Bitmap)image, out var fp);
             }
         }
 
@@ -41,9 +57,10 @@ namespace ImageBankTest
         public void KazeBulkTest()
         {
             var img1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeKazeDescriptors((Bitmap)img1, out var ki1, out var kx1, out var ky1);
+            ImageHelper.ComputeVector((Bitmap)img1, out var v1);
 
             var files = new[] {
+                "org.jpg",
                 "org_png.jpg",
                 "org_resized.jpg",
                 "org_nologo.jpg",
@@ -63,10 +80,15 @@ namespace ImageBankTest
             var sb = new StringBuilder();
             foreach (var filename in files)
             {
-                var img2 = Image.FromFile(filename);
-                ImageHelper.ComputeKazeDescriptors((Bitmap)img2, out var ki2, out var kx2, out var ky2, out var ki2mirror, out var kx2mirror, out var ky2mirror);
+                var imgdata2 = File.ReadAllBytes(filename);
+                ImageHelper.GetBitmapFromImageData(imgdata2, out var bmp2);
+                if (bmp2.PixelFormat != PixelFormat.Format24bppRgb) {
+                    bmp2 = ImageHelper.RepixelBitmap(bmp2);
+                }
 
-                var sim = ImageHelper.GetSimRandom(ki1, kx1, ky1, ki2, kx2, ky2, ki2mirror, kx2mirror, ky2mirror);
+                ImageHelper.ComputeVector(bmp2, out var v2, out var v2mirror);
+
+                var sim = ImageHelper.GetCosineSimilarity(v1, v2, v2mirror);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }

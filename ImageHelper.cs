@@ -1,4 +1,5 @@
 ﻿using OpenCvSharp;
+using OpenCvSharp.Dnn;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace ImageBank
 {
     public static class ImageHelper
     {
-        const int MAXDIM = 750;
+        const int MAXDIM = 500;
         const int KAZESIZE = 64;
         const int MAXCLUSTERS = 16 * 1024;
 
@@ -26,6 +27,7 @@ namespace ImageBank
         private static readonly BOWImgDescriptorExtractor _bow;
         private static readonly Mat _clusters;
         private static readonly CryptoRandom _random;
+        private static readonly Net _model;
 
         static ImageHelper()
         {
@@ -39,6 +41,7 @@ namespace ImageBank
             _clusters.SetArray(fdata);
             _bow.SetVocabulary(_clusters);
             _random = new CryptoRandom();
+            _model = CvDnn.ReadNetFromOnnx(AppConsts.FileModel);
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -171,11 +174,57 @@ namespace ImageBank
             }
         }
 
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out short[] ki, out short[] kx, out short[] ky)
+        public static void ComputeVector(Bitmap bitmap, out float[] vector)
         {
-            ki = null;
-            kx = null;
-            ky = null;
+            vector = null;
+            using (var matsource = bitmap.ToMat()) {
+                var size = new OpenCvSharp.Size(224, 224);
+                using (var blob = CvDnn.BlobFromImage(image: matsource, size: size, crop: true)) {
+                    _model.SetInput(blob);
+                    using (var result = _model.Forward("resnetv27_flatten0_reshape0")) {
+                        result.GetArray<float>(out var rawvector);
+                        vector = rawvector;
+                    }
+                }
+            }
+        }
+
+        public static void ComputeVector(Bitmap bitmap, out float[] vector, out float[] vectormirror)
+        {
+            ComputeVector(bitmap, out vector);
+            using (var brft = new Bitmap(bitmap)) {
+                brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                using (var brft24 = RepixelBitmap(brft)) {
+                    ComputeVector(brft24, out vectormirror);
+                }
+            }
+        }
+
+        public static float GetCosineSimilarity(float[] v1, float[] v2)
+        {
+            var dot = 0f;
+            var mag1 = 0f;
+            var mag2 = 0f;
+            for (var i = 0; i < v1.Length; i++) {
+                dot += v1[i] * v2[i];
+                mag1 += (float)Math.Pow(v1[i], 2);
+                mag2 += (float)Math.Pow(v2[i], 2);
+            }
+
+            return (float)(dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2)));
+        }
+
+        public static float GetCosineSimilarity(float[] v1, float[] v2, float[] v2mirror)
+        {
+            var sim1 = GetCosineSimilarity(v1, v2);
+            var sim1mirror = GetCosineSimilarity(v1, v2mirror);
+            var sim = Math.Max(sim1, sim1mirror);
+            return sim;
+        }
+
+        public static void ComputeFeaturePoints(Bitmap bitmap, out FeaturePoint[] fp)
+        {
+            fp = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat()) {
                 var f = (double)MAXDIM / Math.Max(matsource.Width, matsource.Height);
@@ -200,71 +249,58 @@ namespace ImageBank
                             }
                             */
 
-                            var kazapoints = new Tuple<short, short, short>[keypoints.Length];
+                            fp = new FeaturePoint[keypoints.Length];
                             for (var i = 0; i < idx.Length; i++) {
                                 for (var j = 0; j < idx[i].Length; j++) {
                                     var k = idx[i][j];
-                                    kazapoints[k] = 
-                                        new Tuple<short, short, short>(
-                                            (short)i, 
-                                            (short)Math.Round(keypoints[k].Pt.X), 
-                                            (short)Math.Round(keypoints[k].Pt.Y)
-                                            );
+                                    fp[k] =
+                                        new FeaturePoint() {
+                                            Id = (short)i,
+                                            X = (short)Math.Round(keypoints[k].Pt.X),
+                                            Y = (short)Math.Round(keypoints[k].Pt.Y),
+                                            Angle = (short)Math.Round(keypoints[k].Angle),
+                                            Size = (short)Math.Round(keypoints[k].Size)
+                                        };
                                 }
                             }
-
-                            var kp = kazapoints.OrderBy(e => e.Item1).ToArray();
-                            ki = kp.Select(e => e.Item1).ToArray();
-                            kx = kp.Select(e => e.Item2).ToArray();
-                            ky = kp.Select(e => e.Item3).ToArray();
                         }
                     }
                 }
             }
         }
 
-        /*
-        public static short GetAverageAngle(short[] ka)
+        public static void ComputeFeaturePoints(Bitmap bitmap, out FeaturePoint[] fp, out FeaturePoint[] fpmirror)
         {
-            var sinavg = ka.Sum(a => Math.Sin(a * Math.PI / 180.0)) / ka.Length;
-            var cosavg = ka.Sum(a => Math.Cos(a * Math.PI / 180.0)) / ka.Length;
-            var avgangle = (short)Math.Round(Math.Atan2(sinavg, cosavg) * 180.0 / Math.PI);
-            if (avgangle < 0) {
-                avgangle += 360;
-            }
-
-            if (avgangle >= 360) {
-                avgangle -= 360;
-            }
-
-            return avgangle;
-        }
-        */
-
-        public static void ComputeKazeDescriptors(Bitmap bitmap, out short[] ki, out short[] kx, out short[] ky, out short[] kimirror, out short[] kxmirror, out short[] kymirror)
-        {
-            ComputeKazeDescriptors(bitmap, out ki, out kx, out ky);
+            ComputeFeaturePoints(bitmap, out fp);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                ComputeKazeDescriptors(brft, out kimirror, out kxmirror, out kymirror);
+                ComputeFeaturePoints(brft, out fpmirror);
             }
         }
 
-        /*
-        public static int AngleCompareTo(short a1, short a2)
+        public static RandomVector GetRandomVector(FeaturePoint[] fp)
         {
-            var diff = Math.Abs(a1 - a2);
-            if (diff > 180) {
-                diff = 360 - diff;
+            if (fp.Length < AppConsts.MinDescriptors) {
+                throw new ArgumentOutOfRangeException(nameof(fp));
             }
 
-            if (diff < 20) {
-                return 0;
+            var j = _random.NextShort(0, (short)(fp.Length - 1));
+            var list = new List<Tuple<FeaturePoint, long>>();
+            for (var i = 0; i < fp.Length; i++) {
+                var dx = (long)(fp[i].X - fp[j].X);
+                var dy = (long)(fp[i].Y - fp[j].Y);
+                var distance = (dx * dx) + (dy * dy);
+                list.Add(new Tuple<FeaturePoint, long>(fp[i], distance));
             }
 
-            return a1.CompareTo(a2);
+            var randompoints = (int)_random.NextShort((short)(fp.Length / 2), (short)(fp.Length - 1));
+            var maxpoints = Math.Max(AppConsts.MinDescriptors, randompoints);
+            var rv = new RandomVector {
+                Vector = list.OrderBy(e => e.Item2).Take(maxpoints).Select(e => e.Item1.Id).OrderBy(e => e).ToArray()
+            };
+
+            return rv;
         }
-        */
 
         public static int GetMatch(short[] ki1, short[] ki2)
         {
@@ -290,45 +326,71 @@ namespace ImageBank
             return m;
         }
 
-        public static short[] GetRandomVector(short[] ki, short[] kx, short[] ky)
+        public static short CalculateDifferenceBetweenAngles(short a, short b)
         {
-            if (ki.Length < AppConsts.MinDescriptors) {
-                throw new ArgumentOutOfRangeException(nameof(ki));
-            }
+            int phi = Math.Abs(b - a) % 360;
+            int distance = phi > 180 ? 360 - phi : phi;
+            return (short)distance;
+        }
 
-            var j = _random.NextShort(0, (short)(ki.Length - 1));
-            var list = new List<Tuple<short, float>>();
-            for (var i = 0; i < ki.Length; i++) {
-                if (i == j) {
-                    continue;
+        public static int GetMatch(FeaturePoint[] a, FeaturePoint[] b)
+        {
+            var match = 0;
+            for (var i = 0; i < a.Length; i++) {
+                for (var j = 0; j < b.Length; j++) {
+                    if (a[i].Id != b[j].Id) {
+                        continue;
+                    }
+
+                    var diff = CalculateDifferenceBetweenAngles(a[i].Angle, b[j].Angle);
+                    if (diff > 36) {
+                        continue;
+                    }
+
+                    match++;
+                    break;
                 }
-
-                var dx = (float)(kx[i] - kx[j]);
-                var dy = (float)(ky[i] - ky[j]);
-                var distance = dx * dx + dy * dy;
-                list.Add(new Tuple<short, float>(ki[i], distance));
             }
 
-            list = list.OrderBy(e => e.Item2).ToList();
-            var nmax = _random.NextShort(100, (short)(ki.Length - 1));
-            list = list.Take(nmax).OrderBy(e => e.Item1).ToList();
-            var randomki = list.Select(e => e.Item1).ToArray();
-            return randomki;
+            return match;
         }
 
-        public static float GetSim(short[] ki1, short[] ki2)
+        public static float GetSim(RandomVector rv1, RandomVector rv2)
         {
-            var matchmax = GetMatch(ki1, ki2);
-            var simmax = (float)matchmax / ki1.Length;
-            return simmax;
+            if (rv1.Vector == null || rv2.Vector == null || rv1.Vector.Length == 0 || rv2.Vector.Length == 0) {
+                return 0f;
+            }
+
+            var match = GetMatch(rv1.Vector, rv2.Vector);
+            var sim = (float)match / rv1.Vector.Length;
+            return sim;
         }
 
-        public static float GetSim(short[] ki1, short[] ki2, short[] ki2mirror)
+        public static float GetSim(RandomVector rv1, RandomVector rv2, RandomVector rv2mirror)
         {
-            var sim1 = GetSim(ki1, ki2);
-            var sim1mirror = GetSim(ki1, ki2mirror);
+            var sim1 = GetSim(rv1, rv2);
+            var sim1mirror = GetSim(rv1, rv2mirror);
             var sim = Math.Max(sim1, sim1mirror);
             return sim;
+        }
+
+        public static FeaturePoint[] ToFeaturePoints(short[] ki, short[] kx, short[] ky, short[] ka, short[] ks)
+        {
+            var fp = new FeaturePoint[ki.Length];
+            for (var i = 0; i < ki.Length; i++) {
+                fp[i] = new FeaturePoint() { Id = ki[i], X = kx[i], Y = ky[i], Angle = ka[i], Size = ks[i] };
+            }
+
+            return fp;
+        }
+
+        public static void FromFeaturePoints(FeaturePoint[] fp, out short[] ki, out short[] kx, out short[] ky, out short[] ka, out short[] ks)
+        {
+            ki = fp.Select(e => e.Id).ToArray();
+            kx = fp.Select(e => e.X).ToArray();
+            ky = fp.Select(e => e.Y).ToArray();
+            ka = fp.Select(e => e.Angle).ToArray();
+            ks = fp.Select(e => e.Size).ToArray();
         }
     }
 }

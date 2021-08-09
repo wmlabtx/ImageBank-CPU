@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
@@ -59,20 +58,23 @@ namespace ImageBank
             var sim = img1.Sim;
             var lastchanged = img1.LastChanged;
 
-            img1.RandomKi = ImageHelper.GetRandomVector(img1.Ki, img1.Kx, img1.Ky);
-            img1.RandomKiMirror = ImageHelper.GetRandomVector(img1.KiMirror, img1.KxMirror, img1.KyMirror);
+            img1.Rv = ImageHelper.GetRandomVector(img1.Fp);
+            img1.RvMirror = ImageHelper.GetRandomVector(img1.FpMirror);
 
-            for (var i = 0; i < candidates.Length; i++) {
-                var xsim = ImageHelper.GetSim(img1.RandomKi, candidates[i].RandomKi, candidates[i].RandomKiMirror);
+            var shuffle = candidates.OrderBy(x => _random.GetRandom64()).Take(AppConsts.MaxCandidates).ToArray();
+            for (var i = 0; i < shuffle.Length; i++) {
+                var xsim = ImageHelper.GetSim(img1.Rv, shuffle[i].Rv, shuffle[i].RvMirror);
                 if (xsim > sim) {
-                    img2 = candidates[i];
+                    img2 = shuffle[i];
                     nexthash = img2.Hash;
                     sim = xsim;
                     lastchanged = DateTime.Now;
+                    break;
                 }
             }
 
             if (!nexthash.Equals(img1.NextHash) || img1.Sim != sim) {
+                img1.Generation = 0;
                 var sb = new StringBuilder();
                 sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
@@ -222,8 +224,8 @@ namespace ImageBank
                 bitmap = ImageHelper.RepixelBitmap(bitmap);
             }
 
-            ImageHelper.ComputeKazeDescriptors(bitmap, out var ki, out var kx, out var ky, out var kimirror, out var kxmirror, out var kymirror);
-            if (ki == null || ki.Length == 0) {
+            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
+            if (fp == null || fp.Length == 0 || fpmirror == null || fpmirror.Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
@@ -256,12 +258,8 @@ namespace ImageBank
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                ki: ki,
-                kx: kx,
-                ky: ky,
-                kimirror: kimirror,
-                kxmirror: kxmirror,
-                kymirror: kymirror,
+                fp: fp,
+                fpmirror: fpmirror,
                 nexthash: hash,
                 sim: 0f,
                 lastchanged: lc, 

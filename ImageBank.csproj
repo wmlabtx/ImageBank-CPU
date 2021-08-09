@@ -111,11 +111,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FeaturePoint.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ImageHelper.cs" />
     <Compile Include="ImgMdfClusters.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
+    <Compile Include="RandomVector.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -11,12 +11,8 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public short[] Ki { get; }
-        public short[] Kx { get; }
-        public short[] Ky { get; }
-        public short[] KiMirror { get; }
-        public short[] KxMirror { get; }
-        public short[] KyMirror { get; }
+        public FeaturePoint[] Fp { get; }
+        public FeaturePoint[] FpMirror { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -32,8 +28,8 @@ namespace ImageBank
             get => _sim;
             set {
                 _sim = value;
-                if (_sim < 0f || _sim > 1f) {
-                    throw new ArgumentException("_sim < 0f || _sim > 1f");
+                if (_sim < 0f || _sim > 100f) {
+                    throw new ArgumentException(nameof(_sim));
                 }
 
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSim, value);
@@ -80,8 +76,8 @@ namespace ImageBank
             }
         }
 
-        public short[] RandomKi;
-        public short[] RandomKiMirror;
+        public RandomVector Rv;
+        public RandomVector RvMirror;
 
         public Img(
             string name,
@@ -91,12 +87,8 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            short[] ki,
-            short[] kx,
-            short[] ky,
-            short[] kimirror,
-            short[] kxmirror,
-            short[] kymirror,
+            FeaturePoint[] fp,
+            FeaturePoint[] fpmirror,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -113,12 +105,8 @@ namespace ImageBank
             DateTaken = datetaken;
             MetaData = metadata;
 
-            Ki = ki;
-            Kx = kx;
-            Ky = ky;
-            KiMirror = kimirror;
-            KxMirror = kxmirror;
-            KyMirror = kymirror;
+            Fp = fp;
+            FpMirror = fpmirror;
 
             _nexthash = nexthash;
             _sim = sim;
@@ -127,8 +115,8 @@ namespace ImageBank
             _lastcheck = lastcheck;
             _generation = generation;
 
-            RandomKi = ImageHelper.GetRandomVector(Ki, Kx, Ky);
-            RandomKiMirror = ImageHelper.GetRandomVector(KiMirror, KxMirror, KyMirror);
+            Rv = ImageHelper.GetRandomVector(Fp);
+            RvMirror = ImageHelper.GetRandomVector(FpMirror);
         }
     }
 }

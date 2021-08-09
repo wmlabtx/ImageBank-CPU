@@ -36,7 +36,7 @@ namespace ImageBank
             }
         }
 
-        private ulong GetRandom64()
+        public ulong GetRandom64()
         {
             lock (_this) {
                 EnsureRandomBuffer(sizeof(ulong));
@@ -56,19 +56,6 @@ namespace ImageBank
             var random64 = GetRandom64();
             var remainder = (short)(random64 % diff);
             var randomnext = (short)(minvalue + remainder);
-            return randomnext;
-        }
-
-        public int NextInt(int minvalue, int maxvalue)
-        {
-            if (minvalue > maxvalue) {
-                throw new ArgumentOutOfRangeException(nameof(minvalue));
-            }
-
-            var diff = (ulong)(maxvalue - minvalue + 1);
-            var random64 = GetRandom64();
-            var remainder = (int)(random64 % diff);
-            var randomnext = minvalue + remainder;
             return randomnext;
         }
 
