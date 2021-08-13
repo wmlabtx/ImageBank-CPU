@@ -45,9 +45,9 @@ namespace ImageBank
                             }
                         }
 
-                        //imgX = valid.Where(e => e.Generation == ig).OrderBy(e => e.LastView).ThenByDescending(e => e.LastCheck).FirstOrDefault();
+                        imgX = valid.Where(e => e.Generation == ig).OrderBy(e => e.LastView).ThenByDescending(e => e.LastCheck).FirstOrDefault();
 
-                        imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim).FirstOrDefault();
+                        //imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim).FirstOrDefault();
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;

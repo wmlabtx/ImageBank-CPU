@@ -70,9 +70,6 @@ namespace ImageBank
                 throw new ArgumentException("generation < 0 || generation > 99");
             }
 
-            ImageHelper.FromFeaturePoints(img.Fp, out var ki, out var kx, out var ky, out var ka, out var ks);
-            ImageHelper.FromFeaturePoints(img.FpMirror, out var kimirror, out var kxmirror, out var kymirror, out var kamirror, out var ksmirror);
-
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
                     sqlCommand.Connection = _sqlConnection;
@@ -85,16 +82,8 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrSize}, ");
                     sb.Append($"{AppConsts.AttrDateTaken}, ");
                     sb.Append($"{AppConsts.AttrMetadata}, ");
-                    sb.Append($"{AppConsts.AttrKi}, ");
-                    sb.Append($"{AppConsts.AttrKx}, ");
-                    sb.Append($"{AppConsts.AttrKy}, ");
-                    sb.Append($"{AppConsts.AttrKa}, ");
-                    sb.Append($"{AppConsts.AttrKs}, ");
-                    sb.Append($"{AppConsts.AttrKiMirror}, ");
-                    sb.Append($"{AppConsts.AttrKxMirror}, ");
-                    sb.Append($"{AppConsts.AttrKyMirror}, ");
-                    sb.Append($"{AppConsts.AttrKaMirror}, ");
-                    sb.Append($"{AppConsts.AttrKsMirror}, ");
+                    sb.Append($"{AppConsts.AttrNet}, ");
+                    sb.Append($"{AppConsts.AttrNetMirror}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
                     sb.Append($"{AppConsts.AttrSim}, ");
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
@@ -109,16 +98,8 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrSize}, ");
                     sb.Append($"@{AppConsts.AttrDateTaken}, ");
                     sb.Append($"@{AppConsts.AttrMetadata}, ");
-                    sb.Append($"@{AppConsts.AttrKi}, ");
-                    sb.Append($"@{AppConsts.AttrKx}, ");
-                    sb.Append($"@{AppConsts.AttrKy}, ");
-                    sb.Append($"@{AppConsts.AttrKa}, ");
-                    sb.Append($"@{AppConsts.AttrKs}, ");
-                    sb.Append($"@{AppConsts.AttrKiMirror}, ");
-                    sb.Append($"@{AppConsts.AttrKxMirror}, ");
-                    sb.Append($"@{AppConsts.AttrKyMirror}, ");
-                    sb.Append($"@{AppConsts.AttrKaMirror}, ");
-                    sb.Append($"@{AppConsts.AttrKsMirror}, ");
+                    sb.Append($"@{AppConsts.AttrNet}, ");
+                    sb.Append($"@{AppConsts.AttrNetMirror}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
                     sb.Append($"@{AppConsts.AttrSim}, ");
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
@@ -134,16 +115,8 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(250, img.MetaData.Length)));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKi}", Helper.ShortToBuffer(ki));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKx}", Helper.ShortToBuffer(kx));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKy}", Helper.ShortToBuffer(ky));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKa}", Helper.ShortToBuffer(ka));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKs}", Helper.ShortToBuffer(ks));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKiMirror}", Helper.ShortToBuffer(kimirror));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKxMirror}", Helper.ShortToBuffer(kxmirror));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKyMirror}", Helper.ShortToBuffer(kymirror));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKaMirror}", Helper.ShortToBuffer(kamirror));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKsMirror}", Helper.ShortToBuffer(ksmirror));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNet}", Helper.FloatToBuffer(img.Net));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNetMirror}", Helper.FloatToBuffer(img.NetMirror));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSim}", img.Sim);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
@@ -172,22 +145,14 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttrSize}, "); // 4
             sb.Append($"{AppConsts.AttrDateTaken}, "); // 5
             sb.Append($"{AppConsts.AttrMetadata}, "); // 6
-            sb.Append($"{AppConsts.AttrKi}, "); // 7
-            sb.Append($"{AppConsts.AttrKx}, "); // 8
-            sb.Append($"{AppConsts.AttrKy}, "); // 9
-            sb.Append($"{AppConsts.AttrKa}, "); // 10
-            sb.Append($"{AppConsts.AttrKs}, "); // 11
-            sb.Append($"{AppConsts.AttrKiMirror}, "); // 12
-            sb.Append($"{AppConsts.AttrKxMirror}, "); // 13
-            sb.Append($"{AppConsts.AttrKyMirror}, "); // 14
-            sb.Append($"{AppConsts.AttrKaMirror}, "); // 15
-            sb.Append($"{AppConsts.AttrKsMirror}, "); // 16
-            sb.Append($"{AppConsts.AttrNextHash}, "); // 17
-            sb.Append($"{AppConsts.AttrSim}, "); // 18
-            sb.Append($"{AppConsts.AttrLastChanged}, "); // 19
-            sb.Append($"{AppConsts.AttrLastView}, "); // 20
-            sb.Append($"{AppConsts.AttrLastCheck}, "); // 21
-            sb.Append($"{AppConsts.AttrGeneration} "); // 22
+            sb.Append($"{AppConsts.AttrNet}, "); // 7
+            sb.Append($"{AppConsts.AttrNetMirror}, "); // 8
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 9
+            sb.Append($"{AppConsts.AttrSim}, "); // 10
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 11
+            sb.Append($"{AppConsts.AttrLastView}, "); // 12
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 13
+            sb.Append($"{AppConsts.AttrGeneration} "); // 14
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -209,25 +174,14 @@ namespace ImageBank
                             }
 
                             var metadata = reader.GetString(6);
-                            var ki = Helper.ShortFromBuffer((byte[])reader[7]);
-                            var kx = Helper.ShortFromBuffer((byte[])reader[8]);
-                            var ky = Helper.ShortFromBuffer((byte[])reader[9]);
-                            var ka = Helper.ShortFromBuffer((byte[])reader[10]);
-                            var ks = Helper.ShortFromBuffer((byte[])reader[11]);
-                            var kimirror = Helper.ShortFromBuffer((byte[])reader[12]);
-                            var kxmirror = Helper.ShortFromBuffer((byte[])reader[13]);
-                            var kymirror = Helper.ShortFromBuffer((byte[])reader[14]);
-                            var kamirror = Helper.ShortFromBuffer((byte[])reader[15]);
-                            var ksmirror = Helper.ShortFromBuffer((byte[])reader[16]);
-                            var nexthash = reader.GetString(17);
-                            var sim = reader.GetFloat(18);
-                            var lastchanged = reader.GetDateTime(19);
-                            var lastview = reader.GetDateTime(20);
-                            var lastcheck = reader.GetDateTime(21);
-                            var generation = reader.GetInt32(22);
-
-                            var fp = ImageHelper.ToFeaturePoints(ki, kx, ky, ka, ks);
-                            var fpmirror = ImageHelper.ToFeaturePoints(kimirror, kxmirror, kymirror, kamirror, ksmirror);
+                            var net = Helper.FloatFromBuffer((byte[])reader[7]);
+                            var netmirror = Helper.FloatFromBuffer((byte[])reader[8]);
+                            var nexthash = reader.GetString(9);
+                            var sim = reader.GetFloat(10);
+                            var lastchanged = reader.GetDateTime(11);
+                            var lastview = reader.GetDateTime(12);
+                            var lastcheck = reader.GetDateTime(13);
+                            var generation = reader.GetInt32(14);
 
                             var img = new Img(
                                 name: name,
@@ -237,8 +191,8 @@ namespace ImageBank
                                 size: size,
                                 datetaken: datetaken,
                                 metadata: metadata,
-                                fp: fp,
-                                fpmirror: fpmirror,
+                                net: net,
+                                netmirror: netmirror,
                                 nexthash: nexthash,
                                 sim: sim,
                                 lastchanged: lastchanged,

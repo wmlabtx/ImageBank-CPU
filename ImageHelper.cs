@@ -42,6 +42,8 @@ namespace ImageBank
             _bow.SetVocabulary(_clusters);
             _random = new CryptoRandom();
             _model = CvDnn.ReadNetFromOnnx(AppConsts.FileModel);
+            _model.SetPreferableTarget(Target.CUDA);
+            _model.SetPreferableBackend(Backend.CUDA);
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -52,6 +54,9 @@ namespace ImageBank
             {
                 using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor)) {
                     bitmap = BitmapConverter.ToBitmap(mat);
+                    if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
+                        bitmap = RepixelBitmap(bitmap);
+                    }
                 }
             }
             catch (ArgumentException) {
@@ -179,7 +184,8 @@ namespace ImageBank
             vector = null;
             using (var matsource = bitmap.ToMat()) {
                 var size = new OpenCvSharp.Size(224, 224);
-                using (var blob = CvDnn.BlobFromImage(image: matsource, size: size, crop: true)) {
+                var scalar = new Scalar(0, 0, 0);
+                using (var blob = CvDnn.BlobFromImage(image: matsource, scaleFactor: 1.0 / 255, size: size, mean: scalar, crop: true)) {
                     _model.SetInput(blob);
                     using (var result = _model.Forward("resnetv27_flatten0_reshape0")) {
                         result.GetArray<float>(out var rawvector);

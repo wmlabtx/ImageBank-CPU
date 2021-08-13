@@ -9,7 +9,7 @@
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
         public const string FileModel = @"D:\Users\Murad\Documents\Sdb\Db\resnet152-v2-7.onnx";
 
-        public const int MaxImages = 100000;
+        public const int MaxImages = 300000;
 
         public const int MinDescriptors = 100;
         public const int MaxDescriptors = 2000;
@@ -17,7 +17,7 @@
 
         public const int MaxGeneration = 4;
 
-        public const int MaxCandidates = 1000;
+        //public const int MaxCandidates = 1000;
         public const int MaxAttempts = 1;
 
         public const string MzxExtension = ".mzx";
@@ -41,16 +41,8 @@
         public const string AttrSize = "Size";
         public const string AttrDateTaken = "DateTaken";
         public const string AttrMetadata = "Metadata";
-        public const string AttrKi = "Ki";
-        public const string AttrKx = "Kx";
-        public const string AttrKy = "Ky";
-        public const string AttrKa = "Ka";
-        public const string AttrKs = "Ks";
-        public const string AttrKiMirror = "KiMirror";
-        public const string AttrKxMirror = "KxMirror";
-        public const string AttrKyMirror = "KyMirror";
-        public const string AttrKaMirror = "KaMirror";
-        public const string AttrKsMirror = "KsMirror";
+        public const string AttrNet = "Net";
+        public const string AttrNetMirror = "NetMirror";
         public const string AttrNextHash = "NextHash";
         public const string AttrSim = "Sim";
         public const string AttrLastChanged = "LastChanged";

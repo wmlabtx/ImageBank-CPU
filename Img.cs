@@ -11,8 +11,8 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public FeaturePoint[] Fp { get; }
-        public FeaturePoint[] FpMirror { get; }
+        public float[] Net { get; }
+        public float[] NetMirror { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -76,9 +76,6 @@ namespace ImageBank
             }
         }
 
-        public RandomVector Rv;
-        public RandomVector RvMirror;
-
         public Img(
             string name,
             string hash,
@@ -87,8 +84,8 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            FeaturePoint[] fp,
-            FeaturePoint[] fpmirror,
+            float[] net,
+            float[] netmirror,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -105,8 +102,8 @@ namespace ImageBank
             DateTaken = datetaken;
             MetaData = metadata;
 
-            Fp = fp;
-            FpMirror = fpmirror;
+            Net = net;
+            NetMirror = netmirror;
 
             _nexthash = nexthash;
             _sim = sim;
@@ -114,9 +111,6 @@ namespace ImageBank
             _lastview = lastview;
             _lastcheck = lastcheck;
             _generation = generation;
-
-            Rv = ImageHelper.GetRandomVector(Fp);
-            RvMirror = ImageHelper.GetRandomVector(FpMirror);
         }
     }
 }

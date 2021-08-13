@@ -277,6 +277,20 @@ namespace ImageBank
 
         #region Buffers
 
+        public static byte[] FloatToBuffer(float[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(float)];
+            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
+            return buffer;
+        }
+
+        public static float[] FloatFromBuffer(byte[] buffer)
+        {
+            var array = new float[buffer.Length / sizeof(float)];
+            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            return array;
+        }
+
         public static byte[] ShortToBuffer(short[] array)
         {
             var buffer = new byte[array.Length * sizeof(short)];

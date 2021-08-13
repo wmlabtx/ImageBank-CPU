@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -58,12 +57,9 @@ namespace ImageBank
             var sim = img1.Sim;
             var lastchanged = img1.LastChanged;
 
-            img1.Rv = ImageHelper.GetRandomVector(img1.Fp);
-            img1.RvMirror = ImageHelper.GetRandomVector(img1.FpMirror);
-
-            var shuffle = candidates.OrderBy(x => _random.GetRandom64()).Take(AppConsts.MaxCandidates).ToArray();
+            var shuffle = candidates.OrderBy(x => _random.GetRandom64()).Take(1).ToArray();
             for (var i = 0; i < shuffle.Length; i++) {
-                var xsim = ImageHelper.GetSim(img1.Rv, shuffle[i].Rv, shuffle[i].RvMirror);
+                var xsim = ImageHelper.GetCosineSimilarity(img1.Net, shuffle[i].Net, shuffle[i].NetMirror);
                 if (xsim > sim) {
                     img2 = shuffle[i];
                     nexthash = img2.Hash;
@@ -74,7 +70,7 @@ namespace ImageBank
             }
 
             if (!nexthash.Equals(img1.NextHash) || img1.Sim != sim) {
-                img1.Generation = 0;
+                //img1.Generation = 0;
                 var sb = new StringBuilder();
                 sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
@@ -220,12 +216,8 @@ namespace ImageBank
                 return;
             }
 
-            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                bitmap = ImageHelper.RepixelBitmap(bitmap);
-            }
-
-            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
-            if (fp == null || fp.Length == 0 || fpmirror == null || fpmirror.Length == 0) {
+            ImageHelper.ComputeVector(bitmap, out var net, out var netmirror);
+            if (net == null || net.Length == 0 || netmirror == null || netmirror.Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
@@ -258,8 +250,8 @@ namespace ImageBank
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                fp: fp,
-                fpmirror: fpmirror,
+                net: net,
+                netmirror: netmirror,
                 nexthash: hash,
                 sim: 0f,
                 lastchanged: lc, 
@@ -282,12 +274,18 @@ namespace ImageBank
 
             bitmap.Dispose();
             _added++;
+
+            lock (_imglock) {
+                var sb = new StringBuilder();
+                sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K");
+                backgroundworker.ReportProgress(0, sb.ToString());
+            }
         }
 
         public static void Compute(BackgroundWorker backgroundworker)
         {
             ImportInternal(backgroundworker);
-            for (var i = 0; i < 2; i++) {
+            for (var i = 0; i < 0; i++) {
                 ComputeInternal(backgroundworker);
             }
         }

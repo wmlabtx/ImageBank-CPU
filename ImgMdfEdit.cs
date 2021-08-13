@@ -30,7 +30,7 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
+                            ImageHelper.ComputeVector(bitmap, out var net, out var netmirror);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
@@ -41,8 +41,8 @@ namespace ImageBank
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                fp: fp,
-                                fpmirror: fpmirror,
+                                net: net,
+                                netmirror: netmirror,
                                 nexthash: rhash,
                                 sim: 0f,
                                 lastchanged: img.LastChanged,
