@@ -21,7 +21,7 @@ namespace ImageBank
                      if (nameX == null) {
                         imgX = null;
                         var valid = _imgList
-                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
+                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash) && e.Value.Node[0] != 0 && e.Value.Node[1] != 0)
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -45,7 +45,7 @@ namespace ImageBank
                             }
                         }
 
-                        imgX = valid.Where(e => e.Generation == ig).OrderBy(e => e.LastView).ThenByDescending(e => e.LastCheck).FirstOrDefault();
+                        imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim) .FirstOrDefault();
 
                         //imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim).FirstOrDefault();
 

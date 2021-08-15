@@ -11,8 +11,8 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public float[] Net { get; }
-        public float[] NetMirror { get; }
+        public float[][] Vector { get; }
+        public int[] Node { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -76,6 +76,46 @@ namespace ImageBank
             }
         }
 
+        private int _nodeid;
+        public int NodeId {
+            get => _nodeid;
+            set {
+                _nodeid = value;
+                if (_nodeid < 0) {
+                    throw new ArgumentException(nameof(NodeId));
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNode0, value);
+            }
+        }
+
+        private int _nodemirrorid;
+        public int NodeMirrorId {
+            get => _nodemirrorid;
+            set {
+                _nodemirrorid = value;
+                if (_nodemirrorid < 0) {
+                    throw new ArgumentException(nameof(NodeMirrorId));
+                }
+
+                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNode1, value);
+            }
+        }
+
+        public void SetNode(int index, int id)
+        {
+            if (index != 0 && index != 1) {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            if (id < 0) {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            Node[index] = id;
+            ImgMdf.SqlUpdateProperty(Name, index == 0 ? AppConsts.AttrNode0 : AppConsts.AttrNode1, id);
+        }
+
         public Img(
             string name,
             string hash,
@@ -84,8 +124,10 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            float[] net,
-            float[] netmirror,
+            float[] vector0,
+            int node0,
+            float[] vector1,
+            int node1,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -102,8 +144,13 @@ namespace ImageBank
             DateTaken = datetaken;
             MetaData = metadata;
 
-            Net = net;
-            NetMirror = netmirror;
+            Vector = new float[2][];
+            Vector[0] = vector0;
+            Vector[1] = vector1;
+
+            Node = new int[2];
+            Node[0] = node0;
+            Node[1] = node1;
 
             _nexthash = nexthash;
             _sim = sim;

@@ -13,11 +13,12 @@ namespace ImageBank
         private static readonly object _imglock = new object();
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
+        private static readonly SortedDictionary<int, Node> _nodeList = new SortedDictionary<int, Node>();
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
         private static readonly CryptoRandom _random = new CryptoRandom();
 
-        public static readonly SortedDictionary<int, string> Family = new SortedDictionary<int, string>();
+        //public static readonly SortedDictionary<int, string> Family = new SortedDictionary<int, string>();
 
         public ImgMdf()
         {
@@ -25,6 +26,7 @@ namespace ImageBank
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
 
+            /*
             Family.Add(0, "Reset");
             Family.Add(1, "Edna");
             Family.Add(2, "Anette");
@@ -63,6 +65,7 @@ namespace ImageBank
             Family.Add(35, "Marietta");
             Family.Add(36, "Rika Nishimura");
             Family.Add(37, "Nozomi Kurahashi");
+            */
         }
 
         public static DateTime GetMinLastView()

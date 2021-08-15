@@ -15,8 +15,7 @@ namespace ImageBank
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
             Img img1 = null;
-            Img img2 = null;
-            Img[] candidates;
+            
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
@@ -27,57 +26,35 @@ namespace ImageBank
                     .OrderBy(e => e.Value.LastCheck)
                     .FirstOrDefault()
                     .Value;
+            }
 
-                if (!_hashList.TryGetValue(img1.NextHash, out img2)) {
-                    img2 = img1;
-                    img1.NextHash = img1.Hash;
-                    if (img1.Sim > 0f) {
-                        img1.Sim = 0f;
+            var nexthash = img1.Hash;
+            var maxsim = 0f;
+            for (var i = 0; i < 2; i++) {
+                var candidates = GetCandidates(i, img1);
+                for (var j = 0; j < candidates.Length; j++) {
+                    if (img1.Name.Equals(candidates[j].Name, StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+
+                    var sim = ImageHelper.GetCosineSimilarity(img1.Vector[0], candidates[j].Vector[i]);
+                    if (sim > maxsim) {
+                        nexthash = candidates[i].Hash;
+                        maxsim = sim;
                     }
                 }
-
-                candidates = _imgList
-                    .Where(e => !e.Value.Name.Equals(img1.Name, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => e.Value)
-                    .ToArray();
             }
 
-            if (candidates.Length == 0) {
-                if (!img1.NextHash.Equals(img1.Hash, StringComparison.OrdinalIgnoreCase)) {
-                    img1.NextHash = img1.Hash;
-                    img1.Sim = 0f;
-                    img1.LastChanged = DateTime.Now;
-                }
-
-                img1.LastCheck = DateTime.Now;
-                return;
-            }
-
-            var nexthash = img1.NextHash;
-            var sim = img1.Sim;
-            var lastchanged = img1.LastChanged;
-
-            var shuffle = candidates.OrderBy(x => _random.GetRandom64()).Take(1).ToArray();
-            for (var i = 0; i < shuffle.Length; i++) {
-                var xsim = ImageHelper.GetCosineSimilarity(img1.Net, shuffle[i].Net, shuffle[i].NetMirror);
-                if (xsim > sim) {
-                    img2 = shuffle[i];
-                    nexthash = img2.Hash;
-                    sim = xsim;
-                    lastchanged = DateTime.Now;
-                    break;
-                }
-            }
-
-            if (!nexthash.Equals(img1.NextHash) || img1.Sim != sim) {
-                //img1.Generation = 0;
+            if (!nexthash.Equals(img1.NextHash) || img1.Sim != maxsim) {
+                img1.Generation = 0;
+                img1.LastChanged = DateTime.Now;
                 var sb = new StringBuilder();
                 sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                 sb.Append($"{img1.Name}[{img1.Generation}]: ");
                 sb.Append($"{img1.Sim:F2} ");
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{sim:F2} ");
+                sb.Append($"{maxsim:F2} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
             }
 
@@ -85,12 +62,8 @@ namespace ImageBank
                 img1.NextHash = nexthash;
             }
 
-            if (img1.Sim != sim) {
-                img1.Sim = sim;
-            }
-
-            if (img1.LastChanged != lastchanged) {
-                img1.LastChanged = lastchanged;
+            if (img1.Sim != maxsim) {
+                img1.Sim = maxsim;
             }
 
             img1.LastCheck = DateTime.Now;
@@ -216,8 +189,8 @@ namespace ImageBank
                 return;
             }
 
-            ImageHelper.ComputeVector(bitmap, out var net, out var netmirror);
-            if (net == null || net.Length == 0 || netmirror == null || netmirror.Length == 0) {
+            ImageHelper.ComputeVector(bitmap, out var net0, out var net1);
+            if (net0 == null || net0.Length == 0 || net1 == null || net1.Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
@@ -250,8 +223,10 @@ namespace ImageBank
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                net: net,
-                netmirror: netmirror,
+                vector0: net0,
+                node0: 0,
+                vector1: net1,
+                node1: 0,
                 nexthash: hash,
                 sim: 0f,
                 lastchanged: lc, 
@@ -285,7 +260,7 @@ namespace ImageBank
         public static void Compute(BackgroundWorker backgroundworker)
         {
             ImportInternal(backgroundworker);
-            for (var i = 0; i < 0; i++) {
+            for (var i = 0; i < 1; i++) {
                 ComputeInternal(backgroundworker);
             }
         }

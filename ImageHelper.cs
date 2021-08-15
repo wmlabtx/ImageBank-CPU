@@ -206,6 +206,7 @@ namespace ImageBank
             }
         }
 
+        /*
         public static float GetCosineSimilarity(float[] v1, float[] v2)
         {
             var dot = 0f;
@@ -218,6 +219,21 @@ namespace ImageBank
             }
 
             return (float)(dot / (Math.Sqrt(mag1) * Math.Sqrt(mag2)));
+        }
+        */
+
+        public static float GetCosineSimilarity(float[] v1, float[] v2)
+        {
+            var sum = 0f;
+            var n = v1.Length;
+            for (var i = 0; i < n; ++i) {
+                var dx = v1[i] - v2[i];
+                sum += dx * dx;
+            }
+
+            var distance = Math.Sqrt(sum);
+            var sim = (float)(100f / (1f + distance));
+            return sim;
         }
 
         public static float GetCosineSimilarity(float[] v1, float[] v2, float[] v2mirror)

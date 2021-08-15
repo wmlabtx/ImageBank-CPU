@@ -13,12 +13,11 @@
 
         public const int MinDescriptors = 100;
         public const int MaxDescriptors = 2000;
-        public const int DescriptorSize = 61;
+        public const int DescriptorSize = 61; 
 
         public const int MaxGeneration = 4;
-
-        //public const int MaxCandidates = 1000;
-        public const int MaxAttempts = 1;
+        
+        public const int MaxImagesInNode = 10;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -41,13 +40,23 @@
         public const string AttrSize = "Size";
         public const string AttrDateTaken = "DateTaken";
         public const string AttrMetadata = "Metadata";
-        public const string AttrNet = "Net";
-        public const string AttrNetMirror = "NetMirror";
+        public const string AttrVector0 = "Vector0";
+        public const string AttrVector1 = "Vector1";
         public const string AttrNextHash = "NextHash";
         public const string AttrSim = "Sim";
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";
         public const string AttrGeneration = "Generation";
+        public const string AttrNode0 = "Node0";
+        public const string AttrNode1 = "Node1";
+
+        public const string TableNodes = "Nodes";
+        public const string AttrNodeId = "NodeId";
+        public const string AttrPrevId = "PrevId";
+        public const string AttrCore = "Core";
+        public const string AttrRadius = "Radius";
+        public const string AttrChildId0 = "ChildId0";
+        public const string AttrChildId1 = "ChildId1";
     }
 }
