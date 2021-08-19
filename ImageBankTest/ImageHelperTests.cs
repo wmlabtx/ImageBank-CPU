@@ -10,54 +10,30 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
-        /*
         [TestMethod()]
-        public void GetAverageAngleTest()
+        public void ComputeFeaturePointsTest()
         {
-            var ka1 = new short[] { 10, 10 };
-            var avg1 = ImageHelper.GetAverageAngle(ka1);
-            Assert.AreEqual(avg1, 10);
-
-            var ka2 = new short[] { 0, 10, 350 };
-            var avg2 = ImageHelper.GetAverageAngle(ka2);
-            Assert.AreEqual(avg2, 0);
-
-            var ka3 = new short[] { 90, 180, 270, 360 };
-            var avg3 = ImageHelper.GetAverageAngle(ka3);
-            Assert.AreEqual(avg3, 270);
-        }
-        */
-
-        [TestMethod()]
-        public void ComputeVectorTest()
-        {
-            float[] v1, v2;
+            FeaturePoint2[] x, y;
 
             var filename = "org.jpg";
-            using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeVector((Bitmap)image, out v1);
+            using (var img1 = Image.FromFile(filename)) {
+                ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out x);
             }
 
             filename = "org_png.jpg";
-            using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeVector((Bitmap)image, out v2);
+            using (var img2 = Image.FromFile(filename)) {
+                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out y);
             }
-        }
 
-        [TestMethod()]
-        public void ComputeKazeDescriptorsTest()
-        {
-            var filename = "k1024.jpg";
-            using (var image = Image.FromFile(filename)) {
-                ImageHelper.ComputeFeaturePoints((Bitmap)image, out var fp);
-            }
+            var sim = ImageHelper.GetSim2(x, y);
         }
 
         [TestMethod()]
         public void KazeBulkTest()
         {
             var img1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeVector((Bitmap)img1, out var v1);
+            ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out var fp1);
+            //var rv1 = ImageHelper.GetRandomVector(fp1);
 
             var files = new[] {
                 "org.jpg",
@@ -80,15 +56,10 @@ namespace ImageBankTest
             var sb = new StringBuilder();
             foreach (var filename in files)
             {
-                var imgdata2 = File.ReadAllBytes(filename);
-                ImageHelper.GetBitmapFromImageData(imgdata2, out var bmp2);
-                if (bmp2.PixelFormat != PixelFormat.Format24bppRgb) {
-                    bmp2 = ImageHelper.RepixelBitmap(bmp2);
-                }
+                var img2 = Image.FromFile(filename);
+                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out var fp2, out var fp2mirror);
 
-                ImageHelper.ComputeVector(bmp2, out var v2, out var v2mirror);
-
-                var sim = ImageHelper.GetCosineSimilarity(v1, v2, v2mirror);
+                var sim = ImageHelper.GetSim2(fp1, fp2, fp2mirror);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
@@ -97,6 +68,37 @@ namespace ImageBankTest
             }
 
             File.WriteAllText("report.txt", sb.ToString());
+        }
+
+        [TestMethod()]
+        public void KazeBulkTest2()
+        {
+            var img1 = Image.FromFile("arianna-048-001.jpg");
+            ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out var fp1);
+            //var rv1 = ImageHelper.GetRandomVector(fp1);
+
+            var files = new[] {
+                "arianna-048-009.jpg",
+                "arianna-048-063.jpg",
+                "arianna-048-093.jpg",
+                "arianna-048-113.jpg",
+                "org_nosim1.jpg"
+            };
+
+            var sb = new StringBuilder();
+            foreach (var filename in files) {
+                var img2 = Image.FromFile(filename);
+                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out var fp2, out var fp2mirror);
+
+                var sim = ImageHelper.GetSim2(fp1, fp2, fp2mirror);
+                if (sb.Length > 0) {
+                    sb.AppendLine();
+                }
+
+                sb.Append($"{filename}: sim={sim:F4}");
+            }
+
+            File.WriteAllText("report2.txt", sb.ToString());
         }
     }
 }

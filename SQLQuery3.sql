@@ -1,0 +1,1 @@
+﻿UPDATE Images SET Sim = 0

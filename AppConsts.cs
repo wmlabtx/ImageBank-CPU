@@ -7,17 +7,14 @@
         public const string FileKazeClusters = @"D:\Users\Murad\Documents\Sdb\Db\kazeclusters.dat";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
-        public const string FileModel = @"D:\Users\Murad\Documents\Sdb\Db\resnet152-v2-7.onnx";
 
-        public const int MaxImages = 300000;
+        public const int MaxImages = 100000;
 
         public const int MinDescriptors = 100;
         public const int MaxDescriptors = 2000;
-        public const int DescriptorSize = 61; 
+        public const int DescriptorSize = 61;
 
         public const int MaxGeneration = 4;
-        
-        public const int MaxImagesInNode = 10;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -40,23 +37,17 @@
         public const string AttrSize = "Size";
         public const string AttrDateTaken = "DateTaken";
         public const string AttrMetadata = "Metadata";
-        public const string AttrVector0 = "Vector0";
-        public const string AttrVector1 = "Vector1";
+        public const string AttrKi = "Ki";
+        public const string AttrKx = "Kx";
+        public const string AttrKy = "Ky";
+        public const string AttrKiMirror = "KiMirror";
+        public const string AttrKxMirror = "KxMirror";
+        public const string AttrKyMirror = "KyMirror";
         public const string AttrNextHash = "NextHash";
         public const string AttrSim = "Sim";
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";
         public const string AttrGeneration = "Generation";
-        public const string AttrNode0 = "Node0";
-        public const string AttrNode1 = "Node1";
-
-        public const string TableNodes = "Nodes";
-        public const string AttrNodeId = "NodeId";
-        public const string AttrPrevId = "PrevId";
-        public const string AttrCore = "Core";
-        public const string AttrRadius = "Radius";
-        public const string AttrChildId0 = "ChildId0";
-        public const string AttrChildId1 = "ChildId1";
     }
 }

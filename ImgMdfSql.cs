@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
 using System;
+using OpenCvSharp.Dnn;
 
 namespace ImageBank
 {
@@ -23,23 +24,6 @@ namespace ImageBank
             }
         }
 
-        public static void SqlUpdateProperty(int nodeid, string key, object val)
-        {
-            lock (_sqllock) {
-                try {
-                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                        sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableNodes} SET {key} = @{key} WHERE {AppConsts.AttrNodeId} = @{AppConsts.AttrNodeId}";                        
-                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNodeId}", nodeid);
-                        sqlCommand.ExecuteNonQuery();
-                    }
-                }
-                catch (SqlException) {
-                }
-            }
-        }
-
         private static void SqlDelete(string name)
         {
             lock (_sqllock) {
@@ -47,18 +31,6 @@ namespace ImageBank
                     sqlCommand.Connection = _sqlConnection;
                     sqlCommand.CommandText = $"DELETE FROM {AppConsts.TableImages} WHERE {AppConsts.AttrName} = @{AppConsts.AttrName}";
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", name);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private static void SqlDelete(int nodeid)
-        {
-            lock (_sqllock) {
-                using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                    sqlCommand.Connection = _sqlConnection;
-                    sqlCommand.CommandText = $"DELETE FROM {AppConsts.TableNodes} WHERE {AppConsts.AttrNodeId} = @{AppConsts.AttrNodeId}";
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNodeId}", nodeid);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -94,9 +66,12 @@ namespace ImageBank
                 throw new ArgumentException("img.Sim < 0f || img.Sim > 1f");
             }
 
-            if (img.Generation < 0 || img.Generation > 99) {
-                throw new ArgumentException("generation < 0 || generation > 99");
+            if (img.Generation < 0 || img.Generation > AppConsts.MaxGeneration) {
+                throw new ArgumentException("generation < 0 || img.Generation > AppConsts.MaxGeneration");
             }
+
+            ImageHelper.FromFeaturePoints(img.Fp, out var ki, out var kx, out var ky);
+            ImageHelper.FromFeaturePoints(img.FpMirror, out var kimirror, out var kxmirror, out var kymirror);
 
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -110,10 +85,12 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrSize}, ");
                     sb.Append($"{AppConsts.AttrDateTaken}, ");
                     sb.Append($"{AppConsts.AttrMetadata}, ");
-                    sb.Append($"{AppConsts.AttrVector0}, ");
-                    sb.Append($"{AppConsts.AttrNode0}, ");
-                    sb.Append($"{AppConsts.AttrVector1}, ");
-                    sb.Append($"{AppConsts.AttrNode1}, ");
+                    sb.Append($"{AppConsts.AttrKi}, ");
+                    sb.Append($"{AppConsts.AttrKx}, ");
+                    sb.Append($"{AppConsts.AttrKy}, ");
+                    sb.Append($"{AppConsts.AttrKiMirror}, ");
+                    sb.Append($"{AppConsts.AttrKxMirror}, ");
+                    sb.Append($"{AppConsts.AttrKyMirror}, ");
                     sb.Append($"{AppConsts.AttrNextHash}, ");
                     sb.Append($"{AppConsts.AttrSim}, ");
                     sb.Append($"{AppConsts.AttrLastChanged}, ");
@@ -128,10 +105,12 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrSize}, ");
                     sb.Append($"@{AppConsts.AttrDateTaken}, ");
                     sb.Append($"@{AppConsts.AttrMetadata}, ");
-                    sb.Append($"@{AppConsts.AttrVector0}, ");
-                    sb.Append($"@{AppConsts.AttrNode0}, ");
-                    sb.Append($"@{AppConsts.AttrVector1}, ");
-                    sb.Append($"@{AppConsts.AttrNode1}, ");
+                    sb.Append($"@{AppConsts.AttrKi}, ");
+                    sb.Append($"@{AppConsts.AttrKx}, ");
+                    sb.Append($"@{AppConsts.AttrKy}, ");
+                    sb.Append($"@{AppConsts.AttrKiMirror}, ");
+                    sb.Append($"@{AppConsts.AttrKxMirror}, ");
+                    sb.Append($"@{AppConsts.AttrKyMirror}, ");
                     sb.Append($"@{AppConsts.AttrNextHash}, ");
                     sb.Append($"@{AppConsts.AttrSim}, ");
                     sb.Append($"@{AppConsts.AttrLastChanged}, ");
@@ -147,10 +126,12 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSize}", img.Size);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMetadata}", img.MetaData.Substring(0, Math.Min(250, img.MetaData.Length)));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector0}", Helper.FloatToBuffer(img.Vector[0]));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNode0}", img.Node[0]);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector1}", Helper.FloatToBuffer(img.Vector[1]));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNode1}", img.Node[1]);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKi}", Helper.ShortToBuffer(ki));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKx}", Helper.ShortToBuffer(kx));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKy}", Helper.ShortToBuffer(ky));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKiMirror}", Helper.ShortToBuffer(kimirror));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKxMirror}", Helper.ShortToBuffer(kxmirror));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrKyMirror}", Helper.ShortToBuffer(kymirror));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNextHash}", img.NextHash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSim}", img.Sim);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastChanged}", img.LastChanged);
@@ -162,87 +143,38 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(Node node)
-        {
-            if (node.NodeId <= 0) {
-                throw new ArgumentOutOfRangeException(nameof(SqlAdd), nameof(node.NodeId));
-            }
-
-            if (node.PrevId < 0) {
-                throw new ArgumentOutOfRangeException(nameof(SqlAdd), nameof(node.PrevId));
-            }
-
-            if (node.Core == null) {
-                throw new ArgumentOutOfRangeException(nameof(SqlAdd), nameof(node.Core));
-            }
-
-            if (node.Radius < 0f) {
-                throw new ArgumentOutOfRangeException(nameof(SqlAdd), nameof(node.Radius));
-            }
-
-            if (node.ChildId == null || node.ChildId.Length != 2 || node.ChildId[0] < 0 || node.ChildId[1] < 0) {
-                throw new ArgumentOutOfRangeException(nameof(SqlAdd), nameof(node.ChildId));
-            }
-
-            lock (_sqllock) {
-                using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                    sqlCommand.Connection = _sqlConnection;
-                    var sb = new StringBuilder();
-                    sb.Append($"INSERT INTO {AppConsts.TableNodes} (");
-                    sb.Append($"{AppConsts.AttrNodeId}, ");
-                    sb.Append($"{AppConsts.AttrPrevId}, ");
-                    sb.Append($"{AppConsts.AttrCore}, ");
-                    sb.Append($"{AppConsts.AttrRadius}, ");
-                    sb.Append($"{AppConsts.AttrChildId0}, ");
-                    sb.Append($"{AppConsts.AttrChildId1}");
-                    sb.Append(") VALUES (");
-                    sb.Append($"@{AppConsts.AttrNodeId}, ");
-                    sb.Append($"@{AppConsts.AttrPrevId}, ");
-                    sb.Append($"@{AppConsts.AttrCore}, ");
-                    sb.Append($"@{AppConsts.AttrRadius}, ");
-                    sb.Append($"@{AppConsts.AttrChildId0}, ");
-                    sb.Append($"@{AppConsts.AttrChildId1}");
-                    sb.Append(')');
-                    sqlCommand.CommandText = sb.ToString();
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrNodeId}", node.NodeId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPrevId}", node.PrevId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCore}", Helper.FloatToBuffer(node.Core));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrRadius}", node.Radius);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChildId0}", node.ChildId[0]);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChildId1}", node.ChildId[1]);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
         public static void LoadImgs(IProgress<string> progress)
         {
             lock (_imglock) {
                 _imgList.Clear();
             }
-           
+
+            progress.Report("Loading images...");
+
+            var sb = new StringBuilder();
+            sb.Append("SELECT ");
+            sb.Append($"{AppConsts.AttrName}, "); // 0
+            sb.Append($"{AppConsts.AttrHash}, "); // 1
+            sb.Append($"{AppConsts.AttrWidth}, "); // 2
+            sb.Append($"{AppConsts.AttrHeight}, "); // 3
+            sb.Append($"{AppConsts.AttrSize}, "); // 4
+            sb.Append($"{AppConsts.AttrDateTaken}, "); // 5
+            sb.Append($"{AppConsts.AttrMetadata}, "); // 6
+            sb.Append($"{AppConsts.AttrKi}, "); // 7
+            sb.Append($"{AppConsts.AttrKx}, "); // 8
+            sb.Append($"{AppConsts.AttrKy}, "); // 9
+            sb.Append($"{AppConsts.AttrKiMirror}, "); // 10
+            sb.Append($"{AppConsts.AttrKxMirror}, "); // 11
+            sb.Append($"{AppConsts.AttrKyMirror}, "); // 12
+            sb.Append($"{AppConsts.AttrNextHash}, "); // 13
+            sb.Append($"{AppConsts.AttrSim}, "); // 14
+            sb.Append($"{AppConsts.AttrLastChanged}, "); // 15
+            sb.Append($"{AppConsts.AttrLastView}, "); // 16
+            sb.Append($"{AppConsts.AttrLastCheck}, "); // 17
+            sb.Append($"{AppConsts.AttrGeneration} "); // 18
+            sb.Append($"FROM {AppConsts.TableImages}");
+            var sqltext = sb.ToString();
             lock (_sqllock) {
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrName}, "); // 0
-                sb.Append($"{AppConsts.AttrHash}, "); // 1
-                sb.Append($"{AppConsts.AttrWidth}, "); // 2
-                sb.Append($"{AppConsts.AttrHeight}, "); // 3
-                sb.Append($"{AppConsts.AttrSize}, "); // 4
-                sb.Append($"{AppConsts.AttrDateTaken}, "); // 5
-                sb.Append($"{AppConsts.AttrMetadata}, "); // 6
-                sb.Append($"{AppConsts.AttrVector0}, "); // 7
-                sb.Append($"{AppConsts.AttrNode0}, "); // 8
-                sb.Append($"{AppConsts.AttrVector1}, "); // 9
-                sb.Append($"{AppConsts.AttrNode1}, "); // 10
-                sb.Append($"{AppConsts.AttrNextHash}, "); // 11
-                sb.Append($"{AppConsts.AttrSim}, "); // 12
-                sb.Append($"{AppConsts.AttrLastChanged}, "); // 13
-                sb.Append($"{AppConsts.AttrLastView}, "); // 14
-                sb.Append($"{AppConsts.AttrLastCheck}, "); // 15
-                sb.Append($"{AppConsts.AttrGeneration} "); // 16
-                sb.Append($"FROM {AppConsts.TableImages}");
-                var sqltext = sb.ToString();
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
                     sqlCommand.Connection = _sqlConnection;
                     sqlCommand.CommandText = sqltext;
@@ -261,16 +193,21 @@ namespace ImageBank
                             }
 
                             var metadata = reader.GetString(6);
-                            var vector0 = Helper.FloatFromBuffer((byte[])reader[7]);
-                            var node0 = reader.GetInt32(8);
-                            var vector1 = Helper.FloatFromBuffer((byte[])reader[9]);
-                            var node1 = reader.GetInt32(10);
-                            var nexthash = reader.GetString(11);
-                            var sim = reader.GetFloat(12);
-                            var lastchanged = reader.GetDateTime(13);
-                            var lastview = reader.GetDateTime(14);
-                            var lastcheck = reader.GetDateTime(15);
-                            var generation = reader.GetInt32(16);
+                            var ki = Helper.ShortFromBuffer((byte[])reader[7]);
+                            var kx = Helper.ShortFromBuffer((byte[])reader[8]);
+                            var ky = Helper.ShortFromBuffer((byte[])reader[9]);
+                            var kimirror = Helper.ShortFromBuffer((byte[])reader[10]);
+                            var kxmirror = Helper.ShortFromBuffer((byte[])reader[11]);
+                            var kymirror = Helper.ShortFromBuffer((byte[])reader[12]);
+                            var nexthash = reader.GetString(13);
+                            var sim = reader.GetFloat(14);
+                            var lastchanged = reader.GetDateTime(15);
+                            var lastview = reader.GetDateTime(16);
+                            var lastcheck = reader.GetDateTime(17);
+                            var generation = reader.GetInt32(18);
+
+                            var fp = ImageHelper.ToFeaturePoints(ki, kx, ky);
+                            var fpmirror = ImageHelper.ToFeaturePoints(kimirror, kxmirror, kymirror);
 
                             var img = new Img(
                                 name: name,
@@ -280,10 +217,8 @@ namespace ImageBank
                                 size: size,
                                 datetaken: datetaken,
                                 metadata: metadata,
-                                vector0: vector0,
-                                node0: node0,
-                                vector1: vector1,
-                                node1: node1,
+                                fp: fp,
+                                fpmirror: fpmirror,
                                 nexthash: nexthash,
                                 sim: sim,
                                 lastchanged: lastchanged,
@@ -302,56 +237,7 @@ namespace ImageBank
                     }
                 }
 
-                sb.Length = 0;
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrNodeId}, "); // 0
-                sb.Append($"{AppConsts.AttrPrevId}, "); // 1
-                sb.Append($"{AppConsts.AttrCore}, "); // 2
-                sb.Append($"{AppConsts.AttrRadius}, "); // 3
-                sb.Append($"{AppConsts.AttrChildId0}, "); // 4
-                sb.Append($"{AppConsts.AttrChildId1} "); // 5
-                sb.Append($"FROM {AppConsts.TableNodes}");
-                sqltext = sb.ToString();
-                using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                    sqlCommand.Connection = _sqlConnection;
-                    sqlCommand.CommandText = sqltext;
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        var dtn = DateTime.Now;
-                        while (reader.Read()) {
-                            var nodeid = reader.GetInt32(0);
-                            var previd = reader.GetInt32(1);
-                            var core = Helper.FloatFromBuffer((byte[])reader[2]);
-                            var radius = reader.GetFloat(3);
-                            var childid0 = reader.GetInt32(4);
-                            var childid1 = reader.GetInt32(5);
-
-                            var node = new Node(
-                                nodeid: nodeid,
-                                previd: previd,
-                                core: core,
-                                radius: radius,
-                                childid0: childid0,
-                                childid1: childid1
-                               );
-
-                            AddToMemory(node);
-
-                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
-                                dtn = DateTime.Now;
-                                progress.Report($"Loading nodes ({_nodeList.Count})...");
-                            }
-                        }
-                    }
-                }
-            }
-
-            lock (_imglock) {
-                if (_nodeList.Count == 0) {
-                    var node0 = new Node(nodeid: 1, previd: 0, core: Array.Empty<float>(), radius: 0f, childid0: 0, childid1: 0);
-                    Add(node0);
-                    var node1 = new Node(nodeid: 2, previd: 0, core: Array.Empty<float>(), radius: 0f, childid0: 0, childid1: 0);
-                    Add(node1);
-                }
+                progress.Report("Database loaded");
             }
         }
     }

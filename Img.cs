@@ -11,8 +11,8 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public float[][] Vector { get; }
-        public int[] Node { get; }
+        public FeaturePoint[] Fp { get; }
+        public FeaturePoint[] FpMirror { get; }
 
         private string _nexthash;
         public string NextHash {
@@ -28,10 +28,6 @@ namespace ImageBank
             get => _sim;
             set {
                 _sim = value;
-                if (_sim < 0f || _sim > 100f) {
-                    throw new ArgumentException(nameof(_sim));
-                }
-
                 ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSim, value);
             }
         }
@@ -76,45 +72,8 @@ namespace ImageBank
             }
         }
 
-        private int _nodeid;
-        public int NodeId {
-            get => _nodeid;
-            set {
-                _nodeid = value;
-                if (_nodeid < 0) {
-                    throw new ArgumentException(nameof(NodeId));
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNode0, value);
-            }
-        }
-
-        private int _nodemirrorid;
-        public int NodeMirrorId {
-            get => _nodemirrorid;
-            set {
-                _nodemirrorid = value;
-                if (_nodemirrorid < 0) {
-                    throw new ArgumentException(nameof(NodeMirrorId));
-                }
-
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNode1, value);
-            }
-        }
-
-        public void SetNode(int index, int id)
-        {
-            if (index != 0 && index != 1) {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            if (id < 0) {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
-
-            Node[index] = id;
-            ImgMdf.SqlUpdateProperty(Name, index == 0 ? AppConsts.AttrNode0 : AppConsts.AttrNode1, id);
-        }
+        public short[] Rv;
+        public short[] RvMirror;
 
         public Img(
             string name,
@@ -124,17 +83,16 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            float[] vector0,
-            int node0,
-            float[] vector1,
-            int node1,
+            FeaturePoint[] fp,
+            FeaturePoint[] fpmirror,
             string nexthash,
             float sim,
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
             int generation
-            ) {
+            )
+        {
 
             Name = name;
             Hash = hash;
@@ -144,13 +102,8 @@ namespace ImageBank
             DateTaken = datetaken;
             MetaData = metadata;
 
-            Vector = new float[2][];
-            Vector[0] = vector0;
-            Vector[1] = vector1;
-
-            Node = new int[2];
-            Node[0] = node0;
-            Node[1] = node1;
+            Fp = fp;
+            FpMirror = fpmirror;
 
             _nexthash = nexthash;
             _sim = sim;
@@ -158,6 +111,9 @@ namespace ImageBank
             _lastview = lastview;
             _lastcheck = lastcheck;
             _generation = generation;
+
+            Rv = ImageHelper.GetRandomVector(Fp);
+            RvMirror = ImageHelper.GetRandomVector(FpMirror);
         }
     }
 }

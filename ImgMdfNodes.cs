@@ -5,6 +5,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        /*
         private static int GetAvailableNodeId()
         {
             var nodeid = 0;
@@ -142,5 +143,6 @@ namespace ImageBank
                 }
             }
         }
+        */
     }
 }

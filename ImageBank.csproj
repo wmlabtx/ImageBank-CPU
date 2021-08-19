@@ -118,7 +118,6 @@
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
     <Compile Include="ImgMdfNodes.cs" />
-    <Compile Include="RandomVector.cs" />
     <Compile Include="Node.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

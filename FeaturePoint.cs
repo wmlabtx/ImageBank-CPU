@@ -5,7 +5,12 @@
         public short Id;
         public short X;
         public short Y;
-        public short Angle;
-        public short Size;
+    }
+
+    public struct FeaturePoint2
+    {
+        public uint Id;
+        public short X;
+        public short Y;
     }
 }

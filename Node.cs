@@ -1,7 +1,6 @@
-﻿using System;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
+    /*
     public class Node
     {
         public int NodeId { get; }
@@ -85,4 +84,5 @@ namespace ImageBank
             return ChildId[0] == 0 && ChildId[1] == 0;
         }
     }
+    */
 }

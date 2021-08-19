@@ -18,10 +18,10 @@ namespace ImageBank
                         return;
                     }
 
-                     if (nameX == null) {
+                    if (nameX == null) {
                         imgX = null;
                         var valid = _imgList
-                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash) && e.Value.Node[0] != 0 && e.Value.Node[1] != 0)
+                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -33,7 +33,7 @@ namespace ImageBank
                         /*
                         imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
                         */
-                        
+
                         foreach (var e in valid) {
                             hist[e.Generation]++;
                         }
@@ -45,9 +45,9 @@ namespace ImageBank
                             }
                         }
 
-                        imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim) .FirstOrDefault();
+                        //imgX = valid.Where(e => e.Generation == ig).OrderBy(e => e.LastView).ThenByDescending(e => e.LastCheck).FirstOrDefault();
 
-                        //imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim).FirstOrDefault();
+                        imgX = valid.Where(e => e.Generation == ig).OrderByDescending(e => e.Sim).FirstOrDefault();
 
                         if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
                             continue;
@@ -83,7 +83,7 @@ namespace ImageBank
 
                 var changed = _imgList
                     .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
-                    .Count( e => e.Value.LastView <= e.Value.LastChanged);
+                    .Count(e => e.Value.LastView <= e.Value.LastChanged);
 
                 sb.Append($"c:{changed}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Name}: ");

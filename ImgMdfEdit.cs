@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
 
 namespace ImageBank
 {
@@ -30,7 +29,7 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.ComputeVector(bitmap, out var net0, out var net1);
+                            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
@@ -41,10 +40,8 @@ namespace ImageBank
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                vector0: net0,
-                                node0: 0,
-                                vector1: net1,
-                                node1: 0,
+                                fp: fp,
+                                fpmirror: fpmirror,
                                 nexthash: rhash,
                                 sim: 0f,
                                 lastchanged: img.LastChanged,

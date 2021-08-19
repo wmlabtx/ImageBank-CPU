@@ -6,10 +6,6 @@
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(name, out var img)) {
-                    for (var i = 0; i < 2; i++) {
-                        CheckNode(i, img.Node[i]);
-                    }
-
                     if (_hashList.ContainsKey(img.Hash)) {
                         _hashList.Remove(img.Hash);
                     }

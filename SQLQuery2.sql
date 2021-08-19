@@ -1,0 +1,5 @@
+﻿TRUNCATE TABLE Nodes;
+GO
+UPDATE Images SET Sim = 0
+UPDATE Images SET Node0 = 0
+UPDATE Images SET Node1 = 0
