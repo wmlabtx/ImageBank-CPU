@@ -1,4 +1,6 @@
 ﻿TRUNCATE TABLE Images;
+TRUNCATE TABLE Nodes;
+TRUNCATE TABLE Descriptors;
 GO
 
 --TRUNCATE TABLE Vars;

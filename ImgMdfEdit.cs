@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Drawing;
 
 namespace ImageBank
@@ -29,7 +30,13 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
+                            ImageHelper.GetVectors(bitmap, out ulong[][] rdescriptors, out Mat[] rmats);
+                            for (var i = 0; i < 2; i++) {
+                                rmats[i].Dispose();
+                                //SqlPopulateDescriptors(rdescriptors[i]);
+                            }
+
+                            SqlGetFeatures(rdescriptors, out int[][] rfeatures);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
@@ -40,8 +47,8 @@ namespace ImageBank
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                fp: fp,
-                                fpmirror: fpmirror,
+                                ki: rfeatures[0],
+                                kimirror: rfeatures[1],
                                 nexthash: rhash,
                                 sim: 0f,
                                 lastchanged: img.LastChanged,

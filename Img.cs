@@ -11,15 +11,13 @@ namespace ImageBank
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
-        public FeaturePoint[] Fp { get; }
-        public FeaturePoint[] FpMirror { get; }
 
         private string _nexthash;
         public string NextHash {
             get => _nexthash;
             set {
                 _nexthash = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrNextHash, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrNextHash, value);
             }
         }
 
@@ -28,7 +26,7 @@ namespace ImageBank
             get => _sim;
             set {
                 _sim = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrSim, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrSim, value);
             }
         }
 
@@ -37,7 +35,7 @@ namespace ImageBank
             get => _lastchanged;
             set {
                 _lastchanged = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastChanged, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastChanged, value);
             }
         }
 
@@ -46,7 +44,7 @@ namespace ImageBank
             get => _lastview;
             set {
                 _lastview = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastView, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastView, value);
             }
         }
 
@@ -55,7 +53,7 @@ namespace ImageBank
             get => _lastcheck;
             set {
                 _lastcheck = value;
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrLastCheck, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastCheck, value);
             }
         }
 
@@ -68,12 +66,24 @@ namespace ImageBank
                     throw new ArgumentException("_generation < 0");
                 }
 
-                ImgMdf.SqlUpdateProperty(Name, AppConsts.AttrGeneration, value);
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrGeneration, value);
             }
         }
 
-        public short[] Rv;
-        public short[] RvMirror;
+        private readonly int[][] _vector;
+        public int[][] Vector => _vector;
+
+        public void SetVector(int index, int[] vector)
+        {
+            if (index == 0) {
+                _vector[0] = vector;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKi, Helper.ArrayFrom32(vector));
+            }
+            else {
+                _vector[1] = vector;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKiMirror, Helper.ArrayFrom32(vector));
+            }
+        }
 
         public Img(
             string name,
@@ -83,8 +93,8 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            FeaturePoint[] fp,
-            FeaturePoint[] fpmirror,
+            int[] ki,
+            int[] kimirror,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -93,7 +103,6 @@ namespace ImageBank
             int generation
             )
         {
-
             Name = name;
             Hash = hash;
             Width = width;
@@ -102,9 +111,6 @@ namespace ImageBank
             DateTaken = datetaken;
             MetaData = metadata;
 
-            Fp = fp;
-            FpMirror = fpmirror;
-
             _nexthash = nexthash;
             _sim = sim;
             _lastchanged = lastchanged;
@@ -112,8 +118,9 @@ namespace ImageBank
             _lastcheck = lastcheck;
             _generation = generation;
 
-            Rv = ImageHelper.GetRandomVector(Fp);
-            RvMirror = ImageHelper.GetRandomVector(FpMirror);
+            _vector = new int[2][];
+            _vector[0] = ki;
+            _vector[1] = kimirror;
         }
     }
 }

@@ -51,12 +51,46 @@ namespace ImageBankTest
         }
 
         [TestMethod()]
-        public void TestBuffer()
+        public void GetDistanceTest()
         {
-            var array1 = new short[] { 7, 25, 2021, 11111 };
-            var buffer1 = Helper.ShortToBuffer(array1);
-            var array2 = Helper.ShortFromBuffer(buffer1);
-            Assert.IsTrue(array1.SequenceEqual(array2));
+            var vector = new ulong[4 * 3];
+            for (var i = 0; i < 4; i++) {
+                vector[i] = 0;
+                vector[i + 4] = 0x1;
+                vector[i + 4 + 4] = 0xFFFFFFFFFFFFFFFF;
+            }
+
+            var distance = Helper.GetDistance(vector, 0, vector, 0);
+            Assert.AreEqual(distance, 0);
+            distance = Helper.GetDistance(vector, 0, vector, 4);
+            Assert.AreEqual(distance, 4);
+            distance = Helper.GetDistance(vector, 0, vector, 4 + 4);
+            Assert.AreEqual(distance, 256);
+            distance = Helper.GetDistance(vector, 4 + 4, vector, 0);
+            Assert.AreEqual(distance, 256);
+        }
+
+        [TestMethod()]
+        public void AddDescriptorTest()
+        {
+            var d1 = Array.Empty<ulong>();
+            var d2 = new ulong[4];
+            for (var i = 0; i < 4; i++) {
+                d2[i] = 0x1;
+            }
+
+            var result = Helper.AddDescriptor(d1, d2);
+            Assert.IsTrue(result.Length == 4 && result[0] == 0x1);
+            var d3 = new ulong[4];
+            for (var i = 0; i < 4; i++) {
+                d3[i] = 0xFFFFFFFFFFFFFFFF;
+            }
+
+            result = Helper.AddDescriptor(d3, d2);
+            Assert.IsTrue(result.Length == 8 && result[0] == 0xFFFFFFFFFFFFFFFF && result[4] == 0x1);
+
+            var d4 = Helper.GetDescriptor(result, 4);
+            Assert.IsTrue(d4.Length == 4 && d4[0] == 0x1);
         }
     }
 }

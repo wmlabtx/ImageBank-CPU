@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
@@ -54,15 +55,45 @@ namespace ImageBank
                 return;
             }
 
-            var nexthash = img1.NextHash;
-            var sim = img1.Sim;
+            var filename = Helper.GetFileName(img1.Name);
+            var imagedata = Helper.ReadData(filename);
+            if (imagedata == null) {
+                Delete(img1.Name);
+                return;
+            }
+
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                Delete(img1.Name);
+                return;
+            }
+
+            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                bitmap = ImageHelper.RepixelBitmap(bitmap);
+            }
+
+            ImageHelper.GetVectors(bitmap, out ulong[][] descriptors, out Mat[] mats);
+            for (var i = 0; i < 2; i++) {
+                if (mats[i] != null) {
+                    mats[i].Dispose();
+                }
+            }
+
+            SqlGetFeatures(descriptors, out int[][] features);
+            if (features == null || features[0] == null || features[1] == null || features[0].Length == 0 || features[1].Length == 0) {
+                Delete(img1.Name);
+                return;
+            }
+
+            for (var i = 0; i < 2; i++) {
+                img1.SetVector(i, features[i]);
+            }
+
+            var nexthash = img1.Hash;
+            var sim = 0f;
             var lastchanged = img1.LastChanged;
 
-            img1.Rv = ImageHelper.Unique(ImageHelper.GetRandomVector(img1.Fp));
-            img1.RvMirror = ImageHelper.Unique(ImageHelper.GetRandomVector(img1.FpMirror));
-
             for (var i = 0; i < candidates.Length; i++) {
-                var xsim = ImageHelper.GetSim(img1.Rv, candidates[i].Fp, candidates[i].FpMirror);
+                var xsim = ImageHelper.GetSim(img1.Vector[0], candidates[i].Vector);
                 if (xsim > sim) { 
                     img2 = candidates[i];
                     nexthash = img2.Hash;
@@ -71,30 +102,16 @@ namespace ImageBank
                 }
             }
 
-
-            /*
-            var shuffle = candidates.OrderBy(x => _random.GetRandom64()).Take(AppConsts.MaxCandidates).ToArray();
-            for (var i = 0; i < shuffle.Length; i++) {
-                var xsim = ImageHelper.GetSim(img1.Rv, shuffle[i].Rv, shuffle[i].RvMirror);
-                if (xsim > sim) {
-                    img2 = shuffle[i];
-                    nexthash = img2.Hash;
-                    sim = xsim;
-                    lastchanged = DateTime.Now;
-                    break;
-                }
-            }
-            */
-
-            if (!nexthash.Equals(img1.NextHash) || img1.Sim != sim) {
-                img1.Generation = 0;
+            if (!nexthash.Equals(img1.NextHash)) {
+                var nc = SqlGetNodesCount();
+                var dc = SqlGetDescriptorsCount();
                 var sb = new StringBuilder();
-                sb.Append($"a{_added}/f{_found}/b{_bad}/{_rwList.Count / 1024}K ");
+                sb.Append($"a{_added}/f{_found}/b{_bad}/n{nc}/d{dc / 1024}K/i{_rwList.Count / 1024}K ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
                 sb.Append($"{img1.Name}[{img1.Generation}]: ");
-                sb.Append($"{img1.Sim:F2} ");
+                sb.Append($"{img1.Sim:F1} ");
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{sim:F2} ");
+                sb.Append($"{sim:F1} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
             }
 
@@ -237,8 +254,17 @@ namespace ImageBank
                 bitmap = ImageHelper.RepixelBitmap(bitmap);
             }
 
-            ImageHelper.ComputeFeaturePoints(bitmap, out var fp, out var fpmirror);
-            if (fp == null || fp.Length == 0 || fpmirror == null || fpmirror.Length == 0) {
+            ImageHelper.GetVectors(bitmap, out ulong[][] descriptors, out Mat[] mats);
+            for (var i = 0; i < 2; i++) {
+                if (mats[i] != null) {
+                    mats[i].Dispose();
+                }
+
+                //SqlPopulateDescriptors(descriptors[i]);
+            }
+
+            SqlGetFeatures(descriptors, out int[][] features);
+            if (features == null || features[0] == null || features[1] == null || features[0].Length == 0 || features[1].Length == 0) {
                 var badname = Path.GetFileNameWithoutExtension(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
@@ -271,8 +297,8 @@ namespace ImageBank
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                fp: fp,
-                fpmirror: fpmirror,
+                ki: features[0],
+                kimirror: features[1],
                 nexthash: hash,
                 sim: 0f,
                 lastchanged: lc,

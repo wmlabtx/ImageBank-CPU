@@ -47,6 +47,16 @@ namespace ImageBank
             }
         }
 
+        public static long ComputeDescriptorId(ulong[] vector)
+        {
+            var array = ArrayFrom64(vector);
+            using (var md5 = MD5.Create()) {
+                var hashmd5 = md5.ComputeHash(array);
+                var descriptorid = BitConverter.ToInt64(hashmd5, 4);
+                return descriptorid;
+            }
+        }
+
         #endregion
 
         #region TimeIntervalToString
@@ -277,32 +287,60 @@ namespace ImageBank
 
         #region Buffers
 
-        public static byte[] FloatToBuffer(float[] array)
+        public static ulong[] ArrayTo64(byte[] array)
         {
-            var buffer = new byte[array.Length * sizeof(float)];
+            var buffer = new ulong[array.Length / sizeof(ulong)];
+            Buffer.BlockCopy(array, 0, buffer, 0, array.Length);
+            return buffer;
+        }
+
+        public static byte[] ArrayFrom64(ulong[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(ulong)];
             Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
             return buffer;
         }
 
-        public static float[] FloatFromBuffer(byte[] buffer)
+        public static byte[] ArrayFrom32(int[] array)
         {
-            var array = new float[buffer.Length / sizeof(float)];
-            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
-            return array;
-        }
-
-        public static byte[] ShortToBuffer(short[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(short)];
+            var buffer = new byte[array.Length * sizeof(int)];
             Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
             return buffer;
         }
 
-        public static short[] ShortFromBuffer(byte[] buffer)
+        public static int[] ArrayTo32(byte[] buffer)
         {
-            var array = new short[buffer.Length / sizeof(short)];
+            var array = new int[buffer.Length / sizeof(int)];
             Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
             return array;
+        }
+
+        #endregion
+
+        #region Descriptors
+
+        public static int GetDistance(ulong[] x, int xoffset, ulong[] y, int yoffset)
+        {
+            var distance = Intrinsic.PopCnt(x[xoffset] ^ y[yoffset]);
+            distance += Intrinsic.PopCnt(x[xoffset + 1] ^ y[yoffset + 1]);
+            distance += Intrinsic.PopCnt(x[xoffset + 2] ^ y[yoffset + 2]);
+            distance += Intrinsic.PopCnt(x[xoffset + 3] ^ y[yoffset + 3]);
+            return distance;
+        }
+
+        public static ulong[] AddDescriptor(ulong[] x, ulong[] y)
+        {
+            var result = new ulong[x.Length + y.Length];
+            Array.Copy(x, 0, result, 0, x.Length);
+            Array.Copy(y, 0, result, x.Length, y.Length);
+            return result;
+        }
+
+        public static ulong[] GetDescriptor(ulong[] x, int offset)
+        {
+            var result = new ulong[4];
+            Array.Copy(x, offset, result, 0, 4);
+            return result;
         }
 
         #endregion

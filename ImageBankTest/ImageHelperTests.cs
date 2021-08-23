@@ -1,104 +1,100 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using ImageBank;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenCvSharp;
 
 namespace ImageBankTest
 {
     [TestClass()]
     public class ImageHelperTests
     {
+        private static readonly ImgMdf Collection = new ImgMdf();
+        private readonly string[] names = new string[] {
+            "gab_org.jpg", "gab_scale.jpg", "gab_crop.jpg", "gab_blur.jpg", "gab_exp.jpg", "gab_face.jpg", "gab_flip.jpg",
+            "gab_logo.jpg", "gab_noice.jpg", "gab_r3.jpg", "gab_r10.jpg", "gab_r90.jpg", "gab_sim1.jpg", "gab_sim2.jpg",
+            "gab_nosim1.jpg", "gab_nosim2.jpg", "gab_nosim3.jpg", "gab_nosim4.jpg", "gab_nosim5.jpg"
+        };
+
         [TestMethod()]
-        public void ComputeFeaturePointsTest()
+        public void GetDescriptorsTest()
         {
-            FeaturePoint2[] x, y;
-
-            var filename = "org.jpg";
+            var filename = "gab_org.jpg";
             using (var img1 = Image.FromFile(filename)) {
-                ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out x);
+                ImageHelper.GetVectors((Bitmap)img1, out ulong[] x, out Mat m);
+                Assert.IsTrue(x != null && m != null);
+                var length = x.Length * sizeof(ulong);
+                Assert.IsTrue((length % 32 == 0) && (length / 32 <= AppConsts.MaxDescriptors));
+                m.SaveImage("gab_org.png");
+                m.Dispose();
             }
-
-            filename = "org_png.jpg";
-            using (var img2 = Image.FromFile(filename)) {
-                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out y);
-            }
-
-            var sim = ImageHelper.GetSim2(x, y);
         }
 
         [TestMethod()]
-        public void KazeBulkTest()
+        public void SqlPopulateNodesTest()
         {
-            var img1 = Image.FromFile("org.jpg");
-            ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out var fp1);
-            //var rv1 = ImageHelper.GetRandomVector(fp1);
+            ImgMdf.SqlTruncateNodes();
+            ImgMdf.SqlTruncateDescriptors();
+            var count = ImgMdf.SqlGetNodesCount();
+            Assert.IsTrue(count == 1);
+            var nodeid = ImgMdf.SqlGetAvailableNodeId();
+            Assert.IsTrue(nodeid == 2);
+            var rootnode = ImgMdf.SqlGetNode(1);
+            Assert.IsTrue(rootnode.NodeId == 1 && rootnode.ChildId == 0 && rootnode.Radius == 0 && rootnode.Core.Length == 0);
+            count = ImgMdf.SqlGetDescriptorsCount();
+            Assert.IsTrue(count == 0);
 
-            var files = new[] {
-                "org.jpg",
-                "org_png.jpg",
-                "org_resized.jpg",
-                "org_nologo.jpg",
-                "org_r10.jpg",
-                "org_r90.jpg",
-                "org_bwresized.jpg",
-                "org_compressed.jpg",
-                "org_sim1.jpg",
-                "org_sim2.jpg",
-                "org_crop.jpg",
-                "org_nosim1.jpg",
-                "org_nosim2.jpg",
-                "org_mirror.jpg",
-                "k1024.jpg"
-            };
+            foreach (var name in names) {
+                using (var img = Image.FromFile(name)) {
+                    ImageHelper.GetVectors((Bitmap)img, out ulong[][] vectors, out Mat[] mat);
+                    Assert.IsTrue(vectors != null);
+                    for (var i = 0; i < 2; i++) {
+                        var length = vectors[i].Length * sizeof(ulong);
+                        Assert.IsTrue((length % 32 == 0) && (length / 32 <= AppConsts.MaxDescriptors));
+                        if (i == 0) {
+                            var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
+                            mat[i].SaveImage(pngname);
+                        }
+
+                        mat[i].Dispose();
+                        ImgMdf.SqlPopulateDescriptors(vectors[i]);
+                    }
+                }
+            }
+        }
+
+        [TestMethod()]
+        public void GetSimTest()
+        {
+            var fimages = new List<Tuple<string, int[][]>>();
+            foreach (var name in names) {
+                using (var img = Image.FromFile(name)) {
+                    ImageHelper.GetVectors((Bitmap)img, out ulong[][] vectors, out Mat[] mat);
+                    Assert.IsTrue(vectors != null && mat != null);
+                    mat[0].Dispose();
+                    mat[1].Dispose();
+                    ImgMdf.SqlGetFeatures(vectors, out int[][] features);
+                    fimages.Add(new Tuple<string, int[][]>(name, features));
+                }
+            }
 
             var sb = new StringBuilder();
-            foreach (var filename in files)
-            {
-                var img2 = Image.FromFile(filename);
-                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out var fp2, out var fp2mirror);
+            foreach (var e in fimages) {
 
-                var sim = ImageHelper.GetSim2(fp1, fp2, fp2mirror);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{filename}: sim={sim:F2}");
+                var sim = ImageHelper.GetSim(fimages[0].Item2[0], e.Item2);
+                sb.Append($"{e.Item1}: sim={sim:F1}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
         }
-
-        [TestMethod()]
-        public void KazeBulkTest2()
-        {
-            var img1 = Image.FromFile("arianna-048-001.jpg");
-            ImageHelper.ComputeFeaturePoints2((Bitmap)img1, out var fp1);
-            //var rv1 = ImageHelper.GetRandomVector(fp1);
-
-            var files = new[] {
-                "arianna-048-009.jpg",
-                "arianna-048-063.jpg",
-                "arianna-048-093.jpg",
-                "arianna-048-113.jpg",
-                "org_nosim1.jpg"
-            };
-
-            var sb = new StringBuilder();
-            foreach (var filename in files) {
-                var img2 = Image.FromFile(filename);
-                ImageHelper.ComputeFeaturePoints2((Bitmap)img2, out var fp2, out var fp2mirror);
-
-                var sim = ImageHelper.GetSim2(fp1, fp2, fp2mirror);
-                if (sb.Length > 0) {
-                    sb.AppendLine();
-                }
-
-                sb.Append($"{filename}: sim={sim:F4}");
-            }
-
-            File.WriteAllText("report2.txt", sb.ToString());
-        }
     }
+
 }

@@ -169,8 +169,7 @@ namespace ImageBank
                 var generation = AppVars.ImgPanel[index].Img.Generation;
                 var generationsize = ImgMdf.GetGenerationSize(generation);
                 sb.Append($" [{generation}:{generationsize}]");
-                
-                sb.AppendLine($" {AppVars.ImgPanel[index].Img.Sim:F2}");
+                sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Img.Size)} ");
                 sb.Append($" ({ AppVars.ImgPanel[index].Bitmap.Width}x{AppVars.ImgPanel[index].Bitmap.Height})");
@@ -187,19 +186,9 @@ namespace ImageBank
                         pLabels[0].Background = System.Windows.Media.Brushes.LightGray;
                         pLabels[1].Background = System.Windows.Media.Brushes.LightGray;
                     }
-
-                    /*
-                    if (AppVars.ImgPanel[0].Img.Size >= AppVars.ImgPanel[1].Img.Size && pLabels[0].Background == System.Windows.Media.Brushes.White) {
-                        pLabels[0].Background = System.Windows.Media.Brushes.Pink;
-                    }
-
-                    if (AppVars.ImgPanel[0].Img.Size < AppVars.ImgPanel[1].Img.Size) {
-                        scb = System.Windows.Media.Brushes.Pink;
-                    }
-                    */
                 }
 
-                if (AppVars.ImgPanel[index].Img.LastView < AppVars.ImgPanel[index].Img.LastChanged) {
+                if (AppVars.ImgPanel[index].Img.LastView.Year == 2021 && AppVars.ImgPanel[index].Img.LastView.Month == 1 && AppVars.ImgPanel[index].Img.LastView.Day == 1) {
                     scb = System.Windows.Media.Brushes.Bisque;
                 }
 
