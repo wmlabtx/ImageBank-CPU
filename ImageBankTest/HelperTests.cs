@@ -51,26 +51,6 @@ namespace ImageBankTest
         }
 
         [TestMethod()]
-        public void GetDistanceTest()
-        {
-            var vector = new ulong[4 * 3];
-            for (var i = 0; i < 4; i++) {
-                vector[i] = 0;
-                vector[i + 4] = 0x1;
-                vector[i + 4 + 4] = 0xFFFFFFFFFFFFFFFF;
-            }
-
-            var distance = Helper.GetDistance(vector, 0, vector, 0);
-            Assert.AreEqual(distance, 0);
-            distance = Helper.GetDistance(vector, 0, vector, 4);
-            Assert.AreEqual(distance, 4);
-            distance = Helper.GetDistance(vector, 0, vector, 4 + 4);
-            Assert.AreEqual(distance, 256);
-            distance = Helper.GetDistance(vector, 4 + 4, vector, 0);
-            Assert.AreEqual(distance, 256);
-        }
-
-        [TestMethod()]
         public void AddDescriptorTest()
         {
             var d1 = Array.Empty<ulong>();

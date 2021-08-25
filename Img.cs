@@ -70,19 +70,15 @@ namespace ImageBank
             }
         }
 
-        private readonly int[][] _vector;
-        public int[][] Vector => _vector;
+        private readonly short[][] _ki;
+        public short[][] Ki => _ki;
 
-        public void SetVector(int index, int[] vector)
+        public void SetKi(short[][] ki)
         {
-            if (index == 0) {
-                _vector[0] = vector;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKi, Helper.ArrayFrom32(vector));
-            }
-            else {
-                _vector[1] = vector;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKiMirror, Helper.ArrayFrom32(vector));
-            }
+            _ki[0] = ki[0];
+            ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKi, Helper.ArrayFrom16(ki[0]));
+            _ki[1] = ki[1];
+            ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKiMirror, Helper.ArrayFrom16(ki[1]));
         }
 
         public Img(
@@ -93,8 +89,7 @@ namespace ImageBank
             int size,
             DateTime? datetaken,
             string metadata,
-            int[] ki,
-            int[] kimirror,
+            short[][] ki,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -118,9 +113,9 @@ namespace ImageBank
             _lastcheck = lastcheck;
             _generation = generation;
 
-            _vector = new int[2][];
-            _vector[0] = ki;
-            _vector[1] = kimirror;
+            _ki = new short[2][];
+            _ki[0] = ki[0];
+            _ki[1] = ki[1];
         }
     }
 }

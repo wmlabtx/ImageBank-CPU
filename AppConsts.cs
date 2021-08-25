@@ -9,10 +9,11 @@
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
 
         public const int MaxImages = 300000;
-
-        public const int MaxDescriptors = 500;
         public const int MaxGeneration = 4;
-        public const int MaxNodeDescriptors = 100;
+        public const int MaxDescriptors = 500;
+        public const int MaxNodes = 8 * 1024;
+        public const float MaxDistance = 16f;
+        public const float MinDescriptorSize = 8f;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -46,12 +47,7 @@
 
         public const string TableNodes = "Nodes";
         public const string AttrNodeId = "NodeId";
-        public const string AttrCore = "Core";
-        public const string AttrRadius = "Radius";
-        public const string AttrChildId = "ChildId";
-
-        public const string TableDescriptors = "Descriptors";
-        public const string AttrDescriptorId = "DescriptorId";
-        public const string AttrVector = "Vector";
+        public const string AttrDescriptor = "Descriptor";
+        public const string AttrWeight = "Weight";
     }
 }

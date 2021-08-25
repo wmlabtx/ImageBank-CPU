@@ -1,35 +1,17 @@
-﻿using System;
-
-namespace ImageBank
+﻿namespace ImageBank
 {
     public class Node
     {
-        public int NodeId { get; }
-        public int Radius { get; }
-        public ulong[] Core { get; }
-        public int ChildId { get; }
+        public float[] Descriptor { get; set; }
+        public int Weight { get; set; }
 
         public Node(
-            int nodeid,
-            ulong[] core,
-            int radius,
-            int childid
+            float[] descriptor,
+            int weight
             )
         {
-            NodeId = nodeid;
-            Core = core;
-            Radius = radius;
-            ChildId = childid;
-        }
-
-        public Node(
-            int nodeid
-            )
-        {
-            NodeId = nodeid;
-            Core = Array.Empty<ulong>();
-            Radius = 0;
-            ChildId = 0;
+            Descriptor = descriptor;
+            Weight = weight;
         }
     }
 }

@@ -30,13 +30,14 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.GetVectors(bitmap, out ulong[][] rdescriptors, out Mat[] rmats);
-                            for (var i = 0; i < 2; i++) {
-                                rmats[i].Dispose();
-                                //SqlPopulateDescriptors(rdescriptors[i]);
-                            }
+                            ImageHelper.GetDescriptors(bitmap, out Mat[] rdescriptors, out KeyPoint[][] _, out Mat rmat);
+                            rmat.Dispose();
 
-                            SqlGetFeatures(rdescriptors, out int[][] rfeatures);
+                            var rfdescriptors = new float[2][];
+                            rdescriptors[0].GetArray(out rfdescriptors[0]);
+                            rdescriptors[0].GetArray(out rfdescriptors[1]);
+
+                            var rki = GetKi(rfdescriptors);
                             MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
@@ -47,8 +48,7 @@ namespace ImageBank
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                ki: rfeatures[0],
-                                kimirror: rfeatures[1],
+                                ki: rki,
                                 nexthash: rhash,
                                 sim: 0f,
                                 lastchanged: img.LastChanged,

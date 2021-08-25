@@ -1,6 +1,8 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using OpenCvSharp.Features2D;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -17,12 +19,14 @@ namespace ImageBank
     public static class ImageHelper
     {
         //private static readonly CryptoRandom _random;
-        private static readonly ORB _orb;
+        private static readonly SIFT _sift;
+        private static readonly BFMatcher _bf;
 
         static ImageHelper()
         {
             //_random = new CryptoRandom();
-            _orb = ORB.Create(nFeatures:AppConsts.MaxDescriptors);
+            _sift = SIFT.Create(nFeatures:AppConsts.MaxDescriptors * 16, contrastThreshold:0.01, edgeThreshold:40.0);
+            _bf = new BFMatcher();
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -158,9 +162,9 @@ namespace ImageBank
             }
         }
 
-        public static void GetVectors(Bitmap bitmap, out ulong[] vectors, out Mat matkeypoints)
+        public static void GetDescriptors(Bitmap bitmap, out Mat descriptors, out KeyPoint[] keypoints, out Mat matkeypoints)
         {
-            vectors = null;
+            descriptors = null;
             matkeypoints = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = bitmap.ToMat()) {
@@ -168,72 +172,86 @@ namespace ImageBank
                 Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
                 using (var mat = new Mat()) {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    var keypoints = _orb.Detect(mat);
+                    keypoints = _sift.Detect(mat);
                     if (keypoints.Length > 0) {
-                        keypoints = keypoints.OrderByDescending(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
+                        keypoints = keypoints
+                            .OrderByDescending(e => e.Size)
+                            .Where(e => e.Size >= AppConsts.MinDescriptorSize)
+                            .Take(AppConsts.MaxDescriptors)
+                            .ToArray();
+
                         if (keypoints.Length == 0) {
                             return;
                         }
 
-                        using (var matdescriptors = new Mat()) { 
-                            _orb.Compute(mat, ref keypoints, matdescriptors);
-                            matkeypoints = new Mat();
-                            Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                            matdescriptors.GetArray(out byte[] buffer);
-                            vectors = Helper.ArrayTo64(buffer);
-                        }
+                        descriptors = new Mat();
+                        _sift.Compute(mat, ref keypoints, descriptors);
+                        matkeypoints = new Mat();
+                        Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
                     }
                 }
             }
         }
 
-        public static void GetVectors(Bitmap bitmap, out ulong[][] vectors, out Mat[] mats)
+        public static void GetDescriptors(Bitmap bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat)
         {
-            vectors = new ulong[2][];
-            mats = new Mat[2];
-            GetVectors(bitmap, out ulong[] d1, out Mat m1);
-            vectors[0] = d1;
-            mats[0] = m1;
+            descriptors = new Mat[2];
+            keypoints = new KeyPoint[2][];
+            GetDescriptors(bitmap, out Mat d1, out KeyPoint[] k1, out mat);
+            descriptors[0] = d1;
+            keypoints[0] = k1;
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                GetVectors(brft, out ulong[] d2, out Mat m2);
-                vectors[1] = d2;
-                mats[1] = m2;
+                GetDescriptors(brft, out Mat d2, out KeyPoint[] k2, out Mat m2);
+                descriptors[1] = d2;
+                keypoints[1] = k2;
+                m2.Dispose();
             }
         }
 
-        public static float GetSim(int[] x, int[] y)
+        public static Point2d Point2fToPoint2d(Point2f pf) => new Point2d((int)pf.X, (int)pf.Y);
+
+        public static float GetSim(Mat x, KeyPoint[] kx, Mat y, KeyPoint[] ky)
         {
-            var m = 0;
-            var i = 0;
-            var j = 0;
-            while (i < x.Length && j < y.Length) {
-                if (x[i] == y[j]) {
-                    m++;
-                    i++;
-                    j++;
+            var matches = _bf.KnnMatch(x, y, 2);
+            var pointsSrc = new List<Point2f>();
+            var pointsDst = new List<Point2f>();
+            var goodMatches = new List<DMatch>();
+            foreach (DMatch[] items in matches.Where(e => e.Length > 1)) {
+                if (items[0].Distance < 0.75f * items[1].Distance) {
+                    pointsSrc.Add(kx[items[0].QueryIdx].Pt);
+                    pointsDst.Add(ky[items[0].TrainIdx].Pt);
+                    goodMatches.Add(items[0]);
+                }
+            }
+
+            /*
+            var pSrc = pointsSrc.ConvertAll(new Converter<Point2f, Point2d>(Point2fToPoint2d));
+            var pDst = pointsDst.ConvertAll(new Converter<Point2f, Point2d>(Point2fToPoint2d));
+            float sim;
+            using (var outMask = new Mat()) {
+                if (pSrc.Count >= 4 && pDst.Count >= 4) {
+                    Cv2.FindHomography(pSrc, pDst, HomographyMethods.Ransac, mask: outMask);
+                    var nonZero = Cv2.CountNonZero(outMask);
+                    sim = 100f * nonZero / kx.Length;
+
                 }
                 else {
-                    if (x[i] < y[j]) {
-                        i++;
-                    }
-                    else {
-                        j++;
-                    }
+                    sim = 0f;
                 }
             }
+            */
 
-            var sim = m * 100f / x.Length;
+            var sim = 100f * goodMatches.Count / kx.Length;
             return sim;
         }
 
-        public static float GetSim(int[] x, int[][] y)
+        public static float GetSim(Mat x, KeyPoint[] kx, Mat[] y, KeyPoint[][] ky)
         {
-            var sim0 = GetSim(x, y[0]);
-            var sim1 = GetSim(x, y[1]);
-            var sim = Math.Max(sim0, sim1);
+            var s1 = GetSim(x, kx, y[0], ky[0]);
+            var s2 = GetSim(x, kx, y[1], ky[1]);
+            var sim = Math.Max(s1, s2);
             return sim;
         }
-
     }
 }

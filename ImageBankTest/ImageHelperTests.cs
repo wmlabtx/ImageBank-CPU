@@ -25,44 +25,43 @@ namespace ImageBankTest
         {
             var filename = "gab_org.jpg";
             using (var img1 = Image.FromFile(filename)) {
-                ImageHelper.GetVectors((Bitmap)img1, out ulong[] x, out Mat m);
-                Assert.IsTrue(x != null && m != null);
-                var length = x.Length * sizeof(ulong);
-                Assert.IsTrue((length % 32 == 0) && (length / 32 <= AppConsts.MaxDescriptors));
+                ImageHelper.GetDescriptors((Bitmap)img1, out Mat x, out KeyPoint[] keypoints, out Mat m);
+                x.GetArray(out float[] fx);
+                Assert.IsTrue(x != null && keypoints != null && m != null);
+                Assert.IsTrue((fx.Length % 128 == 0) && (fx.Length / 128 <= AppConsts.MaxDescriptors) && keypoints.Length > 0);
                 m.SaveImage("gab_org.png");
                 m.Dispose();
             }
         }
 
         [TestMethod()]
-        public void SqlPopulateNodesTest()
+        public void PopulateNodesTest()
         {
             ImgMdf.SqlTruncateNodes();
-            ImgMdf.SqlTruncateDescriptors();
-            var count = ImgMdf.SqlGetNodesCount();
-            Assert.IsTrue(count == 1);
-            var nodeid = ImgMdf.SqlGetAvailableNodeId();
-            Assert.IsTrue(nodeid == 2);
-            var rootnode = ImgMdf.SqlGetNode(1);
-            Assert.IsTrue(rootnode.NodeId == 1 && rootnode.ChildId == 0 && rootnode.Radius == 0 && rootnode.Core.Length == 0);
-            count = ImgMdf.SqlGetDescriptorsCount();
-            Assert.IsTrue(count == 0);
+            ImgMdf.ClearNodes();
 
-            foreach (var name in names) {
-                using (var img = Image.FromFile(name)) {
-                    ImageHelper.GetVectors((Bitmap)img, out ulong[][] vectors, out Mat[] mat);
-                    Assert.IsTrue(vectors != null);
-                    for (var i = 0; i < 2; i++) {
-                        var length = vectors[i].Length * sizeof(ulong);
-                        Assert.IsTrue((length % 32 == 0) && (length / 32 <= AppConsts.MaxDescriptors));
-                        if (i == 0) {
-                            var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
-                            mat[i].SaveImage(pngname);
-                        }
+            for (var i = 1; i <= 30; i++) {
+                var name = $"train\\train{i:D2}.jpg";
+                var imagedata = File.ReadAllBytes(name);
+                if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                    continue;
+                }
 
-                        mat[i].Dispose();
-                        ImgMdf.SqlPopulateDescriptors(vectors[i]);
-                    }
+                if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                    bitmap = ImageHelper.RepixelBitmap(bitmap);
+                }
+
+                ImageHelper.GetDescriptors(bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
+                bitmap.Dispose();
+                Assert.IsTrue(descriptors != null);
+                var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
+                mat.SaveImage(pngname);
+                mat.Dispose();
+                for (var j = 0; j < 2; j++) {
+                    descriptors[j].GetArray(out float[] fdescriptors);
+                    var num = fdescriptors.Length / 128;
+                    Assert.IsTrue(num > 0 && num <= AppConsts.MaxDescriptors);
+                    ImgMdf.AddDescriptors(fdescriptors);
                 }
             }
         }
@@ -70,15 +69,21 @@ namespace ImageBankTest
         [TestMethod()]
         public void GetSimTest()
         {
-            var fimages = new List<Tuple<string, int[][]>>();
+            ImgMdf.LoadImgs(null);
+
+            var fimages = new List<Tuple<string, short[][], Mat[], KeyPoint[][]>>();
             foreach (var name in names) {
                 using (var img = Image.FromFile(name)) {
-                    ImageHelper.GetVectors((Bitmap)img, out ulong[][] vectors, out Mat[] mat);
-                    Assert.IsTrue(vectors != null && mat != null);
-                    mat[0].Dispose();
-                    mat[1].Dispose();
-                    ImgMdf.SqlGetFeatures(vectors, out int[][] features);
-                    fimages.Add(new Tuple<string, int[][]>(name, features));
+                    ImageHelper.GetDescriptors((Bitmap)img, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
+                    Assert.IsTrue(descriptors != null);
+                    var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
+                    mat.SaveImage(pngname);
+                    mat.Dispose();
+                    var fdescriptors = new float[2][];
+                    descriptors[0].GetArray(out fdescriptors[0]);
+                    descriptors[0].GetArray(out fdescriptors[1]);
+                    var ki = ImgMdf.GetKi(fdescriptors);
+                    fimages.Add(new Tuple<string, short[][], Mat[], KeyPoint[][]>(name, ki, descriptors, keypoints));
                 }
             }
 
@@ -89,8 +94,9 @@ namespace ImageBankTest
                     sb.AppendLine();
                 }
 
-                var sim = ImageHelper.GetSim(fimages[0].Item2[0], e.Item2);
-                sb.Append($"{e.Item1}: sim={sim:F1}");
+                var fsim = ImgMdf.GetSim(fimages[0].Item2[0], e.Item2);
+                var sim = ImageHelper.GetSim(fimages[0].Item3[0], fimages[0].Item4[0], e.Item3, e.Item4);
+                sb.Append($"{e.Item1}: fsim={fsim:F2} sim={sim:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

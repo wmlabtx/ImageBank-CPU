@@ -114,8 +114,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Descriptor.cs" />
-    <Compile Include="FeaturePoint.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ImageHelper.cs" />
     <Compile Include="ImgMdfClusters.cs" />
