@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using OpenCvSharp.Features2D;
+using OpenCvSharp.ImgHash;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -18,7 +19,6 @@ namespace ImageBank
 {
     public static class ImageHelper
     {
-        //private static readonly CryptoRandom _random;
         private static readonly SIFT _sift;
         private static readonly BFMatcher _bf;
 
@@ -162,26 +162,25 @@ namespace ImageBank
             }
         }
 
-        public static void GetDescriptors(Bitmap bitmap, out Mat descriptors, out KeyPoint[] keypoints, out Mat matkeypoints)
+        private static Mat GetDescriptors(Bitmap bitmap, out Mat matkeypoints)
         {
-            descriptors = null;
             matkeypoints = null;
+            Mat descriptors = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = bitmap.ToMat()) {
                 var f = 768.0 / Math.Max(matsource.Width, matsource.Height);
                 Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
                 using (var mat = new Mat()) {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    keypoints = _sift.Detect(mat);
+                    var keypoints = _sift.Detect(mat);
                     if (keypoints.Length > 0) {
                         keypoints = keypoints
                             .OrderByDescending(e => e.Size)
-                            .Where(e => e.Size >= AppConsts.MinDescriptorSize)
                             .Take(AppConsts.MaxDescriptors)
                             .ToArray();
 
                         if (keypoints.Length == 0) {
-                            return;
+                            return null;
                         }
 
                         descriptors = new Mat();
@@ -191,37 +190,55 @@ namespace ImageBank
                     }
                 }
             }
+
+            return descriptors;
         }
 
-        public static void GetDescriptors(Bitmap bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat)
+        public static Mat[] GetBothDescriptors(Bitmap bitmap, out Mat[] matkeypoints)
         {
-            descriptors = new Mat[2];
-            keypoints = new KeyPoint[2][];
-            GetDescriptors(bitmap, out Mat d1, out KeyPoint[] k1, out mat);
-            descriptors[0] = d1;
-            keypoints[0] = k1;
+            matkeypoints = new Mat[2];
+            var descriptors = new Mat[2];
+            descriptors[0] = GetDescriptors(bitmap, out matkeypoints[0]);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                GetDescriptors(brft, out Mat d2, out KeyPoint[] k2, out Mat m2);
-                descriptors[1] = d2;
-                keypoints[1] = k2;
-                m2.Dispose();
+                descriptors[1] = GetDescriptors(brft, out matkeypoints[1]);
             }
+
+            return descriptors;
+        }
+
+        public static Mat[] GetBothDescriptors(Img img, out Mat[] matkeypoints)
+        {
+            matkeypoints = null;
+            var filename = Helper.GetFileName(img.Name);
+            var imagedata = Helper.ReadData(filename);
+            if (imagedata == null) {
+                return null;
+            }
+
+            if (!GetBitmapFromImageData(imagedata, out var bitmap)) {
+                return null;
+            }
+
+            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
+                bitmap = RepixelBitmap(bitmap);
+            }
+
+            var descriptors = GetBothDescriptors(bitmap, out matkeypoints);
+            return descriptors;
         }
 
         public static Point2d Point2fToPoint2d(Point2f pf) => new Point2d((int)pf.X, (int)pf.Y);
 
-        public static float GetSim(Mat x, KeyPoint[] kx, Mat y, KeyPoint[] ky)
+        public static float GetSim(Mat x, Mat y)
         {
             var matches = _bf.KnnMatch(x, y, 2);
             var pointsSrc = new List<Point2f>();
             var pointsDst = new List<Point2f>();
-            var goodMatches = new List<DMatch>();
+            var goodMatches = 0;
             foreach (DMatch[] items in matches.Where(e => e.Length > 1)) {
                 if (items[0].Distance < 0.75f * items[1].Distance) {
-                    pointsSrc.Add(kx[items[0].QueryIdx].Pt);
-                    pointsDst.Add(ky[items[0].TrainIdx].Pt);
-                    goodMatches.Add(items[0]);
+                    goodMatches++;
                 }
             }
 
@@ -242,16 +259,32 @@ namespace ImageBank
             }
             */
 
-            var sim = 100f * goodMatches.Count / kx.Length;
+            var sim = 100f * goodMatches / x.Height;
             return sim;
         }
 
-        public static float GetSim(Mat x, KeyPoint[] kx, Mat[] y, KeyPoint[][] ky)
+        public static float GetSim(Mat x, Mat[] y)
         {
-            var s1 = GetSim(x, kx, y[0], ky[0]);
-            var s2 = GetSim(x, kx, y[1], ky[1]);
+            var s1 = GetSim(x, y[0]);
+            var s2 = GetSim(x, y[1]);
             var sim = Math.Max(s1, s2);
             return sim;
+        }
+
+        public static Mat GetColorMoments(Bitmap bitmap)
+        {
+            using (var matsource = bitmap.ToMat())
+            using (var cmh = ColorMomentHash.Create()) {
+                var matmoment = new Mat();
+                cmh.Compute(matsource, matmoment);
+                return matmoment;
+            }
+        }
+
+        public static double GetLogDistance(Mat x, Mat y)
+        {
+            var distance = Math.Log(Cv2.Norm(x, y) + double.Epsilon);
+            return distance;
         }
     }
 }

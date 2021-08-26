@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic.FileIO;
+using OpenCvSharp;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -277,58 +278,31 @@ namespace ImageBank
 
         #region Buffers
 
-        public static ulong[] ArrayTo64(byte[] array)
+        public static Mat ArrayToMat(byte[] array)
         {
-            var buffer = new ulong[array.Length / sizeof(ulong)];
-            Buffer.BlockCopy(array, 0, buffer, 0, array.Length);
-            return buffer;
+            var farray = ArrayToDouble(array);
+            var mat = new Mat(1, 42, MatType.CV_64F);
+            mat.SetArray(farray);
+            return mat;
         }
 
-        public static int[] ArrayTo32(byte[] buffer)
+        public static double[] ArrayToDouble(byte[] buffer)
         {
-            var array = new int[buffer.Length / sizeof(int)];
+            var array = new double[buffer.Length / sizeof(double)];
             Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
             return array;
         }
 
-        public static short[] ArrayTo16(byte[] buffer)
+        public static byte[] ArrayFromMat(Mat mat)
         {
-            var array = new short[buffer.Length / sizeof(short)];
-            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            mat.GetArray(out double[] farray);
+            var array = ArrayFromDouble(farray);
             return array;
         }
 
-        public static float[] ArrayToFloat(byte[] buffer)
+        public static byte[] ArrayFromDouble(double[] array)
         {
-            var array = new float[buffer.Length / sizeof(float)];
-            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
-            return array;
-        }
-
-        public static byte[] ArrayFrom64(ulong[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(ulong)];
-            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        public static byte[] ArrayFrom32(int[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(int)];
-            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        public static byte[] ArrayFrom16(short[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(short)];
-            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
-            return buffer;
-        }
-
-        public static byte[] ArrayFromFloat(float[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(float)];
+            var buffer = new byte[array.Length * sizeof(double)];
             Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
             return buffer;
         }

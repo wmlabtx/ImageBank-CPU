@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 
 namespace ImageBank
 {
@@ -6,6 +7,7 @@ namespace ImageBank
     {
         public string Name { get; }
         public string Hash { get; }
+        public Mat ColorMoments { get; }
         public int Width { get; }
         public int Height { get; }
         public int Size { get; }
@@ -70,26 +72,15 @@ namespace ImageBank
             }
         }
 
-        private readonly short[][] _ki;
-        public short[][] Ki => _ki;
-
-        public void SetKi(short[][] ki)
-        {
-            _ki[0] = ki[0];
-            ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKi, Helper.ArrayFrom16(ki[0]));
-            _ki[1] = ki[1];
-            ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrKiMirror, Helper.ArrayFrom16(ki[1]));
-        }
-
         public Img(
             string name,
             string hash,
+            Mat colormoments,
             int width,
             int height,
             int size,
             DateTime? datetaken,
             string metadata,
-            short[][] ki,
             string nexthash,
             float sim,
             DateTime lastchanged,
@@ -100,6 +91,7 @@ namespace ImageBank
         {
             Name = name;
             Hash = hash;
+            ColorMoments = colormoments;
             Width = width;
             Height = height;
             Size = size;
@@ -112,10 +104,6 @@ namespace ImageBank
             _lastview = lastview;
             _lastcheck = lastcheck;
             _generation = generation;
-
-            _ki = new short[2][];
-            _ki[0] = ki[0];
-            _ki[1] = ki[1];
         }
     }
 }

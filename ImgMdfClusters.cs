@@ -11,6 +11,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
+        /*
         public static void Clustering()
         {
             AppVars.SuspendEvent.Reset();
@@ -68,12 +69,12 @@ namespace ImageBank
                                     _kaze.Compute(mat, ref keypoints, matdescriptors);
                                     matsum.PushBack(matdescriptors);
                                     added++;
-                                    /*
+                                    
                                     using (var matkeypoints = new Mat()) {
                                         Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
                                         matkeypoints.SaveImage("keypoints500x500.png");
                                     }
-                                    */
+                                    
                                 }
                             }
                         }
@@ -95,6 +96,7 @@ namespace ImageBank
 
             AppVars.SuspendEvent.Set();
         }
+        */
 
         /*
         public static void Clustering(string path, int maxadd)

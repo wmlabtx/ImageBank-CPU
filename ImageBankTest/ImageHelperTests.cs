@@ -13,7 +13,6 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
-        private static readonly ImgMdf Collection = new ImgMdf();
         private readonly string[] names = new string[] {
             "gab_org.jpg", "gab_scale.jpg", "gab_crop.jpg", "gab_blur.jpg", "gab_exp.jpg", "gab_face.jpg", "gab_flip.jpg",
             "gab_logo.jpg", "gab_noice.jpg", "gab_r3.jpg", "gab_r10.jpg", "gab_r90.jpg", "gab_sim1.jpg", "gab_sim2.jpg",
@@ -25,65 +24,28 @@ namespace ImageBankTest
         {
             var filename = "gab_org.jpg";
             using (var img1 = Image.FromFile(filename)) {
-                ImageHelper.GetDescriptors((Bitmap)img1, out Mat x, out KeyPoint[] keypoints, out Mat m);
-                x.GetArray(out float[] fx);
-                Assert.IsTrue(x != null && keypoints != null && m != null);
-                Assert.IsTrue((fx.Length % 128 == 0) && (fx.Length / 128 <= AppConsts.MaxDescriptors) && keypoints.Length > 0);
-                m.SaveImage("gab_org.png");
-                m.Dispose();
-            }
-        }
-
-        [TestMethod()]
-        public void PopulateNodesTest()
-        {
-            ImgMdf.SqlTruncateNodes();
-            ImgMdf.ClearNodes();
-
-            for (var i = 1; i <= 30; i++) {
-                var name = $"train\\train{i:D2}.jpg";
-                var imagedata = File.ReadAllBytes(name);
-                if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                    continue;
-                }
-
-                if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                    bitmap = ImageHelper.RepixelBitmap(bitmap);
-                }
-
-                ImageHelper.GetDescriptors(bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
-                bitmap.Dispose();
-                Assert.IsTrue(descriptors != null);
-                var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
-                mat.SaveImage(pngname);
-                mat.Dispose();
-                for (var j = 0; j < 2; j++) {
-                    descriptors[j].GetArray(out float[] fdescriptors);
-                    var num = fdescriptors.Length / 128;
-                    Assert.IsTrue(num > 0 && num <= AppConsts.MaxDescriptors);
-                    ImgMdf.AddDescriptors(fdescriptors);
-                }
+                var x = ImageHelper.GetBothDescriptors((Bitmap)img1, out Mat[] m);
+                Assert.IsTrue(m[0] != null);
+                Assert.IsTrue(m[1] != null);
+                Assert.IsTrue((x[0].Width == 128) && (x[0].Height > 0) && (x[0].Height <= AppConsts.MaxDescriptors));
+                Assert.IsTrue((x[1].Width == 128) && (x[1].Height > 0) && (x[1].Height <= AppConsts.MaxDescriptors));
+                m[0].SaveImage("gab_org.png");
+                m[1].SaveImage("gab_org_mirror.png");
             }
         }
 
         [TestMethod()]
         public void GetSimTest()
         {
-            ImgMdf.LoadImgs(null);
-
-            var fimages = new List<Tuple<string, short[][], Mat[], KeyPoint[][]>>();
+            var fimages = new List<Tuple<string, Mat[], Mat>>();
             foreach (var name in names) {
                 using (var img = Image.FromFile(name)) {
-                    ImageHelper.GetDescriptors((Bitmap)img, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
+                    var descriptors = ImageHelper.GetBothDescriptors((Bitmap)img, out Mat[] mat);
+                    var moments = ImageHelper.GetColorMoments((Bitmap)img);
                     Assert.IsTrue(descriptors != null);
                     var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
-                    mat.SaveImage(pngname);
-                    mat.Dispose();
-                    var fdescriptors = new float[2][];
-                    descriptors[0].GetArray(out fdescriptors[0]);
-                    descriptors[0].GetArray(out fdescriptors[1]);
-                    var ki = ImgMdf.GetKi(fdescriptors);
-                    fimages.Add(new Tuple<string, short[][], Mat[], KeyPoint[][]>(name, ki, descriptors, keypoints));
+                    mat[0].SaveImage(pngname);
+                    fimages.Add(new Tuple<string, Mat[], Mat>(name, descriptors, moments));
                 }
             }
 
@@ -94,9 +56,9 @@ namespace ImageBankTest
                     sb.AppendLine();
                 }
 
-                var fsim = ImgMdf.GetSim(fimages[0].Item2[0], e.Item2);
-                var sim = ImageHelper.GetSim(fimages[0].Item3[0], fimages[0].Item4[0], e.Item3, e.Item4);
-                sb.Append($"{e.Item1}: fsim={fsim:F2} sim={sim:F2}");
+                var sim = ImageHelper.GetSim(fimages[0].Item2[0], e.Item2);
+                var distance = ImageHelper.GetLogDistance(fimages[0].Item3, e.Item3);
+                sb.Append($"{e.Item1}: sim={sim:F2} distance={distance:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());

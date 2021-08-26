@@ -16,7 +16,6 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
         private static readonly CryptoRandom _random = new CryptoRandom();
-        private static readonly SortedDictionary<int, Node> _nodes = new SortedDictionary<int, Node>();
 
         public ImgMdf()
         {

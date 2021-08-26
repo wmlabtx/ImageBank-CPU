@@ -32,7 +32,10 @@ namespace ImageBank
 
                 if (!_hashList.TryGetValue(img1.NextHash, out img2)) {
                     img2 = img1;
-                    img1.NextHash = img1.Hash;
+                    if (!img1.NextHash.Equals(img1.Hash, StringComparison.OrdinalIgnoreCase)) {
+                        img1.NextHash = img1.Hash;
+                    }
+                    
                     if (img1.Sim > 0f) {
                         img1.Sim = 0f;
                     }
@@ -55,79 +58,48 @@ namespace ImageBank
                 return;
             }
 
-            var filename = Helper.GetFileName(img1.Name);
-            var imagedata = Helper.ReadData(filename);
-            if (imagedata == null) {
-                Delete(img1.Name);
-                return;
-            }
+            var shuffle = new Img[2];
+            double mindistance = double.MaxValue;
+            ulong minrandom = ulong.MaxValue;
 
-            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                Delete(img1.Name);
-                return;
-            }
-
-            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                bitmap = ImageHelper.RepixelBitmap(bitmap);
-            }
-
-            ImageHelper.GetDescriptors(bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
-            if (mat != null) {
-                mat.Dispose();
-            }
-
-            var fdescriptors = new float[2][];
-            descriptors[0].GetArray(out fdescriptors[0]);
-            descriptors[0].GetArray(out fdescriptors[1]);
-
-            var ki = GetKi(fdescriptors);
-            if (ki == null || ki[0] == null || ki[1] == null || ki[0].Length == 0 || ki[1].Length == 0) {
-                Delete(img1.Name);
-                return;
-            }
-
-            img1.SetKi(ki);
-
-            var bestcandidates = new Tuple<Img, float>[candidates.Length];
             for (var i = 0; i < candidates.Length; i++) {
-                var xsim = GetSim(img1.Ki[0], candidates[i].Ki);
-                bestcandidates[i] = new Tuple<Img, float>(candidates[i], xsim);
+                var distance = ImageHelper.GetLogDistance(img1.ColorMoments, candidates[i].ColorMoments);
+                if (distance < mindistance) {
+                    mindistance = distance;
+                    shuffle[0] = candidates[i];
+                }
+
+                var random = _random.GetRandom64();
+                if (random < minrandom) {
+                    minrandom = random;
+                    shuffle[1] = candidates[i];
+                }
             }
 
-            bestcandidates = bestcandidates.OrderByDescending(e => e.Item2).Take(10).ToArray();
-
-            var nexthash = img1.Hash;
-            var sim = 0f;
+            var nexthash = img1.NextHash;
+            var sim = img1.Sim;
             var lastchanged = img1.LastChanged;
-            for (var i = 0; i < bestcandidates.Length; i++) {
-                var xfilename = Helper.GetFileName(bestcandidates[i].Item1.Name);
-                var ximagedata = Helper.ReadData(xfilename);
-                if (ximagedata == null) {
-                    continue;
-                }
+            var x = ImageHelper.GetBothDescriptors(img1, out Mat[] xmatkeypoints);
+            if (x == null) {
+                Delete(img1.Name);
+                return;
+            }
 
-                if (!ImageHelper.GetBitmapFromImageData(ximagedata, out var xbitmap)) {
-                    continue;
-                }
-
-                if (xbitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                    xbitmap = ImageHelper.RepixelBitmap(xbitmap);
-                }
-
-                ImageHelper.GetDescriptors(xbitmap, out Mat[] xdescriptors, out KeyPoint[][] xkeypoints, out Mat xmat);
-                if (xmat != null) {
-                    xmat.Dispose();
-                }
-
-                var xsim = ImageHelper.GetSim(descriptors[0], keypoints[0], xdescriptors, xkeypoints);
+            x[1].Dispose();
+            for (var i = 0; i < shuffle.Length; i++) {
+                var y = ImageHelper.GetBothDescriptors(shuffle[i], out Mat[] ymatkeypoints);
+                var xsim = ImageHelper.GetSim(x[0], y);
+                y[0].Dispose();
+                y[1].Dispose();
                 if (xsim > sim) {
-                    img2 = candidates[i];
+                    img2 = shuffle[i];
                     nexthash = img2.Hash;
                     sim = xsim;
                     lastchanged = DateTime.Now;
                 }
             }
 
+            x[0].Dispose();
             if (!nexthash.Equals(img1.NextHash)) {
                 var sb = new StringBuilder();
                 sb.Append($"a{_added}/f{_found}/b{_bad}/i{_rwList.Count / 1024}K ");
@@ -137,6 +109,7 @@ namespace ImageBank
                 sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
                 sb.Append($"{sim:F2} ");
                 backgroundworker.ReportProgress(0, sb.ToString());
+                img1.Generation = 0;
             }
 
             if (!nexthash.Equals(img1.NextHash, StringComparison.OrdinalIgnoreCase)) {
@@ -265,45 +238,14 @@ namespace ImageBank
                 }
             }
 
-            // it is a new image; we don't have one 
-            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+            MetadataHelper.GetMetadata(imagedata, out var width, out var height, out var datetaken, out var metadata);
+            if (width <= 0 || height <= 0) {
                 var badname = Path.GetFileName(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
                 File.Move(orgfilename, badfilename);
                 return;
             }
-
-            if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                bitmap = ImageHelper.RepixelBitmap(bitmap);
-            }
-
-            ImageHelper.GetDescriptors(bitmap, out Mat[] descriptors, out KeyPoint[][] keypoints, out Mat mat);
-            if (mat != null) {
-                mat.SaveImage("temp.png");
-                mat.Dispose();
-            }
-
-            var fdescriptors = new float[2][];
-            descriptors[0].GetArray(out fdescriptors[0]);
-            descriptors[0].GetArray(out fdescriptors[1]);
-
-            for (var j = 0; j < 2; j++) {
-                AddDescriptors(fdescriptors[j]);
-            }
-
-            var ki = GetKi(fdescriptors);
-            if (ki == null || ki[0] == null || ki[1] == null || ki[0].Length == 0 || ki[1].Length == 0) {
-                var badname = Path.GetFileNameWithoutExtension(orgfilename);
-                var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
-                Helper.DeleteToRecycleBin(badfilename);
-                File.WriteAllBytes(badfilename, imagedata);
-                Helper.DeleteToRecycleBin(orgfilename);
-                _bad++;
-                return;
-            }
-
-            MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
 
             var lc = GetMinLastCheck();
             var lv = new DateTime(2021, 1, 1);
@@ -318,15 +260,24 @@ namespace ImageBank
                 newfilename = Helper.GetFileName(newname);
             } while (File.Exists(newfilename));
 
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                var badname = Path.GetFileName(orgfilename);
+                var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                Helper.DeleteToRecycleBin(badfilename);
+                File.Move(orgfilename, badfilename);
+                return;
+            }
+
+            var colormoments = ImageHelper.GetColorMoments(bitmap);
             var nimg = new Img(
                 name: newname,
                 hash: hash,
-                width: bitmap.Width,
-                height: bitmap.Height,
+                colormoments: colormoments,
+                width: width,
+                height: height,
                 size: imagedata.Length,
                 datetaken: datetaken,
                 metadata: metadata,
-                ki: ki,
                 nexthash: hash,
                 sim: 0f,
                 lastchanged: lc,
@@ -347,14 +298,13 @@ namespace ImageBank
                 Helper.DeleteToRecycleBin(orgfilename);
             }
 
-            bitmap.Dispose();
             _added++;
         }
 
         public static void Compute(BackgroundWorker backgroundworker)
         {
             ImportInternal(backgroundworker);
-            for (var i = 0; i < 2; i++) {
+            for (var i = 0; i < 10; i++) {
                 ComputeInternal(backgroundworker);
             }
         }

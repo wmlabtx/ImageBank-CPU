@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Drawing;
 
 namespace ImageBank
@@ -30,25 +29,18 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            ImageHelper.GetDescriptors(bitmap, out Mat[] rdescriptors, out KeyPoint[][] _, out Mat rmat);
-                            rmat.Dispose();
-
-                            var rfdescriptors = new float[2][];
-                            rdescriptors[0].GetArray(out rfdescriptors[0]);
-                            rdescriptors[0].GetArray(out rfdescriptors[1]);
-
-                            var rki = GetKi(rfdescriptors);
-                            MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
+                            var colormoments = ImageHelper.GetColorMoments(bitmap);
+                            MetadataHelper.GetMetadata(imagedata, out var width, out var height, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
                                 name: name,
                                 hash: rhash,
+                                colormoments: colormoments,
                                 width: bitmap.Width,
                                 height: bitmap.Height,
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                ki: rki,
                                 nexthash: rhash,
                                 sim: 0f,
                                 lastchanged: img.LastChanged,

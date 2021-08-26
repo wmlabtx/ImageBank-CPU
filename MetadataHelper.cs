@@ -52,12 +52,16 @@ namespace ImageBank
                     }
                 }
             }
-            catch {
+            catch (FileFormatException) {
+            }
+            catch (ArgumentException) {
             }
         }
 
-        public static void GetMetadata(byte[] imagedata, out DateTime? datataken, out string metadata)
+        public static void GetMetadata(byte[] imagedata, out int width, out int height, out DateTime? datataken, out string metadata)
         {
+            width = 0;
+            height = 0;
             _sb.Clear();
             _tagscounter = 0;
             _datetaken = null;
@@ -75,7 +79,9 @@ namespace ImageBank
                 catch (NotSupportedException) {
                     return;
                 }
-                
+
+                width = decoder.Frames[0].PixelWidth;
+                height = decoder.Frames[0].PixelHeight;
                 CaptureMetadata(decoder.Frames[0].Metadata, string.Empty);
             }
 
