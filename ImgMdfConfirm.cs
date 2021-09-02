@@ -7,9 +7,7 @@ namespace ImageBank
         public static void UpdateGeneration(int index)
         {
             lock (_imglock) {
-                if (AppVars.ImgPanel[index].Img.Generation < AppConsts.MaxGeneration) {
-                    AppVars.ImgPanel[index].Img.Generation += 1;
-                }
+                AppVars.ImgPanel[index].Img.Generation += 1;
             }
         }
 

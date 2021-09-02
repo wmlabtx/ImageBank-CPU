@@ -278,64 +278,18 @@ namespace ImageBank
 
         #region Buffers
 
-        public static Mat ArrayToMat(byte[] array)
+        public static byte[] ArrayFrom64(ulong[] array)
         {
-            var farray = ArrayToDouble(array);
-            var mat = new Mat(1, 42, MatType.CV_64F);
-            mat.SetArray(farray);
-            return mat;
-        }
-
-        public static double[] ArrayToDouble(byte[] buffer)
-        {
-            var array = new double[buffer.Length / sizeof(double)];
-            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
-            return array;
-        }
-
-        public static byte[] ArrayFromMat(Mat mat)
-        {
-            mat.GetArray(out double[] farray);
-            var array = ArrayFromDouble(farray);
-            return array;
-        }
-
-        public static byte[] ArrayFromDouble(double[] array)
-        {
-            var buffer = new byte[array.Length * sizeof(double)];
+            var buffer = new byte[array.Length * sizeof(ulong)];
             Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
             return buffer;
         }
 
-        #endregion
-
-        #region Descriptors
-
-        public static float GetDistance(float[] x, float[] y)
+        public static ulong[] ArrayTo64(byte[] buffer)
         {
-            var sum = 0.0;
-            for (var i = 0; i < 128; i++) {
-                var diff = x[i] - y[i];
-                sum += diff * diff;
-            }
-
-            var distance = Math.Sqrt(sum);
-            return (float)distance;
-        }
-
-        public static ulong[] AddDescriptor(ulong[] x, ulong[] y)
-        {
-            var result = new ulong[x.Length + y.Length];
-            Array.Copy(x, 0, result, 0, x.Length);
-            Array.Copy(y, 0, result, x.Length, y.Length);
-            return result;
-        }
-
-        public static ulong[] GetDescriptor(ulong[] x, int offset)
-        {
-            var result = new ulong[4];
-            Array.Copy(x, offset, result, 0, 4);
-            return result;
+            var array = new ulong[buffer.Length / sizeof(ulong)];
+            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            return array;
         }
 
         #endregion

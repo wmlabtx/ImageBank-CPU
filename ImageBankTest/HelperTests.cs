@@ -49,28 +49,5 @@ namespace ImageBankTest
             File.Delete(filename);
             Assert.IsTrue(Enumerable.SequenceEqual(a1, a2));
         }
-
-        [TestMethod()]
-        public void AddDescriptorTest()
-        {
-            var d1 = Array.Empty<ulong>();
-            var d2 = new ulong[4];
-            for (var i = 0; i < 4; i++) {
-                d2[i] = 0x1;
-            }
-
-            var result = Helper.AddDescriptor(d1, d2);
-            Assert.IsTrue(result.Length == 4 && result[0] == 0x1);
-            var d3 = new ulong[4];
-            for (var i = 0; i < 4; i++) {
-                d3[i] = 0xFFFFFFFFFFFFFFFF;
-            }
-
-            result = Helper.AddDescriptor(d3, d2);
-            Assert.IsTrue(result.Length == 8 && result[0] == 0xFFFFFFFFFFFFFFFF && result[4] == 0x1);
-
-            var d4 = Helper.GetDescriptor(result, 4);
-            Assert.IsTrue(d4.Length == 4 && d4[0] == 0x1);
-        }
     }
 }

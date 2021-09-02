@@ -9,7 +9,6 @@ namespace ImageBank
         public static void Find(string nameX, string nameY, IProgress<string> progress)
         {
             Img imgX;
-            var hist = new int[AppConsts.MaxGeneration + 1];
             var sb = new StringBuilder();
             lock (_imglock) {
                 while (true) {
@@ -21,7 +20,7 @@ namespace ImageBank
                     if (nameX == null) {
                         imgX = null;
                         var valid = _imgList
-                            .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
+                            .Where(e => !e.Value.Hash.Equals(e.Value.BestHash) && _hashList.ContainsKey(e.Value.BestHash))
                             .Select(e => e.Value)
                             .ToArray();
 
@@ -30,9 +29,9 @@ namespace ImageBank
                             return;
                         }
 
-                        var mingeneration = valid.Min(e => e.Generation);
-                        imgX = valid.Where(e => e.Generation == mingeneration).OrderByDescending(e => e.Sim).FirstOrDefault();
-                        if (!_hashList.TryGetValue(imgX.NextHash, out var imgY)) {
+                        var recent = valid.Where(e => e.LastChanged >= e.LastView).ToArray();
+                        imgX = recent.OrderBy(e => e.Distance).FirstOrDefault();
+                        if (!_hashList.TryGetValue(imgX.BestHash, out var imgY)) {
                             continue;
                         }
 
@@ -61,12 +60,12 @@ namespace ImageBank
                 }
 
                 var changed = _imgList
-                    .Where(e => !e.Value.Hash.Equals(e.Value.NextHash) && _hashList.ContainsKey(e.Value.NextHash))
+                    .Where(e => !e.Value.Hash.Equals(e.Value.BestHash) && _hashList.ContainsKey(e.Value.BestHash))
                     .Count(e => e.Value.LastView <= e.Value.LastChanged);
 
                 sb.Append($"{changed}/{_imgList.Count}: ");
                 sb.Append($"{imgX.Name}: ");
-                sb.Append($"{imgX.Sim:F1} ");
+                sb.Append($"{imgX.Distance:F2} ");
             }
 
             progress.Report(sb.ToString());

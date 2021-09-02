@@ -8,9 +8,6 @@
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
 
         public const int MaxImages = 300000;
-        public const int MaxGeneration = 4;
-        public const int MaxCandidates = 3;
-        public const int MaxDescriptors = 5000;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -28,14 +25,15 @@
         public const string TableImages = "Images";
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
-        public const string AttrColorMoments = "ColorMoments";
         public const string AttrWidth = "Width";
         public const string AttrHeight = "Height";
         public const string AttrSize = "Size";
         public const string AttrDateTaken = "DateTaken";
         public const string AttrMetadata = "Metadata";
-        public const string AttrNextHash = "NextHash";
-        public const string AttrSim = "Sim";
+        public const string AttrKi0 = "Ki0";
+        public const string AttrKi1 = "Ki1";
+        public const string AttrBestHash = "Bes tHash";
+        public const string AttrDistance = "Distance";
         public const string AttrLastChanged = "LastChanged";
         public const string AttrLastCheck = "LastCheck";
         public const string AttrLastView = "LastView";

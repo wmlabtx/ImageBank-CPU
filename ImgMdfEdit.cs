@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace ImageBank
 {
@@ -18,6 +19,10 @@ namespace ImageBank
                         }
 
                         bitmap.RotateFlip(rft);
+                        if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                            bitmap = ImageHelper.RepixelBitmap(bitmap);
+                        }
+
                         if (!ImageHelper.GetImageDataFromBitmap(bitmap, out var rimagedata)) {
                             ((IProgress<string>)AppVars.Progress).Report($"Encode error: {filename}");
                             return;
@@ -29,20 +34,19 @@ namespace ImageBank
                             return;
                         }
                         else {
-                            var colormoments = ImageHelper.GetColorMoments(bitmap);
-                            MetadataHelper.GetMetadata(imagedata, out var width, out var height, out var rdatetaken, out var rmetadata);
+                            MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
                             var minlc = GetMinLastCheck();
                             var rimg = new Img(
                                 name: name,
                                 hash: rhash,
-                                colormoments: colormoments,
                                 width: bitmap.Width,
                                 height: bitmap.Height,
                                 size: rimagedata.Length,
                                 datetaken: rdatetaken,
                                 metadata: rmetadata,
-                                nexthash: rhash,
-                                sim: 0f,
+                                lastname: img.LastName,
+                                besthash: rhash,
+                                distance: 486f,
                                 lastchanged: img.LastChanged,
                                 lastview: img.LastView,
                                 lastcheck: minlc,

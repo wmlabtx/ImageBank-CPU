@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 
 namespace ImageBank
 {
@@ -7,28 +6,36 @@ namespace ImageBank
     {
         public string Name { get; }
         public string Hash { get; }
-        public Mat ColorMoments { get; }
         public int Width { get; }
         public int Height { get; }
         public int Size { get; }
         public DateTime? DateTaken { get; }
         public string MetaData { get; }
 
-        private string _nexthash;
-        public string NextHash {
-            get => _nexthash;
+        private string _lastname;
+        public string LastName {
+            get => _lastname;
             set {
-                _nexthash = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrNextHash, value);
+                _lastname = value;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastName, value);
             }
         }
 
-        private float _sim;
-        public float Sim {
-            get => _sim;
+        private string _besthash;
+        public string BestHash {
+            get => _besthash;
             set {
-                _sim = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrSim, value);
+                _besthash = value;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrBestHash, value);
+            }
+        }
+
+        private float _distance;
+        public float Distance {
+            get => _distance;
+            set {
+                _distance = value;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrDistance, value);
             }
         }
 
@@ -64,10 +71,6 @@ namespace ImageBank
             get => _generation;
             set {
                 _generation = value;
-                if (_generation < 0) {
-                    throw new ArgumentException("_generation < 0");
-                }
-
                 ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrGeneration, value);
             }
         }
@@ -75,14 +78,14 @@ namespace ImageBank
         public Img(
             string name,
             string hash,
-            Mat colormoments,
             int width,
             int height,
             int size,
             DateTime? datetaken,
             string metadata,
-            string nexthash,
-            float sim,
+            string lastname,
+            string besthash,
+            float distance,
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
@@ -91,15 +94,15 @@ namespace ImageBank
         {
             Name = name;
             Hash = hash;
-            ColorMoments = colormoments;
             Width = width;
             Height = height;
             Size = size;
             DateTaken = datetaken;
             MetaData = metadata;
 
-            _nexthash = nexthash;
-            _sim = sim;
+            _lastname = lastname;
+            _besthash = besthash;
+            _distance = distance;
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;

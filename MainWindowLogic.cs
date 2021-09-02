@@ -94,7 +94,7 @@ namespace ImageBank
         private async void Import()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Import(); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Import(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();

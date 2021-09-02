@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text;
 using ImageBank;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -24,45 +25,64 @@ namespace ImageBankTest
         {
             var filename = "gab_org.jpg";
             using (var img1 = Image.FromFile(filename)) {
-                var x = ImageHelper.GetBothDescriptors((Bitmap)img1, out Mat[] m);
-                Assert.IsTrue(m[0] != null);
-                Assert.IsTrue(m[1] != null);
-                Assert.IsTrue((x[0].Width == 128) && (x[0].Height > 0) && (x[0].Height <= AppConsts.MaxDescriptors));
-                Assert.IsTrue((x[1].Width == 128) && (x[1].Height > 0) && (x[1].Height <= AppConsts.MaxDescriptors));
-                m[0].SaveImage("gab_org.png");
-                m[1].SaveImage("gab_org_mirror.png");
+                if (!ImageHelper.GetDescriptors((Bitmap)img1, out Mat d, out Mat m)) {
+                    Assert.Fail();
+                }
+
+                m.SaveImage("gab_org.png");
+                m.Dispose();
             }
         }
+
+        /*
+        [TestMethod()]
+        public void PopulateNodesTest()
+        {
+            ImgMdf.SqlTruncateAll();
+            ImgMdf.LoadImgs(null);
+
+            for (var i = 1; i <= 30; i++) {
+                var name = $"train\\train{i:D2}.jpg";
+                var imagedata = File.ReadAllBytes(name);
+                if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                    continue;
+                }
+
+                if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
+                    bitmap = ImageHelper.RepixelBitmap(bitmap);
+                }
+
+                if (!ImageHelper.GetKazeDescriptors(bitmap, out KazeDescriptor[][] kazedescriptors, out Mat[] mat)) {
+                    Assert.Fail();
+                }
+
+                bitmap.Dispose();
+                var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
+                mat[0].SaveImage(pngname);
+                mat[1].SaveImage($"{pngname}.mirror.png");
+                var descriptors = ImgMdf.GetDescriptors(kazedescriptors);
+                Assert.IsTrue(descriptors != null);
+            }
+        }
+        */
 
         [TestMethod()]
         public void GetSimTest()
         {
-            var fimages = new List<Tuple<string, Mat[], Mat>>();
-            foreach (var name in names) {
-                using (var img = Image.FromFile(name)) {
-                    var descriptors = ImageHelper.GetBothDescriptors((Bitmap)img, out Mat[] mat);
-                    var moments = ImageHelper.GetColorMoments((Bitmap)img);
-                    Assert.IsTrue(descriptors != null);
-                    var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
-                    mat[0].SaveImage(pngname);
-                    fimages.Add(new Tuple<string, Mat[], Mat>(name, descriptors, moments));
-                }
-            }
-
             var sb = new StringBuilder();
-            foreach (var e in fimages) {
-
+            var idx = File.ReadAllBytes(names[0]);
+            foreach (var name in names) {
+                var idy = File.ReadAllBytes(name);
+                var distance = ImageHelper.GetDistance(idx, idy);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                var sim = ImageHelper.GetSim(fimages[0].Item2[0], e.Item2);
-                var distance = ImageHelper.GetLogDistance(fimages[0].Item3, e.Item3);
-                sb.Append($"{e.Item1}: sim={sim:F2} distance={distance:F2}");
+                sb.Append($"{name}: distance={distance:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
         }
     }
-
 }
+ 

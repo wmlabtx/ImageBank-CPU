@@ -1,7 +1,5 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
-using OpenCvSharp.Features2D;
-using OpenCvSharp.ImgHash;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -19,22 +17,20 @@ namespace ImageBank
 {
     public static class ImageHelper
     {
-        private static readonly SIFT _sift;
-        private static readonly BFMatcher _bf;
+        private static readonly AKAZE _akaze;
+        private static readonly BFMatcher _bfmatcher;
 
         static ImageHelper()
         {
-            //_random = new CryptoRandom();
-            _sift = SIFT.Create(nFeatures:AppConsts.MaxDescriptors * 16, contrastThreshold:0.01, edgeThreshold:40.0);
-            _bf = new BFMatcher();
+            _akaze = AKAZE.Create(threshold: 0.0001f);
+            _bfmatcher = new BFMatcher(normType: NormTypes.Hamming);
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
         {
             bitmap = null;
-            
-            try
-            {
+
+            try {
                 using (var mat = Cv2.ImDecode(data, ImreadModes.AnyColor)) {
                     bitmap = BitmapConverter.ToBitmap(mat);
                     if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
@@ -64,8 +60,7 @@ namespace ImageBank
         {
             var destRect = new Rectangle(0, 0, width, height);
             var destImage = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            using (var graphics = Graphics.FromImage(destImage))
-            {
+            using (var graphics = Graphics.FromImage(destImage)) {
                 graphics.CompositingMode = CompositingMode.SourceCopy;
                 graphics.CompositingQuality = CompositingQuality.HighQuality;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -162,128 +157,102 @@ namespace ImageBank
             }
         }
 
-        private static Mat GetDescriptors(Bitmap bitmap, out Mat matkeypoints)
+        public static bool GetDescriptors(Bitmap bitmap, out Mat matdescriptors, out Mat matkeypoints)
         {
+            matdescriptors = null;
             matkeypoints = null;
-            Mat descriptors = null;
             using (var matsource = bitmap.ToMat())
-            using (var matcolor = bitmap.ToMat()) {
-                var f = 768.0 / Math.Max(matsource.Width, matsource.Height);
+            using (var matcolor = new Mat()) {
+                var f = Math.Min(768.0 / Math.Max(matsource.Width, matsource.Height), 1.0);
+                f = Math.Min(1.0, f);
                 Cv2.Resize(matsource, matcolor, new OpenCvSharp.Size(0, 0), f, f, InterpolationFlags.Area);
                 using (var mat = new Mat()) {
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
-                    var keypoints = _sift.Detect(mat);
-                    if (keypoints.Length > 0) {
-                        keypoints = keypoints
-                            .OrderByDescending(e => e.Size)
-                            .Take(AppConsts.MaxDescriptors)
-                            .ToArray();
-
-                        if (keypoints.Length == 0) {
-                            return null;
-                        }
-
-                        descriptors = new Mat();
-                        _sift.Compute(mat, ref keypoints, descriptors);
-                        matkeypoints = new Mat();
-                        Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                    var keypoints = _akaze.Detect(mat);
+                    if (keypoints.Length == 0) {
+                        return false;
                     }
+
+                    matdescriptors = new Mat();
+                    _akaze.Compute(mat, ref keypoints, matdescriptors);
+                    if (keypoints.Length == 0) {
+                        return false;
+                    }
+
+                    matkeypoints = new Mat();
+                    Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
                 }
             }
 
-            return descriptors;
+            return true;
         }
 
-        public static Mat[] GetBothDescriptors(Bitmap bitmap, out Mat[] matkeypoints)
+        public static bool GetDescriptors(Bitmap bitmap, out Mat[] descriptors, out Mat[] matkeypoints)
         {
+            descriptors = new Mat[2];
             matkeypoints = new Mat[2];
-            var descriptors = new Mat[2];
-            descriptors[0] = GetDescriptors(bitmap, out matkeypoints[0]);
+            if (!GetDescriptors(bitmap, out descriptors[0], out matkeypoints[0])) {
+                return false;
+            }
+
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                descriptors[1] = GetDescriptors(brft, out matkeypoints[1]);
-            }
-
-            return descriptors;
-        }
-
-        public static Mat[] GetBothDescriptors(Img img, out Mat[] matkeypoints)
-        {
-            matkeypoints = null;
-            var filename = Helper.GetFileName(img.Name);
-            var imagedata = Helper.ReadData(filename);
-            if (imagedata == null) {
-                return null;
-            }
-
-            if (!GetBitmapFromImageData(imagedata, out var bitmap)) {
-                return null;
-            }
-
-            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
-                bitmap = RepixelBitmap(bitmap);
-            }
-
-            var descriptors = GetBothDescriptors(bitmap, out matkeypoints);
-            return descriptors;
-        }
-
-        public static Point2d Point2fToPoint2d(Point2f pf) => new Point2d((int)pf.X, (int)pf.Y);
-
-        public static float GetSim(Mat x, Mat y)
-        {
-            var matches = _bf.KnnMatch(x, y, 2);
-            var pointsSrc = new List<Point2f>();
-            var pointsDst = new List<Point2f>();
-            var goodMatches = 0;
-            foreach (DMatch[] items in matches.Where(e => e.Length > 1)) {
-                if (items[0].Distance < 0.75f * items[1].Distance) {
-                    goodMatches++;
+                if (!GetDescriptors(brft, out descriptors[1], out matkeypoints[1])) {
+                    return false;
                 }
+
             }
 
-            /*
-            var pSrc = pointsSrc.ConvertAll(new Converter<Point2f, Point2d>(Point2fToPoint2d));
-            var pDst = pointsDst.ConvertAll(new Converter<Point2f, Point2d>(Point2fToPoint2d));
-            float sim;
-            using (var outMask = new Mat()) {
-                if (pSrc.Count >= 4 && pDst.Count >= 4) {
-                    Cv2.FindHomography(pSrc, pDst, HomographyMethods.Ransac, mask: outMask);
-                    var nonZero = Cv2.CountNonZero(outMask);
-                    sim = 100f * nonZero / kx.Length;
+            return true;
+        }
 
+        public static float GetDistance(Mat dx, Mat dy)
+        {
+            var matches = _bfmatcher.KnnMatch(dx, dy, k:2);
+            var distances = new List<float>();
+            for (var i = 0; i < matches.Length; i++) {
+                if (matches[i].Length < 2) {
+                    continue;
                 }
-                else {
-                    sim = 0f;
+
+                if (float.IsNaN(matches[i][0].Distance)) {
+                    continue;
                 }
+
+                distances.Add(matches[i][0].Distance < 0.85f * matches[i][1].Distance ? matches[i][0].Distance : 486f);
             }
-            */
 
-            var sim = 100f * goodMatches / x.Height;
-            return sim;
+            var distance = distances.Average();
+            return distance;
         }
 
-        public static float GetSim(Mat x, Mat[] y)
+        public static float GetDistance(Mat dx, Mat[] dy)
         {
-            var s1 = GetSim(x, y[0]);
-            var s2 = GetSim(x, y[1]);
-            var sim = Math.Max(s1, s2);
-            return sim;
+            var d0 = GetDistance(dx, dy[0]);
+            var d1 = GetDistance(dx, dy[1]);
+            var d = Math.Min(d0, d1);
+            return d;
         }
 
-        public static Mat GetColorMoments(Bitmap bitmap)
+        public static float GetDistance(byte[] idx, byte[] idy)
         {
-            using (var matsource = bitmap.ToMat())
-            using (var cmh = ColorMomentHash.Create()) {
-                var matmoment = new Mat();
-                cmh.Compute(matsource, matmoment);
-                return matmoment;
+            if (!GetBitmapFromImageData(idx, out var bx)) {
+                return 486f;
             }
-        }
 
-        public static double GetLogDistance(Mat x, Mat y)
-        {
-            var distance = Math.Log(Cv2.Norm(x, y) + double.Epsilon);
+            if (!GetDescriptors(bx, out Mat dx, out _)) {
+                return 486;
+            }
+
+            if (!GetBitmapFromImageData(idy, out var by)) {
+                return 486f;
+            }
+
+            if (!GetDescriptors(by, out Mat[] dy, out _)) {
+                return 486;
+            }
+
+            var distance = GetDistance(dx, dy);
             return distance;
         }
     }

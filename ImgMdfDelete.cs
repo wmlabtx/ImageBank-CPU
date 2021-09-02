@@ -11,9 +11,9 @@
                     }
 
                     foreach (var e in _imgList) {
-                        if (e.Value.NextHash.Equals(img.Hash)) {
-                            e.Value.NextHash = e.Value.Hash;
-                            e.Value.Sim = 0f;
+                        if (e.Value.BestHash.Equals(img.Hash)) {
+                            e.Value.BestHash = e.Value.Hash;
+                            e.Value.Distance = 486f;
                             e.Value.LastCheck = GetMinLastCheck();
                         }
                     }

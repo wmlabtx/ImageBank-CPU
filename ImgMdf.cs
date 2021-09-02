@@ -14,8 +14,8 @@ namespace ImageBank
         private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
         private static readonly object _rwlock = new object();
-        private static List<FileInfo> _rwList = new List<FileInfo>();
-        private static readonly CryptoRandom _random = new CryptoRandom();
+        public static List<FileInfo> _rwList = new List<FileInfo>();
+        //private static readonly CryptoRandom _random = new CryptoRandom();
 
         public ImgMdf()
         {

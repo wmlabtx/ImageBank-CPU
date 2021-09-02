@@ -96,6 +96,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClustersTest.cs" />
     <Compile Include="HelperTests.cs" />
     <Compile Include="ImageHelperTests.cs" />
     <Compile Include="MetadataExtractorTests.cs" />
