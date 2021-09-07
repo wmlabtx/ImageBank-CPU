@@ -274,22 +274,48 @@ namespace ImageBank
             return $"{AppConsts.PathHp}\\{f}\\{n}{AppConsts.MzxExtension}";
         }
 
+        public static int GetBit(Mat mat, int index)
+        {
+            return (mat.At<byte>(0, index >> 3) & (1 << (index & 0x0F))) == 0 ? 0 : 1;
+        }
+
         #endregion
 
         #region Buffers
 
-        public static byte[] ArrayFrom64(ulong[] array)
+        public static byte[] ArrayFrom32(int[] array)
         {
-            var buffer = new byte[array.Length * sizeof(ulong)];
+            var buffer = new byte[array.Length * sizeof(int)];
             Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
             return buffer;
         }
 
-        public static ulong[] ArrayTo64(byte[] buffer)
+        public static int[] ArrayTo32(byte[] buffer)
         {
-            var array = new ulong[buffer.Length / sizeof(ulong)];
+            var array = new int[buffer.Length / sizeof(int)];
             Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
             return array;
+        }
+
+        public static Mat ArrayToMat(byte[] buffer)
+        {
+            if (buffer.Length != 61) {
+                return null;
+            }
+
+            var mat = new Mat(1, 61, MatType.CV_8U);
+            mat.SetArray(buffer);
+            return mat;
+        }
+
+        public static byte[] ArrayFromMat(Mat mat)
+        {
+            if (mat == null || mat.Cols != 61 || mat.Rows != 1) {
+                return Array.Empty<byte>();
+            }
+
+            mat.GetArray(out byte[] buffer);
+            return buffer;
         }
 
         #endregion

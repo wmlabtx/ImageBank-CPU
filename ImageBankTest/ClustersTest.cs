@@ -12,6 +12,7 @@ namespace ImageBankTest
     [TestClass()]
     public class ClustersTest
     {
+        /*
         public static readonly ImgMdf Collection = new ImgMdf();
         private static Mat Clusters = new Mat();
         private static readonly BFMatcher _bfmatcher = new BFMatcher(normType: NormTypes.Hamming);
@@ -163,5 +164,6 @@ namespace ImageBankTest
                 Debug.WriteLine($"Images:{imagescounter} MinDistance:{CMinDistance} Nodes:{Clusters.Rows}");
             }
         }
+        */
     }
 }

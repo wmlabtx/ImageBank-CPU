@@ -23,6 +23,7 @@
 
             var imgpanel = new ImgPanel(
                 img: img,
+                size: imagedata.LongLength,
                 bitmap: bitmap);
 
             return imgpanel;

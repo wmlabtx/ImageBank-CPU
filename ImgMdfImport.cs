@@ -6,7 +6,7 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Import(IProgress<string> progress)
+        public static void Import(int max, IProgress<string> progress)
         {
             lock (_rwlock) {
                 _rwList.Clear();
@@ -41,7 +41,7 @@ namespace ImageBank
                 }
 
                 directoryInfo = new DirectoryInfo(AppConsts.PathRw);
-                fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
+                fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).OrderBy(e => e.Length).Take(max).ToArray();
                 foreach (var e in fs) {
                     if (!Path.GetExtension(e.FullName).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
                         _rwList.Add(e);

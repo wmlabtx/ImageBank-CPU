@@ -33,29 +33,23 @@ namespace ImageBank
                             ((IProgress<string>)AppVars.Progress).Report($"Dup found for {filename}");
                             return;
                         }
-                        else {
-                            MetadataHelper.GetMetadata(imagedata, out var rdatetaken, out var rmetadata);
-                            var minlc = GetMinLastCheck();
-                            var rimg = new Img(
-                                name: name,
-                                hash: rhash,
-                                width: bitmap.Width,
-                                height: bitmap.Height,
-                                size: rimagedata.Length,
-                                datetaken: rdatetaken,
-                                metadata: rmetadata,
-                                lastname: img.LastName,
-                                besthash: rhash,
-                                distance: 486f,
-                                lastchanged: img.LastChanged,
-                                lastview: img.LastView,
-                                lastcheck: minlc,
-                                generation: img.Generation);
 
-                            Delete(name);
-                            Add(rimg);
-                            Helper.WriteData(filename, rimagedata);
-                        }
+                        MetadataHelper.GetMetadata(imagedata, out var rdatetaken);
+
+                        var rimg = new Img(
+                            name: name,
+                            hash: rhash,
+                            datetaken: rdatetaken,
+                            bestnames: img.BestNames,
+                            family: img.Family,
+                            lastchanged: img.LastChanged,
+                            lastview: img.LastView,
+                            lastcheck: img.LastCheck,
+                            generation: img.Generation);
+
+                        Delete(name);
+                        Add(rimg);
+                        Helper.WriteData(filename, rimagedata);
 
                         bitmap.Dispose();
                     }

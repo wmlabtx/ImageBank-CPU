@@ -6,36 +6,23 @@ namespace ImageBank
     {
         public string Name { get; }
         public string Hash { get; }
-        public int Width { get; }
-        public int Height { get; }
-        public int Size { get; }
         public DateTime? DateTaken { get; }
-        public string MetaData { get; }
 
-        private string _lastname;
-        public string LastName {
-            get => _lastname;
+        private int _family;
+        public int Family {
+            get => _family;
             set {
-                _lastname = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastName, value);
+                _family = value;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrFamily, value);
             }
         }
 
-        private string _besthash;
-        public string BestHash {
-            get => _besthash;
+        private string _bestnames;
+        public string BestNames {
+            get => _bestnames;
             set {
-                _besthash = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrBestHash, value);
-            }
-        }
-
-        private float _distance;
-        public float Distance {
-            get => _distance;
-            set {
-                _distance = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrDistance, value);
+                _bestnames = value;
+                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrBestNames, value);
             }
         }
 
@@ -78,14 +65,9 @@ namespace ImageBank
         public Img(
             string name,
             string hash,
-            int width,
-            int height,
-            int size,
             DateTime? datetaken,
-            string metadata,
-            string lastname,
-            string besthash,
-            float distance,
+            int family,
+            string bestnames,
             DateTime lastchanged,
             DateTime lastview,
             DateTime lastcheck,
@@ -94,15 +76,9 @@ namespace ImageBank
         {
             Name = name;
             Hash = hash;
-            Width = width;
-            Height = height;
-            Size = size;
             DateTaken = datetaken;
-            MetaData = metadata;
-
-            _lastname = lastname;
-            _besthash = besthash;
-            _distance = distance;
+            _family = family;
+            _bestnames = bestnames;
             _lastchanged = lastchanged;
             _lastview = lastview;
             _lastcheck = lastcheck;

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -15,7 +17,7 @@ namespace ImageBank
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
             Img img1 = null;
-            Img img2 = null;
+            var candidates = new SortedDictionary<string, float>();
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
@@ -26,97 +28,100 @@ namespace ImageBank
                     .OrderBy(e => e.Value.LastCheck)
                     .FirstOrDefault()
                     .Value;
-
-                if (!_hashList.TryGetValue(img1.BestHash, out img2)) {
-                    img2 = img1;
-                    if (!img1.BestHash.Equals(img1.Hash, StringComparison.OrdinalIgnoreCase)) {
-                        img1.BestHash = img1.Hash;
-                    }
-                    
-                    if (img1.Distance < 486f) {
-                        img1.Distance = 486f;
-                    }
-                }
-
-                var names = _imgList.Keys.ToArray();
-                var i = 0;
-                while (i < names.Length) {
-                    if (!names[i].Equals(img1.Name)) {
-                        if (names[i].CompareTo(img1.LastName) > 0) {
-                            break;
-                        }
-                    }
-
-                    i++;
-                }
-
-                if (i == names.Length) {
-                    i = 0;
-                    while (i < names.Length) {
-                        if (!names[i].Equals(img1.Name)) {
-                            break;
-                        }
-
-                        i++;
-                    }
-                }
-
-                if (!_imgList.TryGetValue(names[i], out img2)) {
-                    return;
-                }
             }
 
-            var idx = Helper.ReadData(Helper.GetFileName(img1.Name));
-            if (idx == null || idx.Length < 16) {
+            var filename = Helper.GetFileName(img1.Name);
+            var imagedata = Helper.ReadData(filename);
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                 Delete(img1.Name);
                 return;
             }
 
-            var idy = Helper.ReadData(Helper.GetFileName(img2.Name));
-            if (idy == null || idy.Length < 16) {
-                Delete(img2.Name);
+            Mat[] descriptors;
+            try {
+                descriptors = ImageHelper.GetDescriptors(bitmap);
+                if (descriptors == null) {
+                    Delete(img1.Name);
+                    return;
+                }
+            }
+            finally {
+                if (bitmap != null) {
+                    bitmap.Dispose();
+                }
+            }
+
+            AddDescriptors(img1.Name, descriptors, backgroundworker);
+            descriptors[0].Dispose();
+            descriptors[1].Dispose();
+
+            lock (_imglock) {
+                var imagescount = _imgList.Count - 1;
+                foreach (var enode in _nodeList.Values) {
+                    if (!enode.Members.ContainsKey(img1.Name)) {
+                        continue;
+                    }
+
+                    if (enode.Members.Count == 1) {
+                        continue;
+                    }
+
+                    var k = (float)Math.Log10((double)imagescount / (enode.Members.Count - 1));
+                    foreach (var ename in enode.Members) {
+                        if (ename.Key.Equals(img1.Name)) {
+                            continue;
+                        }
+
+                        if (candidates.ContainsKey(ename.Key)) {
+                            candidates[ename.Key] += k;
+                        }
+                        else {
+                            candidates.Add(ename.Key, k);
+                        }
+                    }
+                }
+            }
+
+            if (candidates.Count == 0) {
+                if (!string.IsNullOrEmpty(img1.BestNames)) {
+                    img1.BestNames = string.Empty;
+                    img1.LastChanged = DateTime.Now;
+                }
+
+                img1.LastCheck = DateTime.Now;
                 return;
             }
 
-            var distance = ImageHelper.GetDistance(idx, idy);
-            if (distance < img1.Distance) {
+            if (img1.Family > 0) {
+                var maxk = candidates.Max(e => e.Value);
+                lock (_imglock) {
+                    var enames = candidates.Keys.ToArray();
+                    foreach (var ename in enames) {
+                        if (_imgList.TryGetValue(ename, out var cimg)) {
+                            if (cimg.Family == img1.Family) {
+                                candidates[ename] += maxk + 1f;
+                            }
+                        }
+                    }
+                }
+            }
+
+            var bestnames = string.Concat(candidates.OrderByDescending(e => e.Value).Take(100).Select(e => e.Key).ToArray());
+            if (string.IsNullOrEmpty(img1.BestNames) || !bestnames.Equals(img1.BestNames)) {
                 var sb = new StringBuilder();
-                sb.Append($"a{_added}/f{_found}/b{_bad}/i{_rwList.Count / 1024}K ");
+                var rc = _rwList.Count;
+                var nc = GetLiveNodesCount();
+                sb.Append($"a:{_added}/f:{_found}/b:{_bad}/i:{rc:n0}/n:{nc:n0} ");
                 sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                sb.Append($"{img1.Name}[{img1.Generation}]: ");
-                sb.Append($"{img1.Distance:F2} ");
-                sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{distance:F2} ");
+                sb.Append($"{img1.Name}[{img1.Generation}]");
                 backgroundworker.ReportProgress(0, sb.ToString());
                 lock (_imglock) {
-                    img1.Generation = 0;
-                    img1.BestHash = img2.Hash;
-                    img1.Distance = distance;
+                    img1.BestNames = bestnames;
                     img1.LastChanged = DateTime.Now;
                 }
             }
 
-            distance = ImageHelper.GetDistance(idy, idx);
-            if (distance < img2.Distance) {
-                var sb = new StringBuilder();
-                sb.Append($"a{_added}/f{_found}/b{_bad}/i{_rwList.Count / 1024}K ");
-                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                sb.Append($"{img2.Name}[{img2.Generation}]: ");
-                sb.Append($"{img2.Distance:F2} ");
-                sb.Append($"{char.ConvertFromUtf32(0x2192)} ");
-                sb.Append($"{distance:F2} ");
-                backgroundworker.ReportProgress(0, sb.ToString());
-                lock (_imglock) {
-                    img2.Generation = 0;
-                    img2.BestHash = img1.Hash;
-                    img2.Distance = distance;
-                    img2.LastChanged = DateTime.Now;
-                }
-            }
-
-            lock (_imglock) {
-                img1.LastCheck = DateTime.Now;
-            }
+            img1.LastCheck = DateTime.Now;
         }
 
         private static void ImportInternal(BackgroundWorker backgroundworker)
@@ -238,7 +243,24 @@ namespace ImageBank
                 return;
             }
 
-            MetadataHelper.GetMetadata(imagedata, out var datetaken, out var metadata);
+            Mat[] descriptors;
+            try {
+                descriptors = ImageHelper.GetDescriptors(bitmap);
+                if (descriptors == null) {
+                    var badname = Path.GetFileName(orgfilename);
+                    var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                    Helper.DeleteToRecycleBin(badfilename);
+                    File.Move(orgfilename, badfilename);
+                    return;
+                }
+            }
+            finally {
+                if (bitmap != null) {
+                    bitmap.Dispose();
+                }
+            }
+
+            MetadataHelper.GetMetadata(imagedata, out var datetaken);
 
             var lc = GetMinLastCheck();
             var lv = new DateTime(2021, 1, 1);
@@ -256,14 +278,9 @@ namespace ImageBank
             var nimg = new Img(
                 name: newname,
                 hash: hash,
-                width: bitmap.Width,
-                height: bitmap.Height,
-                size: imagedata.Length,
                 datetaken: datetaken,
-                metadata: metadata,
-                lastname: newname,
-                besthash: hash,
-                distance: 486f,
+                family: 0,
+                bestnames: string.Empty,
                 lastchanged: lc,
                 lastview: lv,
                 lastcheck: lc,
@@ -282,6 +299,10 @@ namespace ImageBank
                 Helper.DeleteToRecycleBin(orgfilename);
             }
 
+            AddDescriptors(newname, descriptors, backgroundworker);
+            descriptors[0].Dispose();
+            descriptors[1].Dispose();
+            
             _added++;
         }
 

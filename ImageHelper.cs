@@ -1,13 +1,11 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -18,12 +16,10 @@ namespace ImageBank
     public static class ImageHelper
     {
         private static readonly AKAZE _akaze;
-        private static readonly BFMatcher _bfmatcher;
 
         static ImageHelper()
         {
-            _akaze = AKAZE.Create(threshold: 0.0001f);
-            _bfmatcher = new BFMatcher(normType: NormTypes.Hamming);
+            _akaze = AKAZE.Create(threshold:AppConsts.AkazeThreshold);
         }
 
         public static bool GetBitmapFromImageData(byte[] data, out Bitmap bitmap)
@@ -157,10 +153,8 @@ namespace ImageBank
             }
         }
 
-        public static bool GetDescriptors(Bitmap bitmap, out Mat matdescriptors, out Mat matkeypoints)
+        private static Mat GetSingleDescriptors(Bitmap bitmap)
         {
-            matdescriptors = null;
-            matkeypoints = null;
             using (var matsource = bitmap.ToMat())
             using (var matcolor = new Mat()) {
                 var f = Math.Min(768.0 / Math.Max(matsource.Width, matsource.Height), 1.0);
@@ -170,90 +164,37 @@ namespace ImageBank
                     Cv2.CvtColor(matcolor, mat, ColorConversionCodes.BGR2GRAY);
                     var keypoints = _akaze.Detect(mat);
                     if (keypoints.Length == 0) {
-                        return false;
+                        return null;
                     }
 
-                    matdescriptors = new Mat();
+                    var matdescriptors = new Mat();
                     _akaze.Compute(mat, ref keypoints, matdescriptors);
                     if (keypoints.Length == 0) {
-                        return false;
+                        return null;
                     }
 
-                    matkeypoints = new Mat();
-                    Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                    /*
+                    using (var matkeypoints = new Mat()) {
+                        Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                        matkeypoints.SaveImage("test.png");
+                    }
+                    */
+
+                    return matdescriptors;
                 }
             }
-
-            return true;
         }
 
-        public static bool GetDescriptors(Bitmap bitmap, out Mat[] descriptors, out Mat[] matkeypoints)
+        public static Mat[] GetDescriptors(Bitmap bitmap)
         {
-            descriptors = new Mat[2];
-            matkeypoints = new Mat[2];
-            if (!GetDescriptors(bitmap, out descriptors[0], out matkeypoints[0])) {
-                return false;
-            }
-
+            var descriptors = new Mat[2];
+            descriptors[0] = GetSingleDescriptors(bitmap);
             using (var brft = new Bitmap(bitmap)) {
                 brft.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                if (!GetDescriptors(brft, out descriptors[1], out matkeypoints[1])) {
-                    return false;
-                }
-
+                descriptors[1] = GetSingleDescriptors(brft);
             }
 
-            return true;
-        }
-
-        public static float GetDistance(Mat dx, Mat dy)
-        {
-            var matches = _bfmatcher.KnnMatch(dx, dy, k:2);
-            var distances = new List<float>();
-            for (var i = 0; i < matches.Length; i++) {
-                if (matches[i].Length < 2) {
-                    continue;
-                }
-
-                if (float.IsNaN(matches[i][0].Distance)) {
-                    continue;
-                }
-
-                distances.Add(matches[i][0].Distance < 0.85f * matches[i][1].Distance ? matches[i][0].Distance : 486f);
-            }
-
-            var distance = distances.Average();
-            return distance;
-        }
-
-        public static float GetDistance(Mat dx, Mat[] dy)
-        {
-            var d0 = GetDistance(dx, dy[0]);
-            var d1 = GetDistance(dx, dy[1]);
-            var d = Math.Min(d0, d1);
-            return d;
-        }
-
-        public static float GetDistance(byte[] idx, byte[] idy)
-        {
-            if (!GetBitmapFromImageData(idx, out var bx)) {
-                return 486f;
-            }
-
-            if (!GetDescriptors(bx, out Mat dx, out _)) {
-                return 486;
-            }
-
-            if (!GetBitmapFromImageData(idy, out var by)) {
-                return 486f;
-            }
-
-            if (!GetDescriptors(by, out Mat[] dy, out _)) {
-                return 486;
-            }
-
-            var distance = GetDistance(dx, dy);
-            return distance;
+            return descriptors[0] != null && descriptors[1] != null ? descriptors : null;
         }
     }
 }

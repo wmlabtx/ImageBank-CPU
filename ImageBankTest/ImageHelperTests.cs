@@ -14,6 +14,7 @@ namespace ImageBankTest
     [TestClass()]
     public class ImageHelperTests
     {
+        public static readonly ImgMdf Collection = new ImgMdf();
         private readonly string[] names = new string[] {
             "gab_org.jpg", "gab_scale.jpg", "gab_crop.jpg", "gab_blur.jpg", "gab_exp.jpg", "gab_face.jpg", "gab_flip.jpg",
             "gab_logo.jpg", "gab_noice.jpg", "gab_r3.jpg", "gab_r10.jpg", "gab_r90.jpg", "gab_sim1.jpg", "gab_sim2.jpg",
@@ -23,66 +24,98 @@ namespace ImageBankTest
         [TestMethod()]
         public void GetDescriptorsTest()
         {
+            ImgMdf.LoadNodes(null);
             var filename = "gab_org.jpg";
-            using (var img1 = Image.FromFile(filename)) {
-                if (!ImageHelper.GetDescriptors((Bitmap)img1, out Mat d, out Mat m)) {
+            var imgdata = File.ReadAllBytes(filename);
+            if (!ImageHelper.GetBitmapFromImageData(imgdata, out var bitmap)) {
+                Assert.Fail();
+            }
+
+            try {
+                var descriptors = ImageHelper.GetDescriptors(bitmap);
+                if (descriptors == null) {
                     Assert.Fail();
                 }
 
-                m.SaveImage("gab_org.png");
-                m.Dispose();
+                //var ki = ImgMdf.GetKi(descriptors);
+            }
+            finally {
+                if (bitmap != null) {
+                    bitmap.Dispose();
+                }
+            }
+        }
+
+        [TestMethod()]
+        public void PopulateNodesTest()
+        {
+            ImgMdf.LoadNodes(null);
+            for (var i = 1; i <= 30; i++) {
+                var filename = $"train\\train{i:D2}.jpg";
+                var imgdata = File.ReadAllBytes(filename);
+                if (!ImageHelper.GetBitmapFromImageData(imgdata, out var bitmap)) {
+                    Assert.Fail();
+                }
+
+                try {
+                    var descriptors = ImageHelper.GetDescriptors(bitmap);
+                    if (descriptors == null) {
+                        Assert.Fail();
+                    }
+
+                    //var ki = ImgMdf.GetKi(descriptors);
+                }
+                finally {
+                    if (bitmap != null) {
+                        bitmap.Dispose();
+                    }
+                }
             }
         }
 
         /*
         [TestMethod()]
-        public void PopulateNodesTest()
+        public void GetSimTest()
         {
-            ImgMdf.SqlTruncateAll();
-            ImgMdf.LoadImgs(null);
-
-            for (var i = 1; i <= 30; i++) {
-                var name = $"train\\train{i:D2}.jpg";
-                var imagedata = File.ReadAllBytes(name);
-                if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                    continue;
-                }
-
-                if (bitmap.PixelFormat != PixelFormat.Format24bppRgb) {
-                    bitmap = ImageHelper.RepixelBitmap(bitmap);
-                }
-
-                if (!ImageHelper.GetKazeDescriptors(bitmap, out KazeDescriptor[][] kazedescriptors, out Mat[] mat)) {
+            ImgMdf.LoadNodes(null);
+            var array = new Tuple<string, int[][]>[names.Length];
+            for (var i = 0; i < names.Length; i++) {
+                var filename = names[i];
+                var imgdata = File.ReadAllBytes(filename);
+                if (!ImageHelper.GetBitmapFromImageData(imgdata, out var bitmap)) {
                     Assert.Fail();
                 }
 
-                bitmap.Dispose();
-                var pngname = Path.ChangeExtension(name, AppConsts.PngExtension);
-                mat[0].SaveImage(pngname);
-                mat[1].SaveImage($"{pngname}.mirror.png");
-                var descriptors = ImgMdf.GetDescriptors(kazedescriptors);
-                Assert.IsTrue(descriptors != null);
-            }
-        }
-        */
+                try {
+                    var descriptors = ImageHelper.GetDescriptors(bitmap);
+                    if (descriptors == null) {
+                        Assert.Fail();
+                    }
 
-        [TestMethod()]
-        public void GetSimTest()
-        {
+                    var ki = ImgMdf.GetKi(descriptors);
+                    array[i] = new Tuple<string, int[][]>(filename, ki);
+                }
+                finally {
+                    if (bitmap != null) {
+                        bitmap.Dispose();
+                    }
+                }
+            }
+
+
             var sb = new StringBuilder();
-            var idx = File.ReadAllBytes(names[0]);
-            foreach (var name in names) {
-                var idy = File.ReadAllBytes(name);
-                var distance = ImageHelper.GetDistance(idx, idy);
+            for (var i = 0; i < names.Length; i++) {
+                var sim = ImageHelper.GetSim(array[0].Item2[0], array[i].Item2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{name}: distance={distance:F2}");
+                sb.Append($"{array[i].Item1}: sim={sim:F2}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
         }
+        */
     }
 }
  

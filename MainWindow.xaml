@@ -4,11 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="ImageBank" Height="446" Width="800" Loaded="WindowLoaded" WindowStartupLocation="Manual" Closing="WindowClosing" Icon="app.ico" Cursor="Arrow" SizeToContent="Manual" ResizeMode="CanMinimize">
+        Title="ImageBank" Height="446" Width="800" Loaded="WindowLoaded" WindowStartupLocation="Manual" Closing="WindowClosing" Icon="app.ico" Cursor="Arrow" SizeToContent="Manual" ResizeMode="CanMinimize" KeyDown="MainWindow_KeyDown">
     <DockPanel Name="DockPanel" LastChildFill="true">
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
-                <MenuItem Header="Import" Click="ImportClick" />
+                <MenuItem Header="Import 10" Click="Import10Click" />
+                <MenuItem Header="Import 100" Click="Import100Click" />
+                <MenuItem Header="Import All" Click="ImportClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>
@@ -17,11 +19,12 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <!--
-            <MenuItem Header="Train">
-                <MenuItem Header="Get Descriptors" Click="GetDescriptorsClick" />
+            <MenuItem Header="Family">
+                <MenuItem Header="Combine" Click="FamilyCombineClick" />
+                <Separator />
+                <MenuItem Header="Forward" Click="ForwardClick" InputGestureText="F" />
+                <MenuItem Header="Backward" Click="BackwardClick" InputGestureText="D" />
             </MenuItem>
-            -->
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

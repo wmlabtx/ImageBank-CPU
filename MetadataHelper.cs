@@ -58,13 +58,12 @@ namespace ImageBank
             }
         }
 
-        public static void GetMetadata(byte[] imagedata, out DateTime? datataken, out string metadata)
+        public static void GetMetadata(byte[] imagedata, out DateTime? datataken)
         {
             _sb.Clear();
             _tagscounter = 0;
             _datetaken = null;
             datataken = null;
-            metadata = string.Empty;
             if (imagedata == null) {
                 return;
             }
@@ -82,12 +81,8 @@ namespace ImageBank
             }
 
             datataken = _datetaken;
-            if (_tagscounter > 0) {
-                _sb.Append($"Exif tags: {_tagscounter}");
-            }
-
-            if (_sb.Length > 0) {
-                metadata = _sb.ToString();
+            if (!datataken.HasValue && _tagscounter > 0) {
+                datataken = DateTime.Now;
             }
         }
     }

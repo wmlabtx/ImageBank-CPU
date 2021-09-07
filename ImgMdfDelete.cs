@@ -10,11 +10,10 @@
                         _hashList.Remove(img.Hash);
                     }
 
-                    foreach (var e in _imgList) {
-                        if (e.Value.BestHash.Equals(img.Hash)) {
-                            e.Value.BestHash = e.Value.Hash;
-                            e.Value.Distance = 486f;
-                            e.Value.LastCheck = GetMinLastCheck();
+                    foreach (var e in _nodeList) {
+                        if (e.Value.Members.ContainsKey(name)) {
+                            e.Value.RemoveMember(name);
+                            SqlUpdateNode(e.Key, e.Value);
                         }
                     }
 

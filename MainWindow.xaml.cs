@@ -83,24 +83,52 @@ namespace ImageBank
             Close();
         }
 
-        private static async System.Threading.Tasks.Task ClusteringClickAsync(object sender, RoutedEventArgs e)
-        {
-            await ClusteringClickAsync();
-        }
-
         private void ImportClick(object sender, RoutedEventArgs e)
         {
-            ImportClick();
+            ImportClick(1000000);
         }
 
-        private void GetDescriptorsClick(object sender, RoutedEventArgs e)
+        private void Import10Click(object sender, RoutedEventArgs e)
         {
-            GetDescriptorsClick();
+            ImportClick(10);
+        }
+
+        private void Import100Click(object sender, RoutedEventArgs e)
+        {
+            ImportClick(100);
         }
 
         private void Rotate270Click(object sender, RoutedEventArgs e)
         {
             Rotate270Click();
+        }
+
+        private void FamilyCombineClick(object sender, EventArgs e)
+        {
+            FamilyCombineClick();
+        }
+
+        private void ForwardClick(object sender, RoutedEventArgs e)
+        {
+            ForwardClick();
+        }
+
+        private void BackwardClick(object sender, RoutedEventArgs e)
+        {
+            BackwardClick();
+        }
+
+        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F) {
+                ForwardClick();
+                return;
+            }
+
+            if (e.Key == Key.D) {
+                BackwardClick();
+                return;
+            }
         }
     }
 }
