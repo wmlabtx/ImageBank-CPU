@@ -6,11 +6,11 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Rotate(string name, RotateFlipType rft)
+        public static void Rotate(int id, RotateFlipType rft)
         {
             lock (_imglock) {
-                if (_imgList.TryGetValue(name, out var img)) {
-                    var filename = Helper.GetFileName(name);
+                if (_imgList.TryGetValue(id, out var img)) {
+                    var filename = Helper.GetFileName(img.Name);
                     var imagedata = Helper.ReadData(filename);
                     if (imagedata != null) {
                         if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
@@ -35,19 +35,18 @@ namespace ImageBank
                         }
 
                         MetadataHelper.GetMetadata(imagedata, out var rdatetaken);
-
+                        var rid = AllocateId();
                         var rimg = new Img(
-                            name: name,
+                            id: rid,
+                            name: img.Name,
                             hash: rhash,
                             datetaken: rdatetaken,
-                            bestnames: img.BestNames,
+                            colorhistogram: img.ColorHistogram,
                             family: img.Family,
-                            lastchanged: img.LastChanged,
-                            lastview: img.LastView,
-                            lastcheck: img.LastCheck,
-                            generation: img.Generation);
+                            history: img.History,
+                            lastview: img.LastView);
 
-                        Delete(name);
+                        Delete(id);
                         Add(rimg);
                         Helper.WriteData(filename, rimagedata);
 

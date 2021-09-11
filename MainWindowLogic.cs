@@ -52,7 +52,6 @@ namespace ImageBank
 
             DisableElements();
             await Task.Run(() => { ImgMdf.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.LoadNodes(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             
@@ -107,8 +106,7 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { ImgMdf.UpdateGeneration(0); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.UpdateLastView(0); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Confirm(); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -151,25 +149,21 @@ namespace ImageBank
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
             for (var index = 0; index < 2; index++) {
-                var name = AppVars.ImgPanel[index].Img.Name;
-                pBoxes[index].Tag = name;
-                pLabels[index].Tag = name;
-
                 pBoxes[index].Source = ImageHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append(name);
-
-                /*
-                var generation = AppVars.ImgPanel[index].Img.Generation;
-                var generationsize = ImgMdf.GetGenerationSize(generation);
-                sb.Append($" [{generation}:{generationsize}]");
-                */
+                sb.Append(AppVars.ImgPanel[index].Img.Name);
 
                 if (AppVars.ImgPanel[index].Img.Family > 0) {
-                    var familysize = ImgMdf.FamilySize(AppVars.ImgPanel[index].Img.Family);
-                    sb.Append($" [F{AppVars.ImgPanel[index].Img.Family}:{familysize}]");
+                    sb.Append($" F{AppVars.ImgPanel[index].Img.Family}");
+                    var familysize = ImgMdf.GetFamilySize(AppVars.ImgPanel[index].Img.Family);
+                    sb.Append($"({familysize})");
                 }
+
+                if (AppVars.ImgPanel[index].Img.History.Count > 0) {
+                    sb.Append($" H{AppVars.ImgPanel[index].Img.History.Count}");
+                }
+
 
                 sb.AppendLine();
 
@@ -178,10 +172,21 @@ namespace ImageBank
                 sb.AppendLine();
 
                 sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastChanged))} ago]");
+                if (AppVars.ImgPanel[index].Img.DateTaken.HasValue) {
+                    sb.Append($"({AppVars.ImgPanel[index].Img.DateTaken.Value.ToShortDateString()})");
+                }
+
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
+
+                if (AppVars.ImgPanel[index].Img.History.Count == 0) {
+                    scb = System.Windows.Media.Brushes.Bisque;
+                }
+
+                if (AppVars.ImgPanel[index].Img.DateTaken.HasValue) {
+                    scb = System.Windows.Media.Brushes.Gold;
+                }
 
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
@@ -193,14 +198,6 @@ namespace ImageBank
                         scb = System.Windows.Media.Brushes.LightGreen;
                         pLabels[0].Background = scb;
                     }
-                }
-
-                if (AppVars.ImgPanel[index].Img.LastView.Year == 2021 && AppVars.ImgPanel[index].Img.LastView.Month == 1 && AppVars.ImgPanel[index].Img.LastView.Day == 1) {
-                    scb = System.Windows.Media.Brushes.Bisque;
-                }
-
-                if (AppVars.ImgPanel[index].Img.DateTaken.HasValue) {
-                    scb = System.Windows.Media.Brushes.Gold;
                 }
 
                 pLabels[index].Background = scb;
@@ -245,9 +242,9 @@ namespace ImageBank
         private async void ImgPanelDelete(int index)
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Name); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Id); }).ConfigureAwait(true);
             if (index == 1) {
-                await Task.Run(() => { ImgMdf.UpdateLastView(0); }).ConfigureAwait(true);
+                await Task.Run(() => { ImgMdf.UpdateLastViewOnly(); }).ConfigureAwait(true);
             }
 
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
@@ -258,7 +255,7 @@ namespace ImageBank
         private async void Rotate(RotateFlipType rft)
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Name, rft); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -318,26 +315,35 @@ namespace ImageBank
             _notifyIcon?.Dispose();
         }
 
-        private async void FamilyCombineClick()
+        private async void AddToFamilyClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.CombineFamilies(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.AddToFamily(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private async void ForwardClick()
+        private async void RemoveFromFamilyClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Forward(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.RemoveFromFamily(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private async void BackwardClick()
+        private async void ClearHistoryClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Backward(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.ClearHistory(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void CreateFamilyClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.CreateFamily(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

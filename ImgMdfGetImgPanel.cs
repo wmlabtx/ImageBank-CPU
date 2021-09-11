@@ -2,16 +2,16 @@
 {
     public partial class ImgMdf
     {
-        private static ImgPanel GetImgPanel(string name)
+        private static ImgPanel GetImgPanel(int id)
         {
             Img img;
             lock (_imglock) {
-                if (!_imgList.TryGetValue(name, out img)) {
+                if (!_imgList.TryGetValue(id, out img)) {
                     return null;
                 }
             }
 
-            var filename = Helper.GetFileName(name);
+            var filename = Helper.GetFileName(img.Name);
             var imagedata = Helper.ReadData(filename);
             if (imagedata == null) {
                 return null;

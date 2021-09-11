@@ -5,7 +5,7 @@
         private static void AddToMemory(Img img)
         {
             lock (_imglock) {
-                _imgList.Add(img.Name, img);
+                _imgList.Add(img.Id, img);
                 _hashList.Add(img.Hash, img);
             }
         }

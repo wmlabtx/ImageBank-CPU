@@ -46,7 +46,7 @@ namespace ImageBank
             }
         }
 
-        public short NextShort(short minvalue, short maxvalue)
+        public int Next(int minvalue, int maxvalue)
         {
             if (minvalue > maxvalue) {
                 throw new ArgumentOutOfRangeException(nameof(minvalue));

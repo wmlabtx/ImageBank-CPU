@@ -67,7 +67,6 @@ namespace ImageBank
             }
         }
 
-
         private void Rotate90Click(object sender, EventArgs e)
         {
             Rotate90Click();
@@ -103,32 +102,37 @@ namespace ImageBank
             Rotate270Click();
         }
 
-        private void FamilyCombineClick(object sender, EventArgs e)
-        {
-            FamilyCombineClick();
-        }
-
-        private void ForwardClick(object sender, RoutedEventArgs e)
-        {
-            ForwardClick();
-        }
-
-        private void BackwardClick(object sender, RoutedEventArgs e)
-        {
-            BackwardClick();
-        }
-
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.F) {
-                ForwardClick();
+            if (e.Key == Key.Z) {
+                ButtonLeftNextMouseClick();
                 return;
             }
 
-            if (e.Key == Key.D) {
-                BackwardClick();
+            if (e.Key == Key.C) {
+                CreateFamilyClick();
                 return;
             }
+        }
+
+        private void AddToFamilyClick(object sender, RoutedEventArgs e)
+        {
+            AddToFamilyClick();
+        }
+
+        private void RemoveFromFamilyClick(object sender, RoutedEventArgs e)
+        {
+            RemoveFromFamilyClick();
+        }
+
+        private void ClearHistoryClick(object sender, RoutedEventArgs e)
+        {
+            ClearHistoryClick();
+        }
+
+        private void CreateFamilyClick(object sender, RoutedEventArgs e)
+        {
+            CreateFamilyClick();
         }
     }
 }

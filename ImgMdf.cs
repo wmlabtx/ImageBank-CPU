@@ -11,12 +11,16 @@ namespace ImageBank
         private static readonly object _sqllock = new object();
         private static SqlConnection _sqlConnection;
         private static readonly object _imglock = new object();
-        private static readonly SortedDictionary<string, Img> _imgList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
-        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>(StringComparer.OrdinalIgnoreCase);
-        private static readonly SortedDictionary<int, Node> _nodeList = new SortedDictionary<int, Node>();
+        private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
+        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
 
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
+
+        private static readonly CryptoRandom _random = new CryptoRandom();
+
+        private static int _id;
+        private static int _family;
 
         public ImgMdf()
         {
@@ -25,11 +29,18 @@ namespace ImageBank
             _sqlConnection.Open();
         }
 
-        public static int GetLiveNodesCount()
+        private static int AllocateId()
         {
-            lock (_imglock) {
-                return _nodeList.Count(e => e.Value.Core != null);
-            }
+            _id++;
+            SqlUpdateVar(AppConsts.AttrId, _id);
+            return _id;
+        }
+
+        public static int AllocateFamily()
+        {
+            _family++;
+            SqlUpdateVar(AppConsts.AttrFamily, _family);
+            return _family;
         }
 
         public static DateTime GetMinLastView()
@@ -49,22 +60,6 @@ namespace ImageBank
                 return scope 
                     .Min(e => e.Value.LastView)
                     .AddSeconds(-1);
-            }
-        }
-
-        public static DateTime GetMinLastCheck()
-        {
-            lock (_imglock) {
-                return _imgList.Count == 0 ? DateTime.Now : _imgList
-                    .Min(e => e.Value.LastCheck)
-                    .AddSeconds(-1);
-            }
-        }
-
-        public static int GetGenerationSize(int generation)
-        {
-            lock (_imglock) {
-                return _imgList.Count == 0 ? 0 : _imgList.Count(e => e.Value.Generation == generation);
             }
         }
     }

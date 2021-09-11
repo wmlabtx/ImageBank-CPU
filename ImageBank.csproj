@@ -140,7 +140,6 @@
     <Compile Include="ImgMdfImport.cs" />
     <Compile Include="ImgMdfConfirm.cs" />
     <Compile Include="ImgMdfSql.cs" />
-    <Compile Include="ImgMdfNodes.cs" />
     <Compile Include="ImgPanel.cs" />
     <Compile Include="MagicFormat.cs" />
     <Compile Include="MainWindow.xaml.cs">
@@ -152,7 +151,6 @@
     <Compile Include="MainWindowLogic.cs" />
     <Compile Include="MetadataHelper.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Node.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

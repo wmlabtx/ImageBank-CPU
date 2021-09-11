@@ -1,104 +1,162 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Linq;
-using System.Text;
 
 namespace ImageBank
 {
     public partial class ImgMdf
     {
-        public static void Forward(IProgress<string> progress)
+        private static int FindIdYx(Img imgX, Img[] collection, IProgress<string> progress)
         {
-            var nameX = AppVars.ImgPanel[0].Img.Name;
-            AppVars.BestNamesPosition += 10;
-            if (AppVars.BestNamesPosition + 10 > AppVars.BestNames.Length) {
-                AppVars.BestNamesPosition = 0;
+            if (collection.Length == 0) {
+                return 0;
             }
 
-            var nameY = AppVars.BestNames.Substring(AppVars.BestNamesPosition, 10);
-            Find(nameX, nameY, progress);
-        }
+            var mindistance = double.MaxValue;
+            var minid = -1;
 
-        public static void Backward(IProgress<string> progress)
-        {
-            var nameX = AppVars.ImgPanel[0].Img.Name;
-            AppVars.BestNamesPosition -= 10;
-            if (AppVars.BestNamesPosition < 0) {
-                AppVars.BestNamesPosition = AppVars.BestNames.Length - 10;
+            foreach (var img in collection) {
+                var distance = ImageHelper.GetDistance(imgX.ColorHistogram, img.ColorHistogram);
+                if (distance < mindistance) {
+                    mindistance = distance;
+                    minid = img.Id;
+                    progress.Report($"Searching candidates ({minid}, {mindistance})...");
+                }
             }
 
-            var nameY = AppVars.BestNames.Substring(AppVars.BestNamesPosition, 10);
-            Find(nameX, nameY, progress);
+            return minid;
         }
 
-        public static void Find(string nameX, string nameY, IProgress<string> progress)
+        private static int FindIdY0(Img imgX, IProgress<string> progress)
         {
-            Img imgX;
-            var sb = new StringBuilder();
+            Img[] collection;
             lock (_imglock) {
-                while (true) {
+                collection = _imgList
+                    .Where(e => e.Key != imgX.Id && e.Value.Family > 0 && !imgX.History.ContainsKey(e.Value.Family))
+                    .Select(e => e.Value)
+                    .ToArray();
+            }
+
+            if (collection.Length == 0) {
+                return 0;
+            }
+
+            return FindIdYx(imgX, collection, progress);
+        }
+
+        private static int FindIdY1(Img imgX, IProgress<string> progress)
+        {
+            Img[] collection;
+            lock (_imglock) {
+                collection = _imgList
+                    .Where(e => e.Key != imgX.Id && e.Value.Family == imgX.Family && !imgX.History.ContainsKey(e.Value.Id))
+                    .Select(e => e.Value)
+                    .ToArray();
+            }
+
+            if (collection.Length == 0) {
+                return 0;
+            }
+
+            return FindIdYx(imgX, collection, progress);
+        }
+
+        private static int FindIdY(Img imgX, IProgress<string> progress)
+        {
+            return imgX.Family == 0 ? FindIdY0(imgX, progress) : FindIdY1(imgX, progress);
+        }
+
+        private static int FindOutOfFamilyIdY(Img imgX, IProgress<string> progress)
+        {
+            Img[] collection;
+            lock (_imglock) {
+                collection = _imgList
+                    .Where(e => e.Key != imgX.Id && e.Value.Family != imgX.Family)
+                    .Select(e => e.Value)
+                    .ToArray();
+            }
+
+            if (collection.Length == 0) {
+                return 0;
+            }
+
+            return FindIdYx(imgX, collection, progress);
+        }
+
+        public static void Find(int idX, IProgress<string> progress)
+        {
+            Img imgX = null;
+            do {
+                lock (_imglock) {
                     if (_imgList.Count < 2) {
                         progress.Report("No images to view");
                         return;
                     }
-
-                    if (nameX == null) {
-                        imgX = null;
-                        var valid = _imgList
-                            .Where(e => !string.IsNullOrEmpty(e.Value.BestNames))
-                            .Select(e => e.Value)
-                            .ToArray();
-
-                        if (valid.Length == 0) {
-                            progress.Report("No images to view");
-                            return;
-                        }
-
-                        var recent = valid.Where(e => e.LastChanged >= e.LastView).ToArray();
-                        if (recent.Length == 0) {
-                            recent = valid;
-                        }
-
-                        imgX = recent.OrderBy(e => e.LastView).FirstOrDefault();
-                        nameX = imgX.Name;
-                        AppVars.BestNames = imgX.BestNames;
-                        AppVars.BestNamesPosition = 0;
-                        nameY = imgX.BestNames.Substring(0, 10);
-                        if (!_imgList.TryGetValue(nameY, out var imgY)) {
-                            continue;
-                        }
-                    }
-
-                    AppVars.ImgPanel[0] = GetImgPanel(nameX);
-                    if (AppVars.ImgPanel[0] == null) {
-                        Delete(nameX);
-                        progress.Report($"{nameX} deleted");
-                        nameX = null;
-                        continue;
-                    }
-
-                    imgX = AppVars.ImgPanel[0].Img;
-                    AppVars.ImgPanel[1] = GetImgPanel(nameY);
-                    if (AppVars.ImgPanel[1] == null) {
-                        Delete(nameY);
-                        progress.Report($"{nameY} deleted");
-                        nameX = null;
-                        continue;
-                    }
-
-                    break;
                 }
 
-                var changed = _imgList.Count(e => e.Value.LastView <= e.Value.LastChanged);
-                sb.Append($"{changed}/{_imgList.Count}: ");
-                sb.Append($"{imgX.Name}");
+                if (idX == 0) {
+                    imgX = null;
+                    Img[] valid;
+                    lock (_imglock) {
+                        valid = _imgList
+                            .Select(e => e.Value)
+                            .ToArray();
+                    }
+
+                    if (valid.Length == 0) {
+                        progress.Report("No images to view");
+                        return;
+                    }
+
+                    var minlastview = valid.Min(e => e.LastView);
+                    imgX = valid.FirstOrDefault(e => e.LastView == minlastview);
+                    idX = imgX.Id;
+                }
+
+                AppVars.ImgPanel[0] = GetImgPanel(idX);
+                if (AppVars.ImgPanel[0] == null) {
+                    Delete(idX);
+                    progress.Report($"{idX} deleted");
+                    idX = 0;
+                    continue;
+                }
+
+                imgX = AppVars.ImgPanel[0].Img;
+                var idY = FindIdY(imgX, progress);
+                if (idY == 0) {
+                    if (imgX.Family == 0) {
+                        imgX.Family = AllocateFamily();
+                        imgX.History.Clear();
+                        imgX.SaveHistory();
+                        imgX.LastView = DateTime.Now;
+                        idX = 0;
+                        continue;
+                    }
+                    else {
+                        idY = FindOutOfFamilyIdY(imgX, progress);
+                    }
+                }
+
+                AppVars.ImgPanel[1] = GetImgPanel(idY);
+                if (AppVars.ImgPanel[1] == null) {
+                    Delete(idY);
+                    progress.Report($"{idY} deleted");
+                    idX = 0;
+                    continue;
+                }
+
+                break;
             }
+            while (true);
 
-            progress.Report(sb.ToString());
+            lock (_imglock) {
+                var imgtoview = _imgList.Count(e => e.Value.Family == 0);
+                var families = _imgList.Select(e => e.Value.Family).Distinct().Count();
+                var imgcount = _imgList.Count;
+                progress.Report($"oof:{imgtoview}/fs:{families}/imgs:{imgcount}");
+            }
         }
 
-        public static void Find(IProgress<string> progress)
-        {
-            Find(null, null, progress);
-        }
+        public static void Find(IProgress<string> progress) => Find(0, progress);
     }
 }

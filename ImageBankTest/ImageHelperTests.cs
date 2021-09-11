@@ -24,7 +24,6 @@ namespace ImageBankTest
         [TestMethod()]
         public void GetDescriptorsTest()
         {
-            ImgMdf.LoadNodes(null);
             var filename = "gab_org.jpg";
             var imgdata = File.ReadAllBytes(filename);
             if (!ImageHelper.GetBitmapFromImageData(imgdata, out var bitmap)) {
@@ -32,12 +31,10 @@ namespace ImageBankTest
             }
 
             try {
-                var descriptors = ImageHelper.GetDescriptors(bitmap);
+                var descriptors = ImageHelper.GetSiftDescriptors(bitmap);
                 if (descriptors == null) {
                     Assert.Fail();
                 }
-
-                //var ki = ImgMdf.GetKi(descriptors);
             }
             finally {
                 if (bitmap != null) {
@@ -46,6 +43,7 @@ namespace ImageBankTest
             }
         }
 
+        /*
         [TestMethod()]
         public void PopulateNodesTest()
         {
@@ -72,13 +70,12 @@ namespace ImageBankTest
                 }
             }
         }
+        */
 
-        /*
         [TestMethod()]
-        public void GetSimTest()
+        public void GetDistanceTest()
         {
-            ImgMdf.LoadNodes(null);
-            var array = new Tuple<string, int[][]>[names.Length];
+            var array = new Tuple<string, Mat[]>[names.Length];
             for (var i = 0; i < names.Length; i++) {
                 var filename = names[i];
                 var imgdata = File.ReadAllBytes(filename);
@@ -87,13 +84,12 @@ namespace ImageBankTest
                 }
 
                 try {
-                    var descriptors = ImageHelper.GetDescriptors(bitmap);
+                    var descriptors = ImageHelper.GetSift2Descriptors(bitmap);
                     if (descriptors == null) {
                         Assert.Fail();
                     }
 
-                    var ki = ImgMdf.GetKi(descriptors);
-                    array[i] = new Tuple<string, int[][]>(filename, ki);
+                    array[i] = new Tuple<string, Mat[]>(filename, descriptors);
                 }
                 finally {
                     if (bitmap != null) {
@@ -102,20 +98,18 @@ namespace ImageBankTest
                 }
             }
 
-
             var sb = new StringBuilder();
             for (var i = 0; i < names.Length; i++) {
-                var sim = ImageHelper.GetSim(array[0].Item2[0], array[i].Item2);
+                var distance = ImageHelper.GetDistance(array[0].Item2[0], array[i].Item2);
                 if (sb.Length > 0) {
                     sb.AppendLine();
                 }
 
-                sb.Append($"{array[i].Item1}: sim={sim:F2}");
+                sb.Append($"{array[i].Item1}: distance={distance}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
         }
-        */
     }
 }
  

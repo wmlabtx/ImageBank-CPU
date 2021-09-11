@@ -6,13 +6,6 @@
         public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
-        public const string FileWords = @"D:\Users\Murad\Documents\Sdb\Db\images_words.dat";
-
-        public const int MaxImages = 300000;
-
-        public const int FeatureSim = 80;
-        public const int MaxNodes = 5000000;
-        public const float AkazeThreshold = 0.0001f;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -29,22 +22,14 @@
         public const double TimeLapse = 500.0;
 
         public const string TableImages = "Images";
+        public const string AttrId = "Id";
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
         public const string AttrDateTaken = "DateTaken";
+        public const string AttrColorHistogram = "ColorHistogram";
         public const string AttrFamily = "Family";
-        public const string AttrBestNames = "BestNames";
-        public const string AttrLastChanged = "LastChanged";
-        public const string AttrLastCheck = "LastCheck";
+        public const string AttrHistory = "History";
         public const string AttrLastView = "LastView";
-        public const string AttrGeneration = "Generation";
-
-        public const string TableNodes = "Nodes";
-        public const string AttrNodeId = "NodeId";
-        public const string AttrCore = "Core";
-        public const string AttrDepth = "Depth";
-        public const string AttrChildId = "ChildId";
-        public const string AttrMembers = "Members";
-        public const string AttrLastAdded = "LastAdded";
+        public const string TableVars = "Vars";
     }
 }

@@ -1,38 +1,35 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ImageBank
 {
     public class Img
     {
+        public int Id { get; }
         public string Name { get; }
         public string Hash { get; }
         public DateTime? DateTaken { get; }
+        public byte[] ColorHistogram { get; }
 
         private int _family;
         public int Family {
             get => _family;
             set {
                 _family = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrFamily, value);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrFamily, value);
             }
         }
 
-        private string _bestnames;
-        public string BestNames {
-            get => _bestnames;
-            set {
-                _bestnames = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrBestNames, value);
-            }
-        }
+        public SortedList<int, int> History { get; }
 
-        private DateTime _lastchanged;
-        public DateTime LastChanged {
-            get => _lastchanged;
-            set {
-                _lastchanged = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastChanged, value);
-            }
+        public void SaveHistory()
+        {
+            var history = History.Select(e => e.Key).ToArray();
+            var buffer = new byte[history.Length * sizeof(int)];
+            Buffer.BlockCopy(history, 0, buffer, 0, buffer.Length);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrHistory, buffer);
         }
 
         private DateTime _lastview;
@@ -40,49 +37,29 @@ namespace ImageBank
             get => _lastview;
             set {
                 _lastview = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastView, value);
-            }
-        }
-
-        private DateTime _lastcheck;
-        public DateTime LastCheck {
-            get => _lastcheck;
-            set {
-                _lastcheck = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrLastCheck, value);
-            }
-        }
-
-        private int _generation;
-        public int Generation {
-            get => _generation;
-            set {
-                _generation = value;
-                ImgMdf.SqlImagesUpdateProperty(Name, AppConsts.AttrGeneration, value);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastView, value);
             }
         }
 
         public Img(
+            int id,
             string name,
             string hash,
             DateTime? datetaken,
+            byte[] colorhistogram,
             int family,
-            string bestnames,
-            DateTime lastchanged,
-            DateTime lastview,
-            DateTime lastcheck,
-            int generation
+            SortedList<int, int> history,
+            DateTime lastview
             )
         {
+            Id = id;
             Name = name;
             Hash = hash;
             DateTaken = datetaken;
+            ColorHistogram = colorhistogram;
             _family = family;
-            _bestnames = bestnames;
-            _lastchanged = lastchanged;
+            History = history;
             _lastview = lastview;
-            _lastcheck = lastcheck;
-            _generation = generation;
         }
     }
 }

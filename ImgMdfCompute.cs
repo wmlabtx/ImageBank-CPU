@@ -13,124 +13,13 @@ namespace ImageBank
         private static int _added;
         private static int _found;
         private static int _bad;
-
-        private static void ComputeInternal(BackgroundWorker backgroundworker)
-        {
-            Img img1 = null;
-            var candidates = new SortedDictionary<string, float>();
-            lock (_imglock) {
-                if (_imgList.Count < 2) {
-                    backgroundworker.ReportProgress(0, "no images");
-                    return;
-                }
-
-                img1 = _imgList
-                    .OrderBy(e => e.Value.LastCheck)
-                    .FirstOrDefault()
-                    .Value;
-            }
-
-            var filename = Helper.GetFileName(img1.Name);
-            var imagedata = Helper.ReadData(filename);
-            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                Delete(img1.Name);
-                return;
-            }
-
-            Mat[] descriptors;
-            try {
-                descriptors = ImageHelper.GetDescriptors(bitmap);
-                if (descriptors == null) {
-                    Delete(img1.Name);
-                    return;
-                }
-            }
-            finally {
-                if (bitmap != null) {
-                    bitmap.Dispose();
-                }
-            }
-
-            AddDescriptors(img1.Name, descriptors, backgroundworker);
-            descriptors[0].Dispose();
-            descriptors[1].Dispose();
-
-            lock (_imglock) {
-                var imagescount = _imgList.Count - 1;
-                foreach (var enode in _nodeList.Values) {
-                    if (!enode.Members.ContainsKey(img1.Name)) {
-                        continue;
-                    }
-
-                    if (enode.Members.Count == 1) {
-                        continue;
-                    }
-
-                    var k = (float)Math.Log10((double)imagescount / (enode.Members.Count - 1));
-                    foreach (var ename in enode.Members) {
-                        if (ename.Key.Equals(img1.Name)) {
-                            continue;
-                        }
-
-                        if (candidates.ContainsKey(ename.Key)) {
-                            candidates[ename.Key] += k;
-                        }
-                        else {
-                            candidates.Add(ename.Key, k);
-                        }
-                    }
-                }
-            }
-
-            if (candidates.Count == 0) {
-                if (!string.IsNullOrEmpty(img1.BestNames)) {
-                    img1.BestNames = string.Empty;
-                    img1.LastChanged = DateTime.Now;
-                }
-
-                img1.LastCheck = DateTime.Now;
-                return;
-            }
-
-            if (img1.Family > 0) {
-                var maxk = candidates.Max(e => e.Value);
-                lock (_imglock) {
-                    var enames = candidates.Keys.ToArray();
-                    foreach (var ename in enames) {
-                        if (_imgList.TryGetValue(ename, out var cimg)) {
-                            if (cimg.Family == img1.Family) {
-                                candidates[ename] += maxk + 1f;
-                            }
-                        }
-                    }
-                }
-            }
-
-            var bestnames = string.Concat(candidates.OrderByDescending(e => e.Value).Take(100).Select(e => e.Key).ToArray());
-            if (string.IsNullOrEmpty(img1.BestNames) || !bestnames.Equals(img1.BestNames)) {
-                var sb = new StringBuilder();
-                var rc = _rwList.Count;
-                var nc = GetLiveNodesCount();
-                sb.Append($"a:{_added}/f:{_found}/b:{_bad}/i:{rc:n0}/n:{nc:n0} ");
-                sb.Append($"[{Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck))} ago] ");
-                sb.Append($"{img1.Name}[{img1.Generation}]");
-                backgroundworker.ReportProgress(0, sb.ToString());
-                lock (_imglock) {
-                    img1.BestNames = bestnames;
-                    img1.LastChanged = DateTime.Now;
-                }
-            }
-
-            img1.LastCheck = DateTime.Now;
-        }
+        private static readonly StringBuilder _sb = new StringBuilder();
 
         private static void ImportInternal(BackgroundWorker backgroundworker)
         {
-            lock (_imglock) {
-                if (_imgList.Count >= AppConsts.MaxImages) {
-                    return;
-                }
-            }
+            _sb.Clear();
+            _sb.Append($"a:{_added}/f:{_found}/b:{_bad}");
+            backgroundworker.ReportProgress(0, _sb.ToString());
 
             FileInfo fileinfo;
             lock (_rwlock) {
@@ -231,7 +120,7 @@ namespace ImageBank
                 }
                 else {
                     // found image is gone; delete it
-                    Delete(imgfound.Name);
+                    Delete(imgfound.Id);
                 }
             }
 
@@ -240,19 +129,13 @@ namespace ImageBank
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
                 Helper.DeleteToRecycleBin(badfilename);
                 File.Move(orgfilename, badfilename);
+                _bad++;
                 return;
             }
 
-            Mat[] descriptors;
+            byte[] colorhistogram;
             try {
-                descriptors = ImageHelper.GetDescriptors(bitmap);
-                if (descriptors == null) {
-                    var badname = Path.GetFileName(orgfilename);
-                    var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
-                    Helper.DeleteToRecycleBin(badfilename);
-                    File.Move(orgfilename, badfilename);
-                    return;
-                }
+                colorhistogram = ImageHelper.GetColorHistogram(bitmap);
             }
             finally {
                 if (bitmap != null) {
@@ -262,8 +145,7 @@ namespace ImageBank
 
             MetadataHelper.GetMetadata(imagedata, out var datetaken);
 
-            var lc = GetMinLastCheck();
-            var lv = new DateTime(2021, 1, 1);
+            var lv = GetMinLastView();
 
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -275,16 +157,24 @@ namespace ImageBank
                 newfilename = Helper.GetFileName(newname);
             } while (File.Exists(newfilename));
 
+            var imgcount = 0;
+            lock (_imglock) {
+                imgcount = _imgList.Count;
+            }
+
+            var family = imgcount == 0 ? 1 : 0;
+            var history = new SortedList<int, int>();
+            var id = AllocateId();
+
             var nimg = new Img(
+                id: id,
                 name: newname,
                 hash: hash,
                 datetaken: datetaken,
-                family: 0,
-                bestnames: string.Empty,
-                lastchanged: lc,
-                lastview: lv,
-                lastcheck: lc,
-                generation: 0);
+                colorhistogram: colorhistogram,
+                family: family,
+                history: history,
+                lastview: lv);
 
             Add(nimg);
 
@@ -299,19 +189,12 @@ namespace ImageBank
                 Helper.DeleteToRecycleBin(orgfilename);
             }
 
-            AddDescriptors(newname, descriptors, backgroundworker);
-            descriptors[0].Dispose();
-            descriptors[1].Dispose();
-            
             _added++;
         }
 
         public static void Compute(BackgroundWorker backgroundworker)
         {
             ImportInternal(backgroundworker);
-            for (var i = 0; i < 3; i++) {
-                ComputeInternal(backgroundworker);
-            }
         }
     }
 }
