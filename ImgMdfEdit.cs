@@ -41,9 +41,9 @@ namespace ImageBank
                             name: img.Name,
                             hash: rhash,
                             datetaken: rdatetaken,
-                            colorhistogram: img.ColorHistogram,
-                            family: img.Family,
-                            history: img.History,
+                            lastid: 0,
+                            bestid: 0,
+                            bestdistance: 0f,
                             lastview: img.LastView);
 
                         Delete(id);

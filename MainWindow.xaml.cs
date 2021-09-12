@@ -108,31 +108,6 @@ namespace ImageBank
                 ButtonLeftNextMouseClick();
                 return;
             }
-
-            if (e.Key == Key.C) {
-                CreateFamilyClick();
-                return;
-            }
-        }
-
-        private void AddToFamilyClick(object sender, RoutedEventArgs e)
-        {
-            AddToFamilyClick();
-        }
-
-        private void RemoveFromFamilyClick(object sender, RoutedEventArgs e)
-        {
-            RemoveFromFamilyClick();
-        }
-
-        private void ClearHistoryClick(object sender, RoutedEventArgs e)
-        {
-            ClearHistoryClick();
-        }
-
-        private void CreateFamilyClick(object sender, RoutedEventArgs e)
-        {
-            CreateFamilyClick();
         }
     }
 }

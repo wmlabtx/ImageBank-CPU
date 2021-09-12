@@ -25,8 +25,6 @@ namespace ImageBank
 
         static ImageHelper()
         {
-            //_cmh = ColorMomentHash.Create();
-            //_akaze = AKAZE.Create(threshold: 0.0001f);
             _bfmatcher = new BFMatcher();
             _sift = SIFT.Create(nFeatures: 10000);
         }
@@ -160,69 +158,6 @@ namespace ImageBank
                 imagedata = null;
                 return false;
             }
-        }
-
-        /*
-        public static Mat GetColorMomentHash(Bitmap bitmap)
-        {
-            Mat mathash;
-            using (var matsource = bitmap.ToMat()) {
-                mathash = bitmap.ToMat();
-                _cmh.Compute(matsource, mathash);
-            }
-
-            return mathash;
-        }
-
-        public static double GetDistance(Mat x, Mat y)
-        {
-            var distance = Cv2.Norm(x, y, NormTypes.L2);
-            return distance;
-        }
-        */
-
-        public static byte[] GetColorHistogram(Bitmap bitmap)
-        {
-            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
-                bitmap = RepixelBitmap(bitmap);
-            }
-
-            byte[] histogram;
-            using (var bitmap256x256 = ResizeBitmap(bitmap, 256, 256)) {
-                var rect = new Rectangle(0, 0, bitmap256x256.Width, bitmap256x256.Height);
-                BitmapData bmpdata = bitmap256x256.LockBits(rect, ImageLockMode.ReadWrite, bitmap256x256.PixelFormat);
-                IntPtr ptr = bmpdata.Scan0;
-                var bytes = bitmap256x256.Width * bitmap256x256.Height * 3;
-                byte[] buffer = new byte[bytes];
-                Marshal.Copy(ptr, buffer, 0, bytes);
-                bitmap256x256.UnlockBits(bmpdata);
-                var ihistogram = new int[4096];
-                for (var i = 0; i < buffer.Length; i += 3) {
-                    var red = (buffer[i + 2]) >> 4; // 4
-                    var green = (buffer[i + 1]) >> 3; // 5
-                    var blue = (buffer[i]) >> 5; // 3
-                    var colorIndex = (red << 7) | (green << 3) | blue; // 12 bit
-                    ihistogram[colorIndex]++;
-                }
-
-                histogram = new byte[ihistogram.Length];
-                for (var i = 0; i < histogram.Length; i++) {
-                    histogram[i] = (byte)Math.Sqrt(ihistogram[i]);
-                }
-            }
-
-            return histogram;
-        }
-
-        public static long GetDistance(byte[] x, byte[] y)
-        {
-            long sum = 0;
-            for (var i = 0; i < x.Length; i++) {
-                var diff = x[i] - y[i];
-                sum += diff * diff;
-            }
-
-            return sum;
         }
 
         public static Mat GetSiftDescriptors(Bitmap bitmap)

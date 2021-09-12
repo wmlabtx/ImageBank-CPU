@@ -43,35 +43,6 @@ namespace ImageBankTest
             }
         }
 
-        /*
-        [TestMethod()]
-        public void PopulateNodesTest()
-        {
-            ImgMdf.LoadNodes(null);
-            for (var i = 1; i <= 30; i++) {
-                var filename = $"train\\train{i:D2}.jpg";
-                var imgdata = File.ReadAllBytes(filename);
-                if (!ImageHelper.GetBitmapFromImageData(imgdata, out var bitmap)) {
-                    Assert.Fail();
-                }
-
-                try {
-                    var descriptors = ImageHelper.GetDescriptors(bitmap);
-                    if (descriptors == null) {
-                        Assert.Fail();
-                    }
-
-                    //var ki = ImgMdf.GetKi(descriptors);
-                }
-                finally {
-                    if (bitmap != null) {
-                        bitmap.Dispose();
-                    }
-                }
-            }
-        }
-        */
-
         [TestMethod()]
         public void GetDistanceTest()
         {

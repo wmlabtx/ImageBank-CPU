@@ -20,7 +20,6 @@ namespace ImageBank
         private static readonly CryptoRandom _random = new CryptoRandom();
 
         private static int _id;
-        private static int _family;
 
         public ImgMdf()
         {
@@ -34,13 +33,6 @@ namespace ImageBank
             _id++;
             SqlUpdateVar(AppConsts.AttrId, _id);
             return _id;
-        }
-
-        public static int AllocateFamily()
-        {
-            _family++;
-            SqlUpdateVar(AppConsts.AttrFamily, _family);
-            return _family;
         }
 
         public static DateTime GetMinLastView()

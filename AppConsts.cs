@@ -26,9 +26,9 @@
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
         public const string AttrDateTaken = "DateTaken";
-        public const string AttrColorHistogram = "ColorHistogram";
-        public const string AttrFamily = "Family";
-        public const string AttrHistory = "History";
+        public const string AttrLastId = "LastId";
+        public const string AttrBestId = "BestId";
+        public const string AttrBestDistance = "BestDistance";
         public const string AttrLastView = "LastView";
         public const string TableVars = "Vars";
     }

@@ -49,18 +49,18 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrDateTaken}, ");
-                    sb.Append($"{AppConsts.AttrColorHistogram}, ");
-                    sb.Append($"{AppConsts.AttrFamily}, ");
-                    sb.Append($"{AppConsts.AttrHistory}, ");
+                    sb.Append($"{AppConsts.AttrLastId}, ");
+                    sb.Append($"{AppConsts.AttrBestId}, ");
+                    sb.Append($"{AppConsts.AttrBestDistance}, ");
                     sb.Append($"{AppConsts.AttrLastView}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrDateTaken}, ");
-                    sb.Append($"@{AppConsts.AttrColorHistogram}, ");
-                    sb.Append($"@{AppConsts.AttrFamily}, ");
-                    sb.Append($"@{AppConsts.AttrHistory}, ");
+                    sb.Append($"@{AppConsts.AttrLastId}, ");
+                    sb.Append($"@{AppConsts.AttrBestId}, ");
+                    sb.Append($"@{AppConsts.AttrBestDistance}, ");
                     sb.Append($"@{AppConsts.AttrLastView}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
@@ -68,12 +68,9 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrColorHistogram}", img.ColorHistogram);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
-                    var historyarray = img.History.Select(e => e.Key).ToArray();
-                    var historybuffer = new byte[img.History.Count * sizeof(int)];
-                    Buffer.BlockCopy(historyarray, 0, historybuffer, 0, historybuffer.Length);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", historybuffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastId}", img.LastId);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestDistance}", img.BestDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.ExecuteNonQuery();
                 }
@@ -91,9 +88,9 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrName}, "); // 1
                 sb.Append($"{AppConsts.AttrHash}, "); // 2
                 sb.Append($"{AppConsts.AttrDateTaken}, "); // 3
-                sb.Append($"{AppConsts.AttrColorHistogram}, "); // 4
-                sb.Append($"{AppConsts.AttrFamily}, "); // 5
-                sb.Append($"{AppConsts.AttrHistory}, "); // 6
+                sb.Append($"{AppConsts.AttrLastId}, "); // 4
+                sb.Append($"{AppConsts.AttrBestId}, "); // 5
+                sb.Append($"{AppConsts.AttrBestDistance}, "); // 6
                 sb.Append($"{AppConsts.AttrLastView} "); // 7
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
@@ -113,12 +110,9 @@ namespace ImageBank
                                     datetaken = dt;
                                 }
 
-                                var colorhistogram = (byte[])reader[4];
-                                var family = reader.GetInt32(5);
-                                var historybuffer = (byte[])reader[6];
-                                var historyarray = new int[historybuffer.Length / sizeof(int)];
-                                Buffer.BlockCopy(historybuffer, 0, historyarray, 0, historybuffer.Length);
-                                var history = new SortedList<int, int>(historyarray.ToDictionary(e => e));
+                                var lastid = reader.GetInt32(4);
+                                var bestid = reader.GetInt32(5);
+                                var bestdistance = reader.GetFloat(6);
                                 var lastview = reader.GetDateTime(7);
 
                                 var img = new Img(
@@ -126,9 +120,9 @@ namespace ImageBank
                                     name: name,
                                     hash: hash,
                                     datetaken: datetaken,
-                                    colorhistogram: colorhistogram,
-                                    family: family,
-                                    history: history,
+                                    lastid: lastid,
+                                    bestid: bestid,
+                                    bestdistance: bestdistance,
                                     lastview: lastview
                                    );
 
@@ -152,8 +146,7 @@ namespace ImageBank
 
                     sb.Length = 0;
                     sb.Append("SELECT ");
-                    sb.Append($"{AppConsts.AttrId}, "); // 0
-                    sb.Append($"{AppConsts.AttrFamily} "); // 1
+                    sb.Append($"{AppConsts.AttrId} "); // 0
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -161,7 +154,6 @@ namespace ImageBank
                             using (var reader = sqlCommand.ExecuteReader()) {
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
-                                    _family = reader.GetInt32(1);
                                     break;
                                 }
                             }

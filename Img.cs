@@ -1,7 +1,4 @@
-﻿using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 
 namespace ImageBank
 {
@@ -11,25 +8,32 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
         public DateTime? DateTaken { get; }
-        public byte[] ColorHistogram { get; }
 
-        private int _family;
-        public int Family {
-            get => _family;
+        private int _lastid;
+        public int LastId {
+            get => _lastid;
             set {
-                _family = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrFamily, value);
+                _lastid = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastId, value);
             }
         }
 
-        public SortedList<int, int> History { get; }
+        private int _bestid;
+        public int BestId {
+            get => _bestid;
+            set {
+                _bestid = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestId, value);
+            }
+        }
 
-        public void SaveHistory()
-        {
-            var history = History.Select(e => e.Key).ToArray();
-            var buffer = new byte[history.Length * sizeof(int)];
-            Buffer.BlockCopy(history, 0, buffer, 0, buffer.Length);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrHistory, buffer);
+        private float _bestdistance;
+        public float BestDistance {
+            get => _bestdistance;
+            set {
+                _bestdistance = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestDistance, value);
+            }
         }
 
         private DateTime _lastview;
@@ -46,9 +50,9 @@ namespace ImageBank
             string name,
             string hash,
             DateTime? datetaken,
-            byte[] colorhistogram,
-            int family,
-            SortedList<int, int> history,
+            int lastid,
+            int bestid,
+            float bestdistance,
             DateTime lastview
             )
         {
@@ -56,9 +60,9 @@ namespace ImageBank
             Name = name;
             Hash = hash;
             DateTaken = datetaken;
-            ColorHistogram = colorhistogram;
-            _family = family;
-            History = history;
+            _lastid = lastid;
+            _bestid = bestid;
+            _bestdistance = bestdistance;
             _lastview = lastview;
         }
     }

@@ -153,18 +153,6 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append(AppVars.ImgPanel[index].Img.Name);
-
-                if (AppVars.ImgPanel[index].Img.Family > 0) {
-                    sb.Append($" F{AppVars.ImgPanel[index].Img.Family}");
-                    var familysize = ImgMdf.GetFamilySize(AppVars.ImgPanel[index].Img.Family);
-                    sb.Append($"({familysize})");
-                }
-
-                if (AppVars.ImgPanel[index].Img.History.Count > 0) {
-                    sb.Append($" H{AppVars.ImgPanel[index].Img.History.Count}");
-                }
-
-
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Size)} ");
@@ -180,10 +168,6 @@ namespace ImageBank
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
 
-                if (AppVars.ImgPanel[index].Img.History.Count == 0) {
-                    scb = System.Windows.Media.Brushes.Bisque;
-                }
-
                 if (AppVars.ImgPanel[index].Img.DateTaken.HasValue) {
                     scb = System.Windows.Media.Brushes.Gold;
                 }
@@ -191,11 +175,6 @@ namespace ImageBank
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
                         scb = System.Windows.Media.Brushes.LightGray;
-                        pLabels[0].Background = scb;
-                    }
-
-                    if (AppVars.ImgPanel[0].Img.Family != 0 && AppVars.ImgPanel[0].Img.Family == AppVars.ImgPanel[1].Img.Family) {
-                        scb = System.Windows.Media.Brushes.LightGreen;
                         pLabels[0].Background = scb;
                     }
                 }
@@ -313,39 +292,6 @@ namespace ImageBank
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
-        }
-
-        private async void AddToFamilyClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.AddToFamily(AppVars.ImgPanel[0].Img, AppVars.ImgPanel[1].Img); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void RemoveFromFamilyClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.RemoveFromFamily(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void ClearHistoryClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.ClearHistory(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void CreateFamilyClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.CreateFamily(AppVars.ImgPanel[0].Img); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using OpenCvSharp;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -15,21 +14,115 @@ namespace ImageBank
         private static int _bad;
         private static readonly StringBuilder _sb = new StringBuilder();
 
+        private static void ComputeInternal(BackgroundWorker backgroundworker)
+        {
+            Img[] shadowcopy = null;
+            lock (_imglock) {
+                if (_imgList.Count < 2) {
+                    backgroundworker.ReportProgress(0, "no images");
+                    return;
+                }
+
+                shadowcopy = _imgList.OrderBy(e => e.Key).Select(e => e.Value).ToArray();
+            }
+
+            var minlastid = shadowcopy.Min(e => e.LastId);
+            var img1 = shadowcopy.First(e => e.LastId == minlastid);
+            var filename = Helper.GetFileName(img1.Name);
+            var imagedata = Helper.ReadData(filename);
+            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                Delete(img1.Id);
+                return;
+            }
+
+            Mat d1 = ImageHelper.GetSiftDescriptors(bitmap);
+            if (d1 == null) {
+                Delete(img1.Id);
+                return;
+            }
+
+            if (bitmap != null) {
+                bitmap.Dispose();
+            }
+
+            if (img1.BestId != 0) {
+                lock (_imglock) {
+                    if (!_imgList.ContainsKey(img1.BestId)) {
+                        img1.LastId = 0;
+                    }
+                }
+                
+            }
+
+            var lastid = img1.LastId;
+            for (var i = 0; i < shadowcopy.Length; i++) {
+                var img2 = shadowcopy[i];
+                if (img2.Id <= img1.LastId || img2.Id == img1.Id) {
+                    continue;
+                }
+
+                filename = Helper.GetFileName(img2.Name);
+                imagedata = Helper.ReadData(filename);
+                if (!ImageHelper.GetBitmapFromImageData(imagedata, out bitmap)) {
+                    Delete(img2.Id);
+                    continue;
+                }
+
+                Mat[] d2 = ImageHelper.GetSift2Descriptors(bitmap);
+                if (d2 == null) {
+                    Delete(img2.Id);
+                    continue;
+                }
+
+                if (bitmap != null) {
+                    bitmap.Dispose();
+                }
+
+                var distance = ImageHelper.GetDistance(d1, d2);
+                if (lastid == 0 || (lastid > 0 && distance < img1.BestDistance)) {
+                    _sb.Clear();
+                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{img2.Id}] {img1.BestDistance * 100f:F2} -> {distance*100f:F2}");
+                    backgroundworker.ReportProgress(0, _sb.ToString());
+                    img1.BestDistance = distance;
+                    img1.BestId = img2.Id;
+                }
+
+                lastid = img2.Id;
+
+                if (d2[0] != null) {
+                    d2[0].Dispose();
+                }
+
+                if (d2[1] != null) {
+                    d2[1].Dispose();
+                }
+            }
+
+            if (d1 != null) {
+                d1.Dispose();
+            }
+
+            if (img1.LastId != lastid) {
+                img1.LastId = lastid;
+            }
+        }
+
         private static void ImportInternal(BackgroundWorker backgroundworker)
         {
-            _sb.Clear();
-            _sb.Append($"a:{_added}/f:{_found}/b:{_bad}");
-            backgroundworker.ReportProgress(0, _sb.ToString());
-
             FileInfo fileinfo;
             lock (_rwlock) {
                 if (_rwList.Count == 0) {
+                    ComputeInternal(backgroundworker);
                     return;
                 }
 
                 fileinfo = _rwList.ElementAt(0);
                 _rwList.RemoveAt(0);
             }
+
+            _sb.Clear();
+            _sb.Append($"a:{_added}/f:{_found}/b:{_bad}");
+            backgroundworker.ReportProgress(0, _sb.ToString());
 
             var orgfilename = fileinfo.FullName;
             if (!File.Exists(orgfilename)) {
@@ -133,20 +226,12 @@ namespace ImageBank
                 return;
             }
 
-            byte[] colorhistogram;
-            try {
-                colorhistogram = ImageHelper.GetColorHistogram(bitmap);
-            }
-            finally {
-                if (bitmap != null) {
-                    bitmap.Dispose();
-                }
+            if (bitmap != null) {
+                bitmap.Dispose();
             }
 
             MetadataHelper.GetMetadata(imagedata, out var datetaken);
-
-            var lv = GetMinLastView();
-
+           
             // we have to create unique name and a location in Hp folder
             string newname;
             string newfilename;
@@ -157,23 +242,16 @@ namespace ImageBank
                 newfilename = Helper.GetFileName(newname);
             } while (File.Exists(newfilename));
 
-            var imgcount = 0;
-            lock (_imglock) {
-                imgcount = _imgList.Count;
-            }
-
-            var family = imgcount == 0 ? 1 : 0;
-            var history = new SortedList<int, int>();
+            var lv = GetMinLastView();
             var id = AllocateId();
-
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
                 datetaken: datetaken,
-                colorhistogram: colorhistogram,
-                family: family,
-                history: history,
+                lastid: 0,
+                bestid: 0,
+                bestdistance: 0f,
                 lastview: lv);
 
             Add(nimg);
