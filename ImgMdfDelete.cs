@@ -8,8 +8,8 @@
                 if (_imgList.TryGetValue(id, out var img)) {
                     _hashList.Remove(img.Hash);
                     _imgList.Remove(id);
-                    var filename = Helper.GetFileName(img.Name);
-                    Helper.DeleteToRecycleBin(filename);
+                    var filename = FileHelper.NameToFileName(img.Name);
+                    FileHelper.DeleteToRecycleBin(filename);
                 }
             }
 

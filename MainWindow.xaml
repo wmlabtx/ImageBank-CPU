@@ -19,6 +19,20 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
+            <MenuItem Header="Navigation">
+                <MenuItem Header="Forward" Click="ForwardClick" InputGestureText="A" />
+                <MenuItem Header="Backward" Click="BackwardClick" InputGestureText="S" />
+            </MenuItem>
+            <MenuItem Header="Family">
+                <MenuItem Header="Add to family" Click="AddToFamilyClick" InputGestureText="W" />
+                <MenuItem Header="Remove from family" Click="RemoveFromFamilyClick" />
+                <Separator />
+                <MenuItem Header="Clear history" Click="ClearHistoryClick" />
+                <Separator />
+                <MenuItem Header="Create family" Click="CreateFamilyClick" InputGestureText="C" />
+                <Separator />
+                <MenuItem Header="Kill family" Click="KillFamilyClick" />
+            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

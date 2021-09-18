@@ -10,8 +10,8 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img)) {
-                    var filename = Helper.GetFileName(img.Name);
-                    var imagedata = Helper.ReadData(filename);
+                    var filename = FileHelper.NameToFileName(img.Name);
+                    var imagedata = FileHelper.ReadData(filename);
                     if (imagedata != null) {
                         if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                             ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
@@ -28,10 +28,15 @@ namespace ImageBank
                             return;
                         }
 
-                        var rhash = Helper.ComputeHash(rimagedata);
+                        var rhash = MD5HashHelper.Compute(rimagedata);
                         if (_hashList.ContainsKey(rhash)) {
                             ((IProgress<string>)AppVars.Progress).Report($"Dup found for {filename}");
                             return;
+                        }
+
+                        var rdescriptors = ImageHelper.GetAkaze2Descriptors(bitmap);
+                        if (bitmap != null) {
+                            bitmap.Dispose();
                         }
 
                         MetadataHelper.GetMetadata(imagedata, out var rdatetaken);
@@ -41,14 +46,17 @@ namespace ImageBank
                             name: img.Name,
                             hash: rhash,
                             datetaken: rdatetaken,
-                            lastid: 0,
-                            bestid: 0,
-                            bestdistance: 0f,
-                            lastview: img.LastView);
+                            descriptors: rdescriptors,
+                            family: img.Family,
+                            history: img.History,
+                            bestid: img.BestId,
+                            bestdistance: img.BestDistance,
+                            lastview: img.LastView,
+                            lastcheck: img.LastCheck);
 
                         Delete(id);
                         Add(rimg);
-                        Helper.WriteData(filename, rimagedata);
+                        FileHelper.WriteData(filename, rimagedata);
 
                         bitmap.Dispose();
                     }

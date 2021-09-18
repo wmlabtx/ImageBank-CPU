@@ -7,6 +7,10 @@
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
 
+        public const int NumDescriptors = 50;
+        public const int TopDescriptors = 1;
+        public const int DescriptorSize = 61;
+
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
         public const string DbxExtension = ".dbx";
@@ -26,10 +30,13 @@
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
         public const string AttrDateTaken = "DateTaken";
-        public const string AttrLastId = "LastId";
+        public const string AttrDescriptors = "Descriptors";
+        public const string AttrFamily = "Family";
+        public const string AttrHistory = "History";
         public const string AttrBestId = "BestId";
         public const string AttrBestDistance = "BestDistance";
         public const string AttrLastView = "LastView";
+        public const string AttrLastCheck = "LastCheck";
         public const string TableVars = "Vars";
     }
 }

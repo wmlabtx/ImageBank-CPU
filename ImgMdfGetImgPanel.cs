@@ -11,8 +11,8 @@
                 }
             }
 
-            var filename = Helper.GetFileName(img.Name);
-            var imagedata = Helper.ReadData(filename);
+            var filename = FileHelper.NameToFileName(img.Name);
+            var imagedata = FileHelper.ReadData(filename);
             if (imagedata == null) {
                 return null;
             }

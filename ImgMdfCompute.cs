@@ -1,5 +1,5 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -26,85 +26,64 @@ namespace ImageBank
                 shadowcopy = _imgList.OrderBy(e => e.Key).Select(e => e.Value).ToArray();
             }
 
-            var minlastid = shadowcopy.Min(e => e.LastId);
-            var img1 = shadowcopy.First(e => e.LastId == minlastid);
-            var filename = Helper.GetFileName(img1.Name);
-            var imagedata = Helper.ReadData(filename);
-            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
-                Delete(img1.Id);
-                return;
-            }
-
-            Mat d1 = ImageHelper.GetSiftDescriptors(bitmap);
-            if (d1 == null) {
-                Delete(img1.Id);
-                return;
-            }
-
-            if (bitmap != null) {
-                bitmap.Dispose();
-            }
-
+            var lc = shadowcopy.Min(e => e.LastCheck);
+            var img1 = shadowcopy.First(e => e.LastCheck == lc);
             if (img1.BestId != 0) {
                 lock (_imglock) {
                     if (!_imgList.ContainsKey(img1.BestId)) {
-                        img1.LastId = 0;
+                        img1.BestId = 0;
+                        img1.BestDistance = 1000f;
                     }
                 }
-                
             }
 
-            var lastid = img1.LastId;
-            for (var i = 0; i < shadowcopy.Length; i++) {
-                var img2 = shadowcopy[i];
-                if (img2.Id <= img1.LastId || img2.Id == img1.Id) {
-                    continue;
+            if (img1.History.Count > 0) {
+                var history = img1.History.Select(e => e.Key).ToArray();
+                lock (_imglock) {
+                    foreach (var e in history) {
+                        if (!_imgList.ContainsKey(img1.BestId)) {
+                            img1.History.Remove(e);
+                        }
+                    }
+
+                    if (img1.History.Count < history.Length) {
+                        img1.SaveHistory();
+                    }
+                }
+            }
+
+            var candidates = img1.Family == 0 ?
+                shadowcopy.Where(e => e.Id != img1.Id && e.Family > 0 && !img1.History.ContainsKey(e.Id)).ToArray() :
+                shadowcopy.Where(e => e.Id != img1.Id && e.Family > 0 && !img1.History.ContainsKey(e.Id) && img1.Family == e.Family).ToArray();
+
+            if (candidates.Length > 0) {
+                var bestid = img1.BestId;
+                var bestdistance = 1000f;
+                for (var i = 0; i < candidates.Length; i++) {
+                    var img2 = candidates[i];
+                    var distance = ImageHelper.GetDistance(img1.Descriptors[0], img2.Descriptors);
+                    if (distance < bestdistance) {
+                        bestid = img2.Id;
+                        bestdistance = distance;
+                    }
                 }
 
-                filename = Helper.GetFileName(img2.Name);
-                imagedata = Helper.ReadData(filename);
-                if (!ImageHelper.GetBitmapFromImageData(imagedata, out bitmap)) {
-                    Delete(img2.Id);
-                    continue;
-                }
-
-                Mat[] d2 = ImageHelper.GetSift2Descriptors(bitmap);
-                if (d2 == null) {
-                    Delete(img2.Id);
-                    continue;
-                }
-
-                if (bitmap != null) {
-                    bitmap.Dispose();
-                }
-
-                var distance = ImageHelper.GetDistance(d1, d2);
-                if (lastid == 0 || (lastid > 0 && distance < img1.BestDistance)) {
+                if (bestid != img1.BestId) {
                     _sb.Clear();
-                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{img2.Id}] {img1.BestDistance * 100f:F2} -> {distance*100f:F2}");
+                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestDistance:F1} -> {bestdistance:F1}");
                     backgroundworker.ReportProgress(0, _sb.ToString());
-                    img1.BestDistance = distance;
-                    img1.BestId = img2.Id;
+                    img1.BestId = bestid;
                 }
 
-                lastid = img2.Id;
-
-                if (d2[0] != null) {
-                    d2[0].Dispose();
-                }
-
-                if (d2[1] != null) {
-                    d2[1].Dispose();
+                if (img1.BestDistance != bestdistance) {
+                    img1.BestDistance = bestdistance;
                 }
             }
-
-            if (d1 != null) {
-                d1.Dispose();
+            else {
+                CreateFamily(img1);
             }
 
-            if (img1.LastId != lastid) {
-                img1.LastId = lastid;
-            }
+            img1.LastCheck = DateTime.Now;
         }
 
         private static void ImportInternal(BackgroundWorker backgroundworker)
@@ -154,8 +133,8 @@ namespace ImageBank
                 orgextension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
                 var password = Path.GetFileNameWithoutExtension(orgfilename);
                 var decrypteddata = orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ?
-                    Helper.DecryptDat(imagedata, password) :
-                    Helper.Decrypt(imagedata, password);
+                    EncryptionHelper.DecryptDat(imagedata, password) :
+                    EncryptionHelper.Decrypt(imagedata, password);
 
                 if (decrypteddata != null) {
                     imagedata = decrypteddata;
@@ -168,7 +147,7 @@ namespace ImageBank
                     if (!ImageHelper.GetBitmapFromImageData(imagedata, out var corruptedbitmap)) {
                         var badname = Path.GetFileName(orgfilename);
                         var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
-                        Helper.DeleteToRecycleBin(badfilename);
+                        FileHelper.DeleteToRecycleBin(badfilename);
                         File.Move(orgfilename, badfilename);
                         _bad++;
                         return;
@@ -177,7 +156,7 @@ namespace ImageBank
                         if (!ImageHelper.GetImageDataFromBitmap(corruptedbitmap, out var fixedimagedata)) {
                             var badname = Path.GetFileName(orgfilename);
                             var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
-                            Helper.DeleteToRecycleBin(badfilename);
+                            FileHelper.DeleteToRecycleBin(badfilename);
                             File.Move(orgfilename, badfilename);
                             _bad++;
                             return;
@@ -185,9 +164,9 @@ namespace ImageBank
                         else {
                             var badname = Path.GetFileNameWithoutExtension(orgfilename);
                             var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}{AppConsts.JpgExtension}";
-                            Helper.DeleteToRecycleBin(badfilename);
+                            FileHelper.DeleteToRecycleBin(badfilename);
                             File.WriteAllBytes(badfilename, fixedimagedata);
-                            Helper.DeleteToRecycleBin(orgfilename);
+                            FileHelper.DeleteToRecycleBin(orgfilename);
                             _bad++;
                             return;
                         }
@@ -195,7 +174,7 @@ namespace ImageBank
                 }
             }
 
-            var hash = Helper.ComputeHash(imagedata);
+            var hash = MD5HashHelper.Compute(imagedata);
             bool found;
             Img imgfound;
             lock (_imglock) {
@@ -204,10 +183,10 @@ namespace ImageBank
 
             if (found) {
                 // we found the same image in a database
-                var filenamefound = Helper.GetFileName(imgfound.Name);
+                var filenamefound = FileHelper.NameToFileName(imgfound.Name);
                 if (File.Exists(filenamefound)) {
                     // no reason to add the same image from a heap; we have one
-                    Helper.DeleteToRecycleBin(orgfilename);
+                    FileHelper.DeleteToRecycleBin(orgfilename);
                     _found++;
                     return;
                 }
@@ -220,11 +199,13 @@ namespace ImageBank
             if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
                 var badname = Path.GetFileName(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
-                Helper.DeleteToRecycleBin(badfilename);
+                FileHelper.DeleteToRecycleBin(badfilename);
                 File.Move(orgfilename, badfilename);
                 _bad++;
                 return;
             }
+
+            var descriptors = ImageHelper.GetAkaze2Descriptors(bitmap);
 
             if (bitmap != null) {
                 bitmap.Dispose();
@@ -238,21 +219,31 @@ namespace ImageBank
             var iteration = -1;
             do {
                 iteration++;
-                newname = Helper.GetName(hash, iteration);
-                newfilename = Helper.GetFileName(newname);
+                newname = FileHelper.HashToName(hash, iteration);
+                newfilename = FileHelper.NameToFileName(newname);
             } while (File.Exists(newfilename));
 
             var lv = GetMinLastView();
+            var lc = GetMinLastCheck();
+            var emptyhistory = new SortedList<int, int>();
             var id = AllocateId();
+            int family;
+            lock (_imglock) {
+                family = _imgList.Count == 0 ? 1 : 0;
+            }
+
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
                 datetaken: datetaken,
-                lastid: 0,
-                bestid: 0,
-                bestdistance: 0f,
-                lastview: lv);
+                descriptors: descriptors,
+                family: family,
+                history: emptyhistory,
+                bestid: id,
+                bestdistance: 1000f,
+                lastview: lv,
+                lastcheck: lc);
 
             Add(nimg);
 
@@ -262,9 +253,9 @@ namespace ImageBank
             }
 
             if (!orgfilename.Equals(newfilename, StringComparison.OrdinalIgnoreCase)) {
-                Helper.WriteData(newfilename, imagedata);
+                FileHelper.WriteData(newfilename, imagedata);
                 File.SetLastWriteTime(newfilename, lastmodified);
-                Helper.DeleteToRecycleBin(orgfilename);
+                FileHelper.DeleteToRecycleBin(orgfilename);
             }
 
             _added++;

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -8,14 +11,25 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
         public DateTime? DateTaken { get; }
+        public Mat[] Descriptors { get; }
 
-        private int _lastid;
-        public int LastId {
-            get => _lastid;
+        private int _family;
+        public int Family {
+            get => _family;
             set {
-                _lastid = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastId, value);
+                _family = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrFamily, value);
             }
+        }
+
+        public SortedList<int, int> History { get; }
+
+        public void SaveHistory()
+        {
+            var history = History.Select(e => e.Key).ToArray();
+            var buffer = new byte[history.Length * sizeof(int)];
+            Buffer.BlockCopy(history, 0, buffer, 0, buffer.Length);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrHistory, buffer);
         }
 
         private int _bestid;
@@ -45,25 +59,40 @@ namespace ImageBank
             }
         }
 
+        private DateTime _lastcheck;
+        public DateTime LastCheck {
+            get => _lastcheck;
+            set {
+                _lastcheck = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastCheck, value);
+            }
+        }
+
         public Img(
             int id,
             string name,
             string hash,
             DateTime? datetaken,
-            int lastid,
+            Mat[] descriptors,
+            int family,
+            SortedList<int, int> history,
             int bestid,
             float bestdistance,
-            DateTime lastview
+            DateTime lastview,
+            DateTime lastcheck
             )
         {
             Id = id;
             Name = name;
             Hash = hash;
             DateTaken = datetaken;
-            _lastid = lastid;
+            Descriptors = descriptors;
+            _family = family;
+            History = history;
             _bestid = bestid;
             _bestdistance = bestdistance;
             _lastview = lastview;
+            _lastcheck = lastcheck;
         }
     }
 }

@@ -49,29 +49,46 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrDateTaken}, ");
-                    sb.Append($"{AppConsts.AttrLastId}, ");
+                    sb.Append($"{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"{AppConsts.AttrFamily}, ");
+                    sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
                     sb.Append($"{AppConsts.AttrBestDistance}, ");
-                    sb.Append($"{AppConsts.AttrLastView}");
+                    sb.Append($"{AppConsts.AttrLastView}, ");
+                    sb.Append($"{AppConsts.AttrLastCheck}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttrId}, ");
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrDateTaken}, ");
-                    sb.Append($"@{AppConsts.AttrLastId}, ");
+                    sb.Append($"@{AppConsts.AttrDescriptors}, ");
+                    sb.Append($"@{AppConsts.AttrFamily}, ");
+                    sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
                     sb.Append($"@{AppConsts.AttrBestDistance}, ");
-                    sb.Append($"@{AppConsts.AttrLastView}");
+                    sb.Append($"@{AppConsts.AttrLastView}, ");
+                    sb.Append($"@{AppConsts.AttrLastCheck}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDateTaken}", img.DateTaken ?? new DateTime(1980, 1, 1));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastId}", img.LastId);
+                    img.Descriptors[0].GetArray<byte>(out var buffer0);
+                    img.Descriptors[1].GetArray<byte>(out var buffer1);
+                    var buffer = new byte[AppConsts.NumDescriptors * AppConsts.DescriptorSize * 2];
+                    Buffer.BlockCopy(buffer0, 0, buffer, 0, AppConsts.NumDescriptors * AppConsts.DescriptorSize);
+                    Buffer.BlockCopy(buffer1, 0, buffer, AppConsts.NumDescriptors * AppConsts.DescriptorSize, AppConsts.NumDescriptors * AppConsts.DescriptorSize);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptors}", buffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrFamily}", img.Family);
+                    var historyarray = img.History.Select(e => e.Key).ToArray();
+                    var historybuffer = new byte[img.History.Count * sizeof(int)];
+                    Buffer.BlockCopy(historyarray, 0, historybuffer, 0, historybuffer.Length);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", historybuffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestDistance}", img.BestDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -88,10 +105,13 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrName}, "); // 1
                 sb.Append($"{AppConsts.AttrHash}, "); // 2
                 sb.Append($"{AppConsts.AttrDateTaken}, "); // 3
-                sb.Append($"{AppConsts.AttrLastId}, "); // 4
-                sb.Append($"{AppConsts.AttrBestId}, "); // 5
-                sb.Append($"{AppConsts.AttrBestDistance}, "); // 6
-                sb.Append($"{AppConsts.AttrLastView} "); // 7
+                sb.Append($"{AppConsts.AttrDescriptors}, "); // 4
+                sb.Append($"{AppConsts.AttrFamily}, "); // 5
+                sb.Append($"{AppConsts.AttrHistory}, "); // 6
+                sb.Append($"{AppConsts.AttrBestId}, "); // 7
+                sb.Append($"{AppConsts.AttrBestDistance}, "); // 8
+                sb.Append($"{AppConsts.AttrLastView}, "); // 9
+                sb.Append($"{AppConsts.AttrLastCheck} "); // 10
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -110,20 +130,38 @@ namespace ImageBank
                                     datetaken = dt;
                                 }
 
-                                var lastid = reader.GetInt32(4);
-                                var bestid = reader.GetInt32(5);
-                                var bestdistance = reader.GetFloat(6);
-                                var lastview = reader.GetDateTime(7);
+                                var buffer = (byte[])reader[4];
+                                var buffer0 = new byte[AppConsts.NumDescriptors * AppConsts.DescriptorSize];
+                                var buffer1 = new byte[AppConsts.NumDescriptors * AppConsts.DescriptorSize];
+                                Buffer.BlockCopy(buffer, 0, buffer0, 0, AppConsts.NumDescriptors * AppConsts.DescriptorSize);
+                                Buffer.BlockCopy(buffer, AppConsts.NumDescriptors * AppConsts.DescriptorSize, buffer1, 0, AppConsts.NumDescriptors * AppConsts.DescriptorSize);
+                                var descriptors = new Mat[2];
+                                descriptors[0] = new Mat(AppConsts.NumDescriptors, AppConsts.DescriptorSize, MatType.CV_8U);
+                                descriptors[1] = new Mat(AppConsts.NumDescriptors, AppConsts.DescriptorSize, MatType.CV_8U);
+                                descriptors[0].SetArray(buffer0);
+                                descriptors[1].SetArray(buffer1);
+                                var family = reader.GetInt32(5);
+                                var historybuffer = (byte[])reader[6];
+                                var historyarray = new int[historybuffer.Length / sizeof(int)];
+                                Buffer.BlockCopy(historybuffer, 0, historyarray, 0, historybuffer.Length);
+                                var history = new SortedList<int, int>(historyarray.ToDictionary(e => e));
+                                var bestid = reader.GetInt32(7);
+                                var bestdistance = reader.GetFloat(8);
+                                var lastview = reader.GetDateTime(9);
+                                var lastcheck = reader.GetDateTime(10);
 
                                 var img = new Img(
                                     id: id,
                                     name: name,
                                     hash: hash,
                                     datetaken: datetaken,
-                                    lastid: lastid,
+                                    descriptors: descriptors,
+                                    family: family,
+                                    history: history, 
                                     bestid: bestid,
                                     bestdistance: bestdistance,
-                                    lastview: lastview
+                                    lastview: lastview,
+                                    lastcheck: lastcheck
                                    );
 
                                 AddToMemory(img);
@@ -146,7 +184,8 @@ namespace ImageBank
 
                     sb.Length = 0;
                     sb.Append("SELECT ");
-                    sb.Append($"{AppConsts.AttrId} "); // 0
+                    sb.Append($"{AppConsts.AttrId}, "); // 0
+                    sb.Append($"{AppConsts.AttrFamily} "); // 1
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -154,6 +193,7 @@ namespace ImageBank
                             using (var reader = sqlCommand.ExecuteReader()) {
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
+                                    _family = reader.GetInt32(1);
                                     break;
                                 }
                             }

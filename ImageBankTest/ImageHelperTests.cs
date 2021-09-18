@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Text;
 using ImageBank;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using OpenCvSharp.ImgHash;
 
 namespace ImageBankTest
 {
@@ -30,8 +28,19 @@ namespace ImageBankTest
                 Assert.Fail();
             }
 
+            var hash256 = PdqHasher.Compute(bitmap);
+
+            /*
+            var btdh = new BTDH(16, 8, false);
+            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb) {
+                bitmap = ImageHelper.RepixelBitmap(bitmap);
+            }
+
+            var btdhDescriptor = btdh.extract(bitmap);
+            */
+
             try {
-                var descriptors = ImageHelper.GetSiftDescriptors(bitmap);
+                var descriptors = ImageHelper.Get2Descriptors(bitmap);
                 if (descriptors == null) {
                     Assert.Fail();
                 }
@@ -54,19 +63,9 @@ namespace ImageBankTest
                     Assert.Fail();
                 }
 
-                try {
-                    var descriptors = ImageHelper.GetSift2Descriptors(bitmap);
-                    if (descriptors == null) {
-                        Assert.Fail();
-                    }
-
-                    array[i] = new Tuple<string, Mat[]>(filename, descriptors);
-                }
-                finally {
-                    if (bitmap != null) {
-                        bitmap.Dispose();
-                    }
-                }
+                var descriptors = ImageHelper.Get2Descriptors(bitmap);
+                array[i] = new Tuple<string, Mat[]>(filename, descriptors);
+                bitmap.Dispose();
             }
 
             var sb = new StringBuilder();
@@ -76,10 +75,21 @@ namespace ImageBankTest
                     sb.AppendLine();
                 }
 
-                sb.Append($"{array[i].Item1}: distance={distance}");
+                sb.Append($"{array[i].Item1}: distance={distance:F4}");
             }
 
             File.WriteAllText("report.txt", sb.ToString());
+        }
+
+        private double GetDistance(double[] x, double[] y)
+        {
+            var sum = 0.0;
+            for (var i = 0; i < x.Length; i++) {
+                var d = x[i] - y[i];
+                sum += d * d;
+            }
+
+            return Math.Sqrt(sum);
         }
     }
 }
