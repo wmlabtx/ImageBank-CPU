@@ -24,13 +24,10 @@ namespace ImageBank
                             var p2 = Path.GetFileNameWithoutExtension(orgfilename);
                             if (p2.Length == 8) {
                                 var key = $"{p1}{p2}";
-                                string[] names;
                                 lock (_imglock) {
-                                    names = _imgList.Select(img => img.Value.Name).ToArray();
-                                }
-
-                                if (Array.IndexOf(names, key) >= 0) {
-                                    continue;
+                                    if (_nameList.ContainsKey(key)) {
+                                        continue;
+                                    }
                                 }
                             }
                         }

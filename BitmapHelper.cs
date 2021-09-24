@@ -10,35 +10,20 @@ namespace ImageBank
 {
     public static class BitmapHelper
     {
-        /*
-        public static System.Drawing.Color GetPixelColor(BitmapSource bitmap, int x, int y)
+        public static System.Windows.Media.ImageSource ImageSourceFromBitmap(Bitmap bitmap)
         {
-            System.Drawing.Color color;
-            var bytesPerPixel = (bitmap.Format.BitsPerPixel + 7) / 8;
-            var bytes = new byte[bytesPerPixel];
-            var rect = new Int32Rect(x, y, 1, 1);
-            bitmap.CopyPixels(rect, bytes, bytesPerPixel, 0);
-
-            // 0 1 2 3
-            // B G R A
-
-            if (bitmap.Format == PixelFormats.Bgra32) {
-                color = System.Drawing.Color.FromArgb(bytes[3], bytes[2], bytes[1], bytes[0]);
-            }
-            else if (bitmap.Format == PixelFormats.Bgr32) {
-                color = System.Drawing.Color.FromArgb(bytes[2], bytes[1], bytes[0]);
-            }
-            else if (bitmap.Format == PixelFormats.Rgb24) {
-                color = System.Drawing.Color.FromArgb(bytes[0], bytes[1], bytes[2], bytes[0]);
-            }
-            // handle other required formats
-            else {
-                color = System.Drawing.Color.Black;
+            if (bitmap == null) {
+                return null;
             }
 
-            return color;
+            var handle = bitmap.GetHbitmap();
+            try {
+                return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally {
+                NativeMethods.DeleteObject(handle);
+            }
         }
-        */
 
         public static Bitmap ImageDataToBitmap(byte[] imagedata)
         {

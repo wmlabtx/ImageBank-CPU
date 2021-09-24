@@ -17,7 +17,8 @@
                 return null;
             }
 
-            if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+            var bitmap = BitmapHelper.ImageDataToBitmap(imagedata);
+            if (bitmap == null) {
                 return null;
             }
 

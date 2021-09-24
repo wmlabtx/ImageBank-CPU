@@ -12,13 +12,13 @@ namespace ImageBank
         private static readonly SqlConnection _sqlConnection;
         private static readonly object _imglock = new object();
         private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
+        private static readonly SortedDictionary<string, Img> _nameList = new SortedDictionary<string, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
 
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
         private static int _id;
-        private static int _family;
 
         static ImgMdf()
         {
@@ -32,13 +32,6 @@ namespace ImageBank
             _id++;
             SqlUpdateVar(AppConsts.AttrId, _id);
             return _id;
-        }
-
-        public static int AllocateFamily()
-        {
-            _family++;
-            SqlUpdateVar(AppConsts.AttrFamily, _family);
-            return _family;
         }
 
         public static DateTime GetMinLastView()

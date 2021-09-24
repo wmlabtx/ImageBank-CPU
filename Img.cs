@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,15 +9,14 @@ namespace ImageBank
         public int Id { get; }
         public string Name { get; }
         public string Hash { get; }
-        public DateTime? DateTaken { get; }
-        public Mat[] Descriptors { get; }
+        public PHashEx PHashEx { get; }
 
-        private int _family;
-        public int Family {
-            get => _family;
+        private int _elo;
+        public int Elo {
+            get => _elo;
             set {
-                _family = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrFamily, value);
+                _elo = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrElo, value);
             }
         }
 
@@ -41,8 +39,8 @@ namespace ImageBank
             }
         }
 
-        private float _bestdistance;
-        public float BestDistance {
+        private int _bestdistance;
+        public int BestDistance {
             get => _bestdistance;
             set {
                 _bestdistance = value;
@@ -72,12 +70,11 @@ namespace ImageBank
             int id,
             string name,
             string hash,
-            DateTime? datetaken,
-            Mat[] descriptors,
-            int family,
+            PHashEx phashex,
+            int elo,
             SortedList<int, int> history,
             int bestid,
-            float bestdistance,
+            int bestdistance,
             DateTime lastview,
             DateTime lastcheck
             )
@@ -85,9 +82,8 @@ namespace ImageBank
             Id = id;
             Name = name;
             Hash = hash;
-            DateTaken = datetaken;
-            Descriptors = descriptors;
-            _family = family;
+            PHashEx = phashex;
+            _elo = elo;
             History = history;
             _bestid = bestid;
             _bestdistance = bestdistance;

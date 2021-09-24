@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 
@@ -88,27 +87,6 @@ namespace ImageBank
             var array = new int[buffer.Length / sizeof(int)];
             Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
             return array;
-        }
-
-        public static Mat ArrayToMat(byte[] buffer)
-        {
-            if (buffer.Length != 61) {
-                return null;
-            }
-
-            var mat = new Mat(1, 61, MatType.CV_8U);
-            mat.SetArray(buffer);
-            return mat;
-        }
-
-        public static byte[] ArrayFromMat(Mat mat)
-        {
-            if (mat == null || mat.Cols != 61 || mat.Rows != 1) {
-                return Array.Empty<byte>();
-            }
-
-            mat.GetArray(out byte[] buffer);
-            return buffer;
         }
 
         #endregion

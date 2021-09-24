@@ -8,12 +8,14 @@ namespace ImageBank
     {
         public static void Rotate(int id, RotateFlipType rft)
         {
+            /*
             lock (_imglock) {
                 if (_imgList.TryGetValue(id, out var img)) {
                     var filename = FileHelper.NameToFileName(img.Name);
                     var imagedata = FileHelper.ReadData(filename);
                     if (imagedata != null) {
-                        if (!ImageHelper.GetBitmapFromImageData(imagedata, out var bitmap)) {
+                        var bitmap = BitmapHelper.ImageDataToBitmap(imagedata);
+                        if (bitmap == null) {
                             ((IProgress<string>)AppVars.Progress).Report($"Corrupted image: {filename}");
                             return;
                         }
@@ -62,6 +64,7 @@ namespace ImageBank
                     }
                 }
             }
+            */
         }
     }
 }

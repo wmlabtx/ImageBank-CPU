@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -97,6 +96,11 @@ namespace ImageBank
             ImportClick(100);
         }
 
+        private void Import1000Click(object sender, RoutedEventArgs e)
+        {
+            ImportClick(1000);
+        }
+
         private void Rotate270Click(object sender, RoutedEventArgs e)
         {
             Rotate270Click();
@@ -108,61 +112,6 @@ namespace ImageBank
                 ButtonLeftNextMouseClick();
                 return;
             }
-
-            if (e.Key == Key.W) {
-                AddToFamilyClick();
-                return;
-            }
-
-            if (e.Key == Key.C) {
-                CreateFamilyClick();
-                return;
-            }
-
-            if (e.Key == Key.A) {
-                ForwardClick();
-                return;
-            }
-
-            if (e.Key == Key.S) {
-                BackwardClick();
-                return;
-            }
-        }
-
-        private void AddToFamilyClick(object sender, RoutedEventArgs e)
-        {
-            AddToFamilyClick();
-        }
-
-        private void RemoveFromFamilyClick(object sender, RoutedEventArgs e)
-        {
-            RemoveFromFamilyClick();
-        }
-
-        private void ClearHistoryClick(object sender, RoutedEventArgs e)
-        {
-            ClearHistoryClick();
-        }
-
-        private void CreateFamilyClick(object sender, RoutedEventArgs e)
-        {
-            CreateFamilyClick();
-        }
-
-        private void KillFamilyClick(object sender, RoutedEventArgs e)
-        {
-            KillFamilyClick();
-        }
-
-        private void ForwardClick(object sender, RoutedEventArgs e)
-        {
-            ForwardClick();
-        }
-
-        private void BackwardClick(object sender, RoutedEventArgs e)
-        {
-            BackwardClick();
         }
     }
 }

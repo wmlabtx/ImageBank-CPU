@@ -60,5 +60,18 @@ namespace ImageBank
             catch (IOException) {
             }
         }
+
+        public static void MoveCorruptedFile(string filename)
+        {
+            var badname = Path.GetFileName(filename);
+            var badfilename = $"{AppConsts.PathGb}\\{badname}";
+            if (!badfilename.Equals(filename, StringComparison.OrdinalIgnoreCase)) {
+                if (File.Exists(badfilename)) {
+                    DeleteToRecycleBin(badfilename);
+                }
+
+                File.Move(filename, badfilename);
+            }
+        }
     }
 }
