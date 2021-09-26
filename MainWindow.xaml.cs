@@ -86,21 +86,6 @@ namespace ImageBank
             ImportClick(1000000);
         }
 
-        private void Import10Click(object sender, RoutedEventArgs e)
-        {
-            ImportClick(10);
-        }
-
-        private void Import100Click(object sender, RoutedEventArgs e)
-        {
-            ImportClick(100);
-        }
-
-        private void Import1000Click(object sender, RoutedEventArgs e)
-        {
-            ImportClick(1000);
-        }
-
         private void Rotate270Click(object sender, RoutedEventArgs e)
         {
             Rotate270Click();

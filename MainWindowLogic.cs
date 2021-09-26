@@ -106,19 +106,14 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { ImgMdf.Confirm(0); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Confirm(); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private async void ButtonRightNextMouseClick()
+        private static void ButtonRightNextMouseClick()
         {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.Confirm(1); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
         }
 
         private void DisableElements()
@@ -163,18 +158,24 @@ namespace ImageBank
                     sb.Append($" [{AppVars.ImgPanel[index].Img.History.Count}]");
                 }
 
-                sb.Append($" {AppVars.ImgPanel[index].Img.Elo}");
-
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Size)} ");
                 sb.Append($" ({ AppVars.ImgPanel[index].Bitmap.Width}x{AppVars.ImgPanel[index].Bitmap.Height})");
                 sb.AppendLine();
 
-                sb.Append($"{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
+                if (AppVars.ImgPanel[index].Img.Year != 0) {
+                    sb.Append($"[{AppVars.ImgPanel[index].Img.Year}]");
+                }
+
+                sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;
+
+                if (AppVars.ImgPanel[index].Img.Year != 0) {
+                    scb = System.Windows.Media.Brushes.Yellow;
+                }
 
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {

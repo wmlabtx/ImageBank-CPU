@@ -9,9 +9,19 @@ namespace ImageBank
         public static void Import(int max, IProgress<string> progress)
         {
             lock (_rwlock) {
+                lock (_imglock) {
+                    var imgcount = _imgList.Count;
+                    var diff = imgcount - _importLimit;
+                    if (diff > 0) {
+                        return;
+                    }
+
+                    DecreaseImportLimit();
+                }
+
                 _rwList.Clear();
                 if (progress != null) {
-                    progress.Report($"importing {AppConsts.PathHp}...");
+                    progress.Report($"importing {AppConsts.PathHp}..."); 
                 }
 
                 var directoryInfo = new DirectoryInfo(AppConsts.PathHp);

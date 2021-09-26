@@ -8,9 +8,6 @@
     <DockPanel Name="DockPanel" LastChildFill="true">
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
-                <MenuItem Header="Import 10" Click="Import10Click" />
-                <MenuItem Header="Import 100" Click="Import100Click" />
-                <MenuItem Header="Import 1000" Click="Import1000Click" />
                 <MenuItem Header="Import All" Click="ImportClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />

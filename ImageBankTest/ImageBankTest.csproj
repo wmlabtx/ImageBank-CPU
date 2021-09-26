@@ -78,7 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitmapHelperTests.cs" />
-    <Compile Include="EloHelperTests.cs" />
+    <Compile Include="EHash80Tests.cs" />
     <Compile Include="EncryptionHelperTests.cs" />
     <Compile Include="FileHelperTests.cs" />
     <Compile Include="MD5HashHelperTests.cs" />

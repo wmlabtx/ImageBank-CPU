@@ -11,12 +11,12 @@ namespace ImageBank
         public string Hash { get; }
         public PHashEx PHashEx { get; }
 
-        private int _elo;
-        public int Elo {
-            get => _elo;
+        private int _year;
+        public int Year {
+            get => _year;
             set {
-                _elo = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrElo, value);
+                _year = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrYear, value);
             }
         }
 
@@ -71,7 +71,7 @@ namespace ImageBank
             string name,
             string hash,
             PHashEx phashex,
-            int elo,
+            int year,
             SortedList<int, int> history,
             int bestid,
             int bestdistance,
@@ -83,7 +83,7 @@ namespace ImageBank
             Name = name;
             Hash = hash;
             PHashEx = phashex;
-            _elo = elo;
+            _year = year;
             History = history;
             _bestid = bestid;
             _bestdistance = bestdistance;

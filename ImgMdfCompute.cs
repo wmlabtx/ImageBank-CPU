@@ -117,9 +117,11 @@ namespace ImageBank
                 return;
             }
 
+            int year = DateTime.Now.Year;
             var orgextension = Path.GetExtension(orgfilename);
             if (orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ||
                 orgextension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
+                year = 0;
                 var password = Path.GetFileNameWithoutExtension(orgfilename);
                 var decrypteddata = orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ?
                     EncryptionHelper.DecryptDat(imagedata, password) :
@@ -143,6 +145,10 @@ namespace ImageBank
                 if (File.Exists(filenamefound)) {
                     // no reason to add the same image from a heap; we have one
                     FileHelper.DeleteToRecycleBin(orgfilename);
+                    if (imgfound.Year == 0 && year != 0) {
+                        imgfound.Year = year;
+                    }
+
                     _found++;
                     return;
                 }
@@ -189,7 +195,7 @@ namespace ImageBank
                 name: newname,
                 hash: hash,
                 phashex: phashex,
-                elo: 2000,
+                year: year,
                 history: emptyhistory,
                 bestid: id,
                 bestdistance: 256,

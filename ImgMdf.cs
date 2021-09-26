@@ -19,6 +19,7 @@ namespace ImageBank
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
         private static int _id;
+        private static int _importLimit;
 
         static ImgMdf()
         {
@@ -31,6 +32,13 @@ namespace ImageBank
         {
             _id++;
             SqlUpdateVar(AppConsts.AttrId, _id);
+            return _id;
+        }
+
+        private static int DecreaseImportLimit()
+        {
+            _importLimit -= 10;
+            SqlUpdateVar(AppConsts.AttrImportLimit, _importLimit);
             return _id;
         }
 

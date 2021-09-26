@@ -35,10 +35,18 @@ namespace ImageBank
                     }
 
                     var hcmin = valid.Min(e => e.History.Count);
-                    var bestdistancemin = valid.Where(e => e.History.Count == hcmin).Min(e => e.BestDistance);
-                    imgX = valid.First(e => e.History.Count == hcmin && e.BestDistance == bestdistancemin);
-                    //var lv = valid.Min(e => e.LastView);
-                    //imgX = valid.First(e => e.LastView == lv);
+                    valid = valid.Where(e => e.History.Count == hcmin).ToArray();
+
+                    var realyear = valid.Where(e => e.Year != 0).ToArray();
+                    if (realyear.Length > 0) {
+                        var lv = realyear.Min(e => e.LastView);
+                        imgX = realyear.First(e => e.LastView == lv);
+                    }
+                    else {
+                        var bestdistancemin = valid.Min(e => e.BestDistance);
+                        imgX = valid.First(e => e.BestDistance == bestdistancemin);
+                    }
+                    
                     idX = imgX.Id;
 
                     if (!_imgList.TryGetValue(imgX.BestId, out var imgBest)) {
@@ -74,8 +82,9 @@ namespace ImageBank
 
             lock (_imglock) {
                 var imgcount = _imgList.Count;
+                var diff = imgcount - _importLimit;
                 var g0 = _imgList.Count(e => e.Value.History.Count == 0);
-                progress.Report($"0:{g0} images:{imgcount} distance:{imgX.BestDistance}");
+                progress.Report($"0:{g0} images:{imgcount}({diff}) distance:{imgX.BestDistance}");
             }
         }
 

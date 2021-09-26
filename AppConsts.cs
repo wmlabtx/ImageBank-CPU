@@ -21,12 +21,13 @@
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
         public const string AttrPHashEx = "PHashEx";
-        public const string AttrElo = "Elo";
+        public const string AttrYear = "Year";
         public const string AttrHistory = "History";
         public const string AttrBestId = "BestId";
         public const string AttrBestDistance = "BestDistance";
         public const string AttrLastView = "LastView";
         public const string AttrLastCheck = "LastCheck";
         public const string TableVars = "Vars";
+        public const string AttrImportLimit = "ImportLimit";
     }
 }

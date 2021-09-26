@@ -48,7 +48,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrPHashEx}, ");
-                    sb.Append($"{AppConsts.AttrElo}, ");
+                    sb.Append($"{AppConsts.AttrYear}, ");
                     sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
                     sb.Append($"{AppConsts.AttrBestDistance}, ");
@@ -59,7 +59,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrPHashEx}, ");
-                    sb.Append($"@{AppConsts.AttrElo}, ");
+                    sb.Append($"@{AppConsts.AttrYear}, ");
                     sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
                     sb.Append($"@{AppConsts.AttrBestDistance}, ");
@@ -71,7 +71,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPHashEx}", img.PHashEx.ToArray());
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrElo}", img.Elo);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
                     var historyarray = img.History.Select(e => e.Key).ToArray();
                     var historybuffer = new byte[img.History.Count * sizeof(int)];
                     Buffer.BlockCopy(historyarray, 0, historybuffer, 0, historybuffer.Length);
@@ -96,7 +96,7 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrName}, "); // 1
                 sb.Append($"{AppConsts.AttrHash}, "); // 2
                 sb.Append($"{AppConsts.AttrPHashEx}, "); // 3
-                sb.Append($"{AppConsts.AttrElo}, "); // 4
+                sb.Append($"{AppConsts.AttrYear}, "); // 4
                 sb.Append($"{AppConsts.AttrHistory}, "); // 5
                 sb.Append($"{AppConsts.AttrBestId}, "); // 6
                 sb.Append($"{AppConsts.AttrBestDistance}, "); // 7
@@ -116,7 +116,7 @@ namespace ImageBank
                                 var hash = reader.GetString(2);
                                 var phashexbuffer = (byte[])reader[3];
                                 var phashex = new PHashEx(phashexbuffer, 0);
-                                var elo = reader.GetInt32(4);
+                                var year = reader.GetInt32(4);
                                 var historybuffer = (byte[])reader[5];
                                 var historyarray = new int[historybuffer.Length / sizeof(int)];
                                 Buffer.BlockCopy(historybuffer, 0, historyarray, 0, historybuffer.Length);
@@ -131,7 +131,7 @@ namespace ImageBank
                                     name: name,
                                     hash: hash,
                                     phashex: phashex,
-                                    elo: elo,
+                                    year: year,
                                     history: history, 
                                     bestid: bestid,
                                     bestdistance: bestdistance,
@@ -159,7 +159,8 @@ namespace ImageBank
 
                     sb.Length = 0;
                     sb.Append("SELECT ");
-                    sb.Append($"{AppConsts.AttrId} "); // 0
+                    sb.Append($"{AppConsts.AttrId}, "); // 0
+                    sb.Append($"{AppConsts.AttrImportLimit} "); // 1
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -167,6 +168,7 @@ namespace ImageBank
                             using (var reader = sqlCommand.ExecuteReader()) {
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
+                                    _importLimit = reader.GetInt32(1);
                                     break;
                                 }
                             }
