@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+﻿ using ImageMagick;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -43,6 +43,9 @@ namespace ImageBank
                 }
             }
             catch (MagickMissingDelegateErrorException) {
+                return null;
+            }
+            catch (ImageMagick.MagickCorruptImageErrorException) {
                 return null;
             }
         }

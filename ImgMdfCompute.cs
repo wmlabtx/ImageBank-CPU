@@ -32,9 +32,22 @@ namespace ImageBank
                 lock (_imglock) {
                     if (!_imgList.ContainsKey(img1.BestId)) {
                         img1.BestId = 0;
-                        img1.BestDistance = 256;
+                        img1.BestPDistance = 256;
+                        img1.BestMDistance = 1000f;
                     }
                 }
+            }
+
+            if (img1.MHash.ToArray().Length == 0) {
+                var filename = FileHelper.NameToFileName(img1.Name);
+                var imagedata = FileHelper.ReadData(filename);
+                if (imagedata == null) {
+                    Delete(img1.Id);
+                    return;
+                }
+
+                var mhash = new MHash(imagedata);
+                img1.MHash = mhash;
             }
 
             if (img1.History.Count > 0) {
@@ -55,26 +68,46 @@ namespace ImageBank
             var candidates = shadowcopy.Where(e => e.Id != img1.Id && !img1.History.ContainsKey(e.Id)).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.BestId;
-                var bestdistance = 256;
+                var bestpdistance = 256;
+                var bestmdistance = 1000f;
                 for (var i = 0; i < candidates.Length; i++) {
                     var img2 = candidates[i];
-                    var distance = img1.PHashEx.HammingDistance(img2.PHashEx);
-                    if (distance < bestdistance) {
-                        bestid = img2.Id;
-                        bestdistance = distance;
+                    var pdistance = img1.PHashEx.HammingDistance(img2.PHashEx);
+                    var mdistance = img1.MHash.ManhattanDistance(img2.MHash);
+                    if (pdistance < 80) {
+                        if (pdistance < bestpdistance) {
+                            bestid = img2.Id;
+                            bestpdistance = pdistance;
+                            bestmdistance = mdistance;
+
+                        }
+                    }
+                    else {
+                        if (bestpdistance >= 80) {
+                            if (mdistance < bestmdistance) {
+                                bestid = img2.Id;
+                                bestpdistance = pdistance;
+                                bestmdistance = mdistance;
+                            }
+                        }
                     }
                 }
 
                 if (bestid != img1.BestId) {
                     _sb.Clear();
-                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestDistance} -> {bestdistance}");
+                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestMDistance:F2}) -> {bestpdistance} ({bestmdistance:F2})");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                 }
 
-                if (img1.BestDistance != bestdistance) {
-                    img1.BestDistance = bestdistance;
+                if (img1.BestPDistance != bestpdistance) {
+                    img1.BestPDistance = bestpdistance;
                 }
+
+                if (img1.BestMDistance != bestmdistance) {
+                    img1.BestMDistance = bestmdistance;
+                }
+
             }
             else {
                 if (img1.History.Count > 0) {
@@ -174,6 +207,8 @@ namespace ImageBank
             var matrix = BitmapHelper.GetMatrix(imagedata);
             var phashex = new PHashEx(matrix);
             bitmap.Dispose();
+
+            var mhash = new MHash(imagedata);
            
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -195,10 +230,12 @@ namespace ImageBank
                 name: newname,
                 hash: hash,
                 phashex: phashex,
+                mhash: mhash,
                 year: year,
                 history: emptyhistory,
                 bestid: id,
-                bestdistance: 256,
+                bestpdistance: 256,
+                bestmdistance: 1000f,
                 lastview: lv,
                 lastcheck: lc);
 

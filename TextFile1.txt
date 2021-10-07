@@ -1,0 +1,47 @@
+        public float ManhattanDistance(MHash other)
+        {
+            var list = new List<Tuple<int, int, float>>();
+            for (var i = 0; i < _descriptors.Length; i += 9) {
+                for (var j = 0; j < other._descriptors.Length; j += 9) {
+                    var d = 0f;
+                    for (var k = 0; k < 9; k++) {
+                        d += Math.Abs(_descriptors[i + k] - other._descriptors[j + k]);
+                    }
+
+                    list.Add(new Tuple<int, int, float>(i, j, d));
+                }
+            }
+
+            list = list.OrderByDescending(e => e.Item3).ToList();
+            var sumd = 0f;
+            var count = 0;
+            while (list.Count > 0) {
+                var x = list[0].Item1;
+                var y = list[0].Item2;
+                sumd += list[0].Item3;
+                count++;
+                list.RemoveAll(e => e.Item1 == x || e.Item2 == y);
+            }
+
+            var distance = sumd / count;
+            return distance;
+        }
+
+                            using (var cmhashmat = new Mat()) {
+                                _cmhash.Compute(mask, cmhashmat);
+                                cmhashmat.GetArray(out double[] cmhash);
+                                _descriptors[d * 14 + 0] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[0]));
+                                _descriptors[d * 14 + 1] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[1]));
+                                _descriptors[d * 14 + 2] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[2]));
+                                _descriptors[d * 14 + 3] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[14]));
+                                _descriptors[d * 14 + 4] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[15]));
+                                _descriptors[d * 14 + 5] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[16]));
+                                _descriptors[d * 14 + 6] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[28]));
+                                _descriptors[d * 14 + 7] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[29]));
+                                _descriptors[d * 14 + 8] = (byte)Math.Floor(255.0 * Math.Abs(cmhash[30]));
+                                _descriptors[d * 14 + 9] = (byte)Math.Floor(10.0 * ((double)Math.Min(bboxes[n].Width, bboxes[n].Height) / Math.Max(bboxes[n].Width, bboxes[n].Height)));
+                                _descriptors[d * 14 + 10] = (byte)Math.Floor(10.0 * Math.Sqrt((double)(bboxes[n].Width * bboxes[n].Height) / (mat.Width * mat.Height)));
+                                _descriptors[d * 14 + 11] = (byte)Math.Floor(10.0 * Math.Sqrt((double)msers[n].Length / (bboxes[n].Width * bboxes[n].Height)));
+                                _descriptors[d * 14 + 12] = (byte)Math.Floor(10.0 * (msers[n].Average(e => (double)e.X) / mat.Width));
+                                _descriptors[d * 14 + 13] = (byte)Math.Floor(10.0 * (msers[n].Average(e => (double)e.Y) / mat.Height));
+                            }

@@ -48,10 +48,12 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
                     sb.Append($"{AppConsts.AttrPHashEx}, ");
+                    sb.Append($"{AppConsts.AttrMHash}, ");
                     sb.Append($"{AppConsts.AttrYear}, ");
                     sb.Append($"{AppConsts.AttrHistory}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
-                    sb.Append($"{AppConsts.AttrBestDistance}, ");
+                    sb.Append($"{AppConsts.AttrBestPDistance}, ");
+                    sb.Append($"{AppConsts.AttrBestMDistance}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}");
                     sb.Append(") VALUES (");
@@ -59,10 +61,12 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
                     sb.Append($"@{AppConsts.AttrPHashEx}, ");
+                    sb.Append($"@{AppConsts.AttrMHash}, ");
                     sb.Append($"@{AppConsts.AttrYear}, ");
                     sb.Append($"@{AppConsts.AttrHistory}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
-                    sb.Append($"@{AppConsts.AttrBestDistance}, ");
+                    sb.Append($"@{AppConsts.AttrBestPDistance}, ");
+                    sb.Append($"@{AppConsts.AttrBestMDistance}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}");
                     sb.Append(')');
@@ -71,13 +75,15 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPHashEx}", img.PHashEx.ToArray());
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMHash}", img.MHash.ToArray());
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
                     var historyarray = img.History.Select(e => e.Key).ToArray();
                     var historybuffer = new byte[img.History.Count * sizeof(int)];
                     Buffer.BlockCopy(historyarray, 0, historybuffer, 0, historybuffer.Length);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", historybuffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestDistance}", img.BestDistance);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestPDistance}", img.BestPDistance);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestMDistance}", img.BestMDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
                     sqlCommand.ExecuteNonQuery();
@@ -96,12 +102,14 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrName}, "); // 1
                 sb.Append($"{AppConsts.AttrHash}, "); // 2
                 sb.Append($"{AppConsts.AttrPHashEx}, "); // 3
-                sb.Append($"{AppConsts.AttrYear}, "); // 4
-                sb.Append($"{AppConsts.AttrHistory}, "); // 5
-                sb.Append($"{AppConsts.AttrBestId}, "); // 6
-                sb.Append($"{AppConsts.AttrBestDistance}, "); // 7
-                sb.Append($"{AppConsts.AttrLastView}, "); // 8
-                sb.Append($"{AppConsts.AttrLastCheck} "); // 9
+                sb.Append($"{AppConsts.AttrMHash}, "); // 4
+                sb.Append($"{AppConsts.AttrYear}, "); // 5
+                sb.Append($"{AppConsts.AttrHistory}, "); // 6
+                sb.Append($"{AppConsts.AttrBestId}, "); // 7
+                sb.Append($"{AppConsts.AttrBestPDistance}, "); // 8
+                sb.Append($"{AppConsts.AttrBestMDistance}, "); // 9
+                sb.Append($"{AppConsts.AttrLastView}, "); // 10
+                sb.Append($"{AppConsts.AttrLastCheck} "); // 11
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -116,25 +124,30 @@ namespace ImageBank
                                 var hash = reader.GetString(2);
                                 var phashexbuffer = (byte[])reader[3];
                                 var phashex = new PHashEx(phashexbuffer, 0);
-                                var year = reader.GetInt32(4);
-                                var historybuffer = (byte[])reader[5];
+                                var mhashbuffer = (byte[])reader[4];
+                                var mhash = new MHash(mhashbuffer);
+                                var year = reader.GetInt32(5);
+                                var historybuffer = (byte[])reader[6];
                                 var historyarray = new int[historybuffer.Length / sizeof(int)];
                                 Buffer.BlockCopy(historybuffer, 0, historyarray, 0, historybuffer.Length);
                                 var history = new SortedList<int, int>(historyarray.ToDictionary(e => e));
-                                var bestid = reader.GetInt32(6);
-                                var bestdistance = reader.GetInt32(7);
-                                var lastview = reader.GetDateTime(8);
-                                var lastcheck = reader.GetDateTime(9);
+                                var bestid = reader.GetInt32(7);
+                                var bestpdistance = reader.GetInt32(8);
+                                var bestmdistance = reader.GetFloat(9);
+                                var lastview = reader.GetDateTime(10);
+                                var lastcheck = reader.GetDateTime(11);
 
                                 var img = new Img(
                                     id: id,
                                     name: name,
                                     hash: hash,
                                     phashex: phashex,
+                                    mhash: mhash,
                                     year: year,
                                     history: history, 
                                     bestid: bestid,
-                                    bestdistance: bestdistance,
+                                    bestpdistance: bestpdistance,
+                                    bestmdistance: bestmdistance,
                                     lastview: lastview,
                                     lastcheck: lastcheck
                                    );
