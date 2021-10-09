@@ -11,13 +11,13 @@ namespace ImageBank
         public string Hash { get; }
         public PHashEx PHashEx { get; }
 
-        private MHash _mhash;
-        public MHash MHash {
-            get => _mhash;
+        private int[] _vector;
+        public int[] Vector {
+            get => _vector;
             set {
-                _mhash = value;
-                var array = _mhash.ToArray();
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrMHash, array);
+                _vector = value;
+                var array = Helper.ArrayFrom32(_vector);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrVector, array);
             }
         }
 
@@ -58,12 +58,12 @@ namespace ImageBank
             }
         }
 
-        private float _bestmdistance;
-        public float BestMDistance {
-            get => _bestmdistance;
+        private float _bestvdistance;
+        public float BestVDistance {
+            get => _bestvdistance;
             set {
-                _bestmdistance = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestMDistance, value);
+                _bestvdistance = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestVDistance, value);
             }
         }
 
@@ -90,12 +90,12 @@ namespace ImageBank
             string name,
             string hash,
             PHashEx phashex,
-            MHash mhash,
+            int[] vector,
             int year,
             SortedList<int, int> history,
             int bestid,
             int bestpdistance,
-            float bestmdistance,
+            float bestvdistance,
             DateTime lastview,
             DateTime lastcheck
             )
@@ -104,12 +104,12 @@ namespace ImageBank
             Name = name;
             Hash = hash;
             PHashEx = phashex;
-            _mhash = mhash;
+            _vector = vector;
             _year = year;
             History = history;
             _bestid = bestid;
             _bestpdistance = bestpdistance;
-            _bestmdistance = bestmdistance;
+            _bestvdistance = bestvdistance;
             _lastview = lastview;
             _lastcheck = lastcheck;
         }

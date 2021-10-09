@@ -141,6 +141,8 @@
     <Compile Include="Node.cs" />
     <Compile Include="PHashEx.cs" />
     <Compile Include="PHash64.cs" />
+    <Compile Include="SiftHelper.cs" />
+    <Compile Include="SiftNode.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

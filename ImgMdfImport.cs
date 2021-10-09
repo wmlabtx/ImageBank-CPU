@@ -75,6 +75,7 @@ namespace ImageBank
             }
 
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
+            SiftHelper.SaveNodes();
         }
     }
 }

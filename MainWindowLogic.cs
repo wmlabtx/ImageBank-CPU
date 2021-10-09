@@ -262,6 +262,8 @@ namespace ImageBank
 
         private void WindowClosing()
         {
+            SiftHelper.SaveNodes();
+
             DisableElements();
             _backgroundWorker?.CancelAsync();
             EnableElements();

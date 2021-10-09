@@ -33,21 +33,33 @@ namespace ImageBank
                     if (!_imgList.ContainsKey(img1.BestId)) {
                         img1.BestId = 0;
                         img1.BestPDistance = 256;
-                        img1.BestMDistance = 1000f;
+                        img1.BestVDistance = 100f;
                     }
                 }
             }
 
-            if (img1.MHash.ToArray().Length == 0) {
-                var filename = FileHelper.NameToFileName(img1.Name);
-                var imagedata = FileHelper.ReadData(filename);
-                if (imagedata == null) {
+            var filename = FileHelper.NameToFileName(img1.Name);
+            var imagedata = FileHelper.ReadData(filename);
+            if (imagedata == null) {
+                Delete(img1.Id);
+                return;
+            }
+
+            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                if (bitmap == null) {
                     Delete(img1.Id);
                     return;
                 }
 
-                var mhash = new MHash(imagedata);
-                img1.MHash = mhash;
+                var matrix = BitmapHelper.GetMatrix(imagedata);
+                var phashex = new PHashEx(matrix);
+                var descriptors = SiftHelper.GetDescriptors(matrix);
+                if (img1.Vector == null || img1.Vector.Length == 0) {
+                    SiftHelper.Populate(descriptors);
+                }
+
+                var vector = SiftHelper.ComputeVector(descriptors);
+                img1.Vector = vector;
             }
 
             if (img1.History.Count > 0) {
@@ -69,33 +81,35 @@ namespace ImageBank
             if (candidates.Length > 0) {
                 var bestid = img1.BestId;
                 var bestpdistance = 256;
-                var bestmdistance = 1000f;
+                var bestvdistance = 100f;
                 for (var i = 0; i < candidates.Length; i++) {
                     var img2 = candidates[i];
                     var pdistance = img1.PHashEx.HammingDistance(img2.PHashEx);
-                    var mdistance = img1.MHash.ManhattanDistance(img2.MHash);
+                    var vdistance = SiftHelper.GetDistance(img1.Vector, img2.Vector);
                     if (pdistance < 80) {
                         if (pdistance < bestpdistance) {
                             bestid = img2.Id;
                             bestpdistance = pdistance;
-                            bestmdistance = mdistance;
+                            bestvdistance = vdistance;
 
                         }
                     }
                     else {
                         if (bestpdistance >= 80) {
-                            if (mdistance < bestmdistance) {
+                            if (vdistance < bestvdistance) {
                                 bestid = img2.Id;
                                 bestpdistance = pdistance;
-                                bestmdistance = mdistance;
+                                bestvdistance = vdistance;
                             }
                         }
                     }
                 }
 
                 if (bestid != img1.BestId) {
+                    var nodecount = SiftHelper.Count;
+
                     _sb.Clear();
-                    _sb.Append($"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestMDistance:F2}) -> {bestpdistance} ({bestmdistance:F2})");
+                    _sb.Append($"n:{nodecount} a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                 }
@@ -104,8 +118,8 @@ namespace ImageBank
                     img1.BestPDistance = bestpdistance;
                 }
 
-                if (img1.BestMDistance != bestmdistance) {
-                    img1.BestMDistance = bestmdistance;
+                if (img1.BestVDistance != bestvdistance) {
+                    img1.BestVDistance = bestvdistance;
                 }
 
             }
@@ -208,8 +222,11 @@ namespace ImageBank
             var phashex = new PHashEx(matrix);
             bitmap.Dispose();
 
-            var mhash = new MHash(imagedata);
-           
+            var descriptors = SiftHelper.GetDescriptors(matrix);
+            SiftHelper.Populate(descriptors);
+            SiftHelper.SaveNodes();
+            var vector = SiftHelper.ComputeVector(descriptors);
+            
             // we have to create unique name and a location in Hp folder
             string newname;
             string newfilename;
@@ -230,12 +247,12 @@ namespace ImageBank
                 name: newname,
                 hash: hash,
                 phashex: phashex,
-                mhash: mhash,
+                vector: vector,
                 year: year,
                 history: emptyhistory,
                 bestid: id,
                 bestpdistance: 256,
-                bestmdistance: 1000f,
+                bestvdistance: 100f,
                 lastview: lv,
                 lastcheck: lc);
 

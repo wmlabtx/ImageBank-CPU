@@ -48,8 +48,8 @@ namespace ImageBank
                             imgX = valid.First(e => e.BestPDistance == bestpdistancemin);
                         }
                         else {
-                            var bestmdistancemin = valid.Min(e => e.BestMDistance);
-                            imgX = valid.First(e => e.BestMDistance == bestmdistancemin);
+                            var bestvdistancemin = valid.Min(e => e.BestVDistance);
+                            imgX = valid.First(e => e.BestVDistance == bestvdistancemin);
                         }
                     }
                     
@@ -90,7 +90,7 @@ namespace ImageBank
                 var imgcount = _imgList.Count;
                 var diff = imgcount - _importLimit;
                 var g0 = _imgList.Count(e => e.Value.History.Count == 0);
-                progress.Report($"0:{g0} images:{imgcount}({diff}) distance:{imgX.BestPDistance}");
+                progress.Report($"0:{g0} images:{imgcount}({diff}) distance:{imgX.BestPDistance} ({imgX.BestVDistance:F2})");
             }
         }
 
