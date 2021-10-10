@@ -51,6 +51,7 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             DisableElements();
+            await Task.Run(() => { ImgMdf.LoadNodes(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
@@ -262,8 +263,6 @@ namespace ImageBank
 
         private void WindowClosing()
         {
-            SiftHelper.SaveNodes();
-
             DisableElements();
             _backgroundWorker?.CancelAsync();
             EnableElements();

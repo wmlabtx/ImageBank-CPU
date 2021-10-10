@@ -25,7 +25,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlDelete(int id)
+        private static void SqlDeleteImage(int id)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -87,6 +87,42 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestVDistance}", img.BestVDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private static void SqlAdd(SiftNode siftnode)
+        {
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    var sb = new StringBuilder();
+                    sb.Append($"INSERT INTO {AppConsts.TableNodes} (");
+                    sb.Append($"{AppConsts.AttrId}, ");
+                    sb.Append($"{AppConsts.AttrCore}, ");
+                    sb.Append($"{AppConsts.AttrSumDst}, ");
+                    sb.Append($"{AppConsts.AttrMaxDst}, ");
+                    sb.Append($"{AppConsts.AttrCnt}, ");
+                    sb.Append($"{AppConsts.AttrAvgDst}, ");
+                    sb.Append($"{AppConsts.AttrChildId}");
+                    sb.Append(") VALUES (");
+                    sb.Append($"@{AppConsts.AttrId}, ");
+                    sb.Append($"@{AppConsts.AttrCore}, ");
+                    sb.Append($"@{AppConsts.AttrSumDst}, ");
+                    sb.Append($"@{AppConsts.AttrMaxDst}, ");
+                    sb.Append($"@{AppConsts.AttrCnt}, ");
+                    sb.Append($"@{AppConsts.AttrAvgDst}, ");
+                    sb.Append($"@{AppConsts.AttrChildId}");
+                    sb.Append(')');
+                    sqlCommand.CommandText = sb.ToString();
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", siftnode.Id);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCore}", siftnode.Core);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSumDst}", siftnode.SumDst);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMaxDst}", siftnode.MaxDst);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCnt}", siftnode.Cnt);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAvgDst}", siftnode.AvgDst);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChildId}", siftnode.ChildId);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -194,8 +230,62 @@ namespace ImageBank
                     }
                 }
             }
+        }
 
-            SiftHelper.LoadNodes();
+        public static void LoadNodes(IProgress<string> progress)
+        {
+            lock (_nodesLock) {
+                _nodesList.Clear();
+
+                var sb = new StringBuilder();
+                sb.Append("SELECT ");
+                sb.Append($"{AppConsts.AttrId}, "); // 0
+                sb.Append($"{AppConsts.AttrCore}, "); // 1
+                sb.Append($"{AppConsts.AttrSumDst}, "); // 2
+                sb.Append($"{AppConsts.AttrMaxDst}, "); // 3
+                sb.Append($"{AppConsts.AttrCnt}, "); // 4
+                sb.Append($"{AppConsts.AttrAvgDst}, "); // 5
+                sb.Append($"{AppConsts.AttrChildId} "); // 6
+                sb.Append($"FROM {AppConsts.TableNodes}");
+                var sqltext = sb.ToString();
+                lock (_sqllock) {
+                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                        sqlCommand.Connection = _sqlConnection;
+                        sqlCommand.CommandText = sqltext;
+                        using (var reader = sqlCommand.ExecuteReader()) {
+                            var dtn = DateTime.Now;
+                            while (reader.Read()) {
+                                var id = reader.GetInt32(0);
+                                var core = (byte[])reader[1];
+                                var sumdst = reader.GetFloat(2);
+                                var maxdst = reader.GetFloat(3);
+                                var cnt = reader.GetInt32(4);
+                                var avgdst = reader.GetFloat(5);
+                                var childid = reader.GetInt32(6);
+
+                                var siftnode = new SiftNode(
+                                    id: id,
+                                    core: core,
+                                    sumdst: sumdst,
+                                    maxdst: maxdst,
+                                    cnt: cnt,
+                                    avgdst: avgdst,
+                                    childid: childid
+                                   );
+
+                                AddToMemory(siftnode);
+
+                                if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
+                                    dtn = DateTime.Now;
+                                    if (progress != null) {
+                                        progress.Report($"Loading nodes ({_nodesList.Count})...");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public static void SqlUpdateVar(string key, object val)
@@ -205,6 +295,23 @@ namespace ImageBank
                 using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
                     sqlCommand.Parameters.AddWithValue($"@{key}", val);
                     sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public static void SqlNodesUpdateProperty(int id, string key, object val)
+        {
+            lock (_sqllock) {
+                try {
+                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                        sqlCommand.Connection = _sqlConnection;
+                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableNodes} SET {key} = @{key} WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}";
+                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException) {
                 }
             }
         }

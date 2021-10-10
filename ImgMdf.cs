@@ -18,6 +18,9 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
+        private static readonly SortedDictionary<int, SiftNode> _nodesList = new SortedDictionary<int, SiftNode>();
+        private static object _nodesLock = new object();
+
         private static int _id;
         private static int _importLimit;
 
@@ -46,8 +49,7 @@ namespace ImageBank
         {
             lock (_imglock)
             {
-                if (_imgList.Count == 0)
-                {
+                if (_imgList.Count == 0) {
                     return DateTime.Now;
                 }
 
@@ -58,24 +60,6 @@ namespace ImageBank
 
                 return scope 
                     .Min(e => e.Value.LastView)
-                    .AddSeconds(-1);
-            }
-        }
-
-        public static DateTime GetMinLastCheck()
-        {
-            lock (_imglock) {
-                if (_imgList.Count == 0) {
-                    return DateTime.Now;
-                }
-
-                var scope = _imgList.ToArray();
-                if (scope.Length == 0) {
-                    return DateTime.Now;
-                }
-
-                return scope
-                    .Min(e => e.Value.LastCheck)
                     .AddSeconds(-1);
             }
         }

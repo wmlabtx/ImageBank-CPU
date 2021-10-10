@@ -14,7 +14,7 @@
                 }
             }
 
-            SqlDelete(id);
+            SqlDeleteImage(id);
         }
     }
 }

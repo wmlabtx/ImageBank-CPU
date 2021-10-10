@@ -133,6 +133,7 @@
     <Compile Include="FHashEx.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="ImgMdfNodes.cs" />
     <Compile Include="KHashEx.cs" />
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />

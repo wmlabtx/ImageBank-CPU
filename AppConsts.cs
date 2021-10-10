@@ -32,5 +32,12 @@
         public const string AttrLastCheck = "LastCheck";
         public const string TableVars = "Vars";
         public const string AttrImportLimit = "ImportLimit";
+        public const string TableNodes = "Nodes";
+        public const string AttrCore = "Core";
+        public const string AttrSumDst = "SumDst";
+        public const string AttrMaxDst = "MaxDst";
+        public const string AttrCnt = "Cnt";
+        public const string AttrAvgDst = "AvgDst";
+        public const string AttrChildId = "ChildId";
     }
 }
