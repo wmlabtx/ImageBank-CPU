@@ -85,11 +85,24 @@ namespace ImageBank
             Import(max);
         }
 
+        private void RandomLeClick(int max)
+        {
+            RandomLe(max);
+        }
+
         private async void Import(int max)
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Import(max, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void RandomLe(int max)
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.RandomLe(max, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -155,8 +168,8 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append(AppVars.ImgPanel[index].Img.Name);
 
-                if (AppVars.ImgPanel[index].Img.History.Count > 0) {
-                    sb.Append($" [{AppVars.ImgPanel[index].Img.History.Count}]");
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                    sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
                 }
 
                 sb.AppendLine();

@@ -6,6 +6,7 @@
         public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
+        public const string PathLe = @"D:\Users\Murad\Documents\Sdb\Le";
         public const string FileSiftNodes = @"D:\Users\Murad\Documents\Sdb\Db\siftnodes.dat";
 
         public const string MzxExtension = ".mzx";
@@ -13,6 +14,8 @@
         public const string JpgExtension = ".jpg";
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
+
+        public const float SiftNodeMax = 543f;
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
@@ -24,7 +27,7 @@
         public const string AttrPHashEx = "PHashEx";
         public const string AttrVector = "Vector";
         public const string AttrYear = "Year";
-        public const string AttrHistory = "History";
+        public const string AttrCounter = "Counter";
         public const string AttrBestId = "BestId";
         public const string AttrBestPDistance = "BestPDistance";
         public const string AttrBestVDistance = "BestVDistance";

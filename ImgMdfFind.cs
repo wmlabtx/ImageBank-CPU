@@ -24,7 +24,9 @@ namespace ImageBank
                             .Where(
                                 e => e.Value.BestId != 0 &&
                                 e.Value.BestId != e.Value.Id &&
-                                _imgList.ContainsKey(e.Value.BestId))
+                                _imgList.ContainsKey(e.Value.BestId) &&
+                                e.Value.Vector.Length > 0 &&
+                                e.Value.Vector[0] != 0)
                             .Select(e => e.Value)
                             .ToArray();
                     }
@@ -34,8 +36,9 @@ namespace ImageBank
                         return;
                     }
 
-                    var hcmin = valid.Min(e => e.History.Count);
-                    valid = valid.Where(e => e.History.Count == hcmin).ToArray();
+                    /*
+                    var cmin = valid.Min(e => e.Counter);
+                    valid = valid.Where(e => e.Counter == cmin).ToArray();
 
                     var realyear = valid.Where(e => e.Year != 0).ToArray();
                     if (realyear.Length > 0) {
@@ -52,7 +55,11 @@ namespace ImageBank
                             imgX = valid.First(e => e.BestVDistance == bestvdistancemin);
                         }
                     }
-                    
+                    */
+
+                    var lvmin = valid.Min(e => e.LastView);
+                    imgX = valid.First(e => e.LastView == lvmin);
+
                     idX = imgX.Id;
 
                     if (!_imgList.TryGetValue(imgX.BestId, out var imgBest)) {
@@ -89,8 +96,9 @@ namespace ImageBank
             lock (_imglock) {
                 var imgcount = _imgList.Count;
                 var diff = imgcount - _importLimit;
-                var g0 = _imgList.Count(e => e.Value.History.Count == 0);
-                progress.Report($"0:{g0} images:{imgcount}({diff}) distance:{imgX.BestPDistance} ({imgX.BestVDistance:F2})");
+                var g0 = _imgList.Count(e => e.Value.Counter == 0);
+                var g1 = _imgList.Count(e => e.Value.Counter == 1);
+                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance:{imgX.BestPDistance} ({imgX.BestVDistance:F2})");
             }
         }
 

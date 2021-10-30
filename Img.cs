@@ -30,14 +30,13 @@ namespace ImageBank
             }
         }
 
-        public SortedList<int, int> History { get; }
-
-        public void SaveHistory()
-        {
-            var history = History.Select(e => e.Key).ToArray();
-            var buffer = new byte[history.Length * sizeof(int)];
-            Buffer.BlockCopy(history, 0, buffer, 0, buffer.Length);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrHistory, buffer);
+        private int _counter;
+        public int Counter {
+            get => _counter;
+            set {
+                _counter = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrCounter, value);
+            }
         }
 
         private int _bestid;
@@ -92,7 +91,7 @@ namespace ImageBank
             PHashEx phashex,
             int[] vector,
             int year,
-            SortedList<int, int> history,
+            int counter,
             int bestid,
             int bestpdistance,
             float bestvdistance,
@@ -106,7 +105,7 @@ namespace ImageBank
             PHashEx = phashex;
             _vector = vector;
             _year = year;
-            History = history;
+            _counter = counter;
             _bestid = bestid;
             _bestpdistance = bestpdistance;
             _bestvdistance = bestvdistance;

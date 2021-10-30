@@ -9,6 +9,7 @@
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
                 <MenuItem Header="Import All" Click="ImportClick" />
+                <MenuItem Header="RandomLe" Click="RandomLeClick" />
                 <Separator />
                 <MenuItem Header="Exit" Click="ExitClick" />
             </MenuItem>

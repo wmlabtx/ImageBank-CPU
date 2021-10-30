@@ -76,5 +76,64 @@ namespace ImageBank
 
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
         }
+
+        public static void RandomLe(int max, IProgress<string> progress)
+        {
+            lock (_rwlock) {
+                lock (_imglock) {
+                    var imgcount = _imgList.Count;
+                    var diff = imgcount - _importLimit;
+                    if (diff > 0) {
+                        return;
+                    }
+
+                    DecreaseImportLimit();
+                }
+
+                using (var random = new CryptoRandom()) {
+                    _rwList.Clear();
+                    for (var i = 0; i < max; i++) {
+                        if (progress != null) {
+                            progress.Report($"importing {AppConsts.PathLe} ({i})...");
+                        }
+
+                        var path = AppConsts.PathLe;
+                        do {
+                            var directoryInfo = new DirectoryInfo(path);
+                            var ds = directoryInfo.GetDirectories("*.*", SearchOption.TopDirectoryOnly).ToArray();
+                            if (ds.Length > 0) {
+                                var rindex = random.Next(0, ds.Length - 1);
+                                path = ds[rindex].FullName;
+                            }
+                            else {
+                                var fs = directoryInfo.GetFiles("*.*", SearchOption.TopDirectoryOnly).ToArray();
+                                if (fs.Length > 0) {
+                                    var rindex = random.Next(0, fs.Length - 1);
+                                    var filename = fs[rindex].FullName;
+                                    var imagedata = File.ReadAllBytes(filename);
+                                    using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                                        if (bitmap == null) {
+                                            progress.Report($"Bad {filename}");
+                                            return;
+                                        }
+
+                                    }
+
+                                    _rwList.Add(fs[rindex]);
+                                    break;
+                                }
+                                else {
+                                    Directory.Delete(directoryInfo.FullName);
+                                    break;
+                                }
+                            }
+                        }
+                        while (true);
+                    }
+
+                    progress.Report($"RandomLe import done!");
+                }
+            }
+        }
     }
 }

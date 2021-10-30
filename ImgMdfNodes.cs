@@ -74,7 +74,7 @@ namespace ImageBank
         public static float GetNodeMaxDistance()
         {
             lock (_nodesLock) {
-                var maxdst = _nodesList.Where(e => e.Value.ChildId == 0).Max(e => e.Value.MaxDst);
+                var maxdst = _nodesList.Where(e => e.Value.ChildId == 0 && e.Value.Cnt > 1).Max(e => e.Value.MaxDst);
                 return maxdst;
             }
         }
@@ -95,7 +95,7 @@ namespace ImageBank
                     }
                 }
 
-                if (pnode != null) {
+                if (pnode != null && pnode.MaxDst > AppConsts.SiftNodeMax) {
                     var nextid = _nodesList.Max(e => e.Key) + 1;
                     var siftnode0 = GetNewSiftNode(nextid);
                     Add(siftnode0);

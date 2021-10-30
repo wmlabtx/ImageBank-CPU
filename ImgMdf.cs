@@ -63,5 +63,23 @@ namespace ImageBank
                     .AddSeconds(-1);
             }
         }
+
+        public static DateTime GetMinLastCheck()
+        {
+            lock (_imglock) {
+                if (_imgList.Count == 0) {
+                    return DateTime.Now;
+                }
+
+                var scope = _imgList.ToArray();
+                if (scope.Length == 0) {
+                    return DateTime.Now;
+                }
+
+                return scope
+                    .Min(e => e.Value.LastCheck)
+                    .AddSeconds(-1);
+            }
+        }
     }
 }

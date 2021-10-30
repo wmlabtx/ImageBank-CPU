@@ -50,7 +50,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrPHashEx}, ");
                     sb.Append($"{AppConsts.AttrVector}, ");
                     sb.Append($"{AppConsts.AttrYear}, ");
-                    sb.Append($"{AppConsts.AttrHistory}, ");
+                    sb.Append($"{AppConsts.AttrCounter}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
                     sb.Append($"{AppConsts.AttrBestPDistance}, ");
                     sb.Append($"{AppConsts.AttrBestVDistance}, ");
@@ -63,7 +63,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrPHashEx}, ");
                     sb.Append($"@{AppConsts.AttrVector}, ");
                     sb.Append($"@{AppConsts.AttrYear}, ");
-                    sb.Append($"@{AppConsts.AttrHistory}, ");
+                    sb.Append($"@{AppConsts.AttrCounter}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
                     sb.Append($"@{AppConsts.AttrBestPDistance}, ");
                     sb.Append($"@{AppConsts.AttrBestVDistance}, ");
@@ -78,10 +78,7 @@ namespace ImageBank
                     var array = Helper.ArrayFrom32(img.Vector);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", array);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
-                    var historyarray = img.History.Select(e => e.Key).ToArray();
-                    var historybuffer = new byte[img.History.Count * sizeof(int)];
-                    Buffer.BlockCopy(historyarray, 0, historybuffer, 0, historybuffer.Length);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHistory}", historybuffer);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestPDistance}", img.BestPDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestVDistance}", img.BestVDistance);
@@ -141,7 +138,7 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrPHashEx}, "); // 3
                 sb.Append($"{AppConsts.AttrVector}, "); // 4
                 sb.Append($"{AppConsts.AttrYear}, "); // 5
-                sb.Append($"{AppConsts.AttrHistory}, "); // 6
+                sb.Append($"{AppConsts.AttrCounter}, "); // 6
                 sb.Append($"{AppConsts.AttrBestId}, "); // 7
                 sb.Append($"{AppConsts.AttrBestPDistance}, "); // 8
                 sb.Append($"{AppConsts.AttrBestVDistance}, "); // 9
@@ -164,10 +161,7 @@ namespace ImageBank
                                 var array = (byte[])reader[4];
                                 var vector = Helper.ArrayTo32(array);
                                 var year = reader.GetInt32(5);
-                                var historybuffer = (byte[])reader[6];
-                                var historyarray = new int[historybuffer.Length / sizeof(int)];
-                                Buffer.BlockCopy(historybuffer, 0, historyarray, 0, historybuffer.Length);
-                                var history = new SortedList<int, int>(historyarray.ToDictionary(e => e));
+                                var counter = reader.GetInt32(6);
                                 var bestid = reader.GetInt32(7);
                                 var bestpdistance = reader.GetInt32(8);
                                 var bestvdistance = reader.GetFloat(9);
@@ -181,7 +175,7 @@ namespace ImageBank
                                     phashex: phashex,
                                     vector: vector,
                                     year: year,
-                                    history: history, 
+                                    counter: counter, 
                                     bestid: bestid,
                                     bestpdistance: bestpdistance,
                                     bestvdistance: bestvdistance,

@@ -28,10 +28,12 @@ namespace ImageBank
 
             Img img1 = null;
             foreach (var img in shadowcopy) {
+                /*
                 if (img.Vector.Length == 0 || img.BestId == 0 || !_imgList.ContainsKey(img.BestId)) {
                     img1 = img;
                     break;
                 }
+                */
 
                 if (img1 == null || img.LastCheck < img1.LastCheck) {
                     img1 = img;
@@ -65,22 +67,7 @@ namespace ImageBank
                 }
             }
 
-            if (img1.History.Count > 0) {
-                var history = img1.History.Select(e => e.Key).ToArray();
-                lock (_imglock) {
-                    foreach (var e in history) {
-                        if (!_imgList.ContainsKey(img1.BestId)) {
-                            img1.History.Remove(e);
-                        }
-                    }
-
-                    if (img1.History.Count < history.Length) {
-                        img1.SaveHistory();
-                    }
-                }
-            }
-
-            var candidates = shadowcopy.Where(e => e.Id != img1.Id && !img1.History.ContainsKey(e.Id)).ToArray();
+            var candidates = shadowcopy.Where(e => e.Id != img1.Id).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.Id;
                 var bestpdistance = 256;
@@ -122,6 +109,7 @@ namespace ImageBank
                     _sb.Append($"n:{nodecount} ({maxdst:F1}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
+                    img1.Counter = 0;
                 }
 
                 if (img1.BestPDistance != bestpdistance) {
@@ -132,12 +120,6 @@ namespace ImageBank
                     img1.BestVDistance = bestvdistance;
                 }
 
-            }
-            else {
-                if (img1.History.Count > 0) {
-                    img1.History.Clear();
-                    img1.SaveHistory();
-                }
             }
 
             img1.LastCheck = DateTime.Now;
@@ -243,8 +225,7 @@ namespace ImageBank
             } while (File.Exists(newfilename));
 
             var lv = GetMinLastView();
-            var lc = new DateTime(2020, 1, 1);
-            var emptyhistory = new SortedList<int, int>();
+            var lc = GetMinLastCheck();
             var id = AllocateId();
 
             var nimg = new Img(
@@ -254,7 +235,7 @@ namespace ImageBank
                 phashex: phashex,
                 vector: Array.Empty<int>(),
                 year: year,
-                history: emptyhistory,
+                counter: 0,
                 bestid: id,
                 bestpdistance: 256,
                 bestvdistance: 100f,
