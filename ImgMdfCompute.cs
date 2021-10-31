@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -28,21 +27,21 @@ namespace ImageBank
 
             Img img1 = null;
             foreach (var img in shadowcopy) {
-                /*
                 if (img.Vector.Length == 0 || img.BestId == 0 || !_imgList.ContainsKey(img.BestId)) {
                     img1 = img;
                     break;
                 }
-                */
+
+                if (img.Vector.Length > 0) {
+                    if (!CheckVector(img.Vector)) {
+                        img.Vector = Array.Empty<int>();
+                        img1 = img;
+                        break;
+                    }
+                }
 
                 if (img1 == null || img.LastCheck < img1.LastCheck) {
                     img1 = img;
-                }
-            }
-
-            if (img1.Vector.Length > 0) {
-                if (!CheckVector(img1.Vector)) {
-                    img1.Vector = Array.Empty<int>();
                 }
             }
 
@@ -67,7 +66,7 @@ namespace ImageBank
                 }
             }
 
-            var candidates = shadowcopy.Where(e => e.Id != img1.Id).ToArray();
+            var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0 && CheckVector(e.Vector)).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.Id;
                 var bestpdistance = 256;
@@ -103,10 +102,10 @@ namespace ImageBank
 
                 if (bestid != img1.BestId) {
                     var nodecount = GetNodeCount();
-                    var maxdst = GetNodeMaxDistance();
+                    var maxnode = GetMaxNode();
 
                     _sb.Clear();
-                    _sb.Append($"n:{nodecount} ({maxdst:F1}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
+                    _sb.Append($"n:{nodecount} ({maxnode.Id}/{maxnode.MaxDst:F1}/{maxnode.Cnt}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                     img1.Counter = 0;

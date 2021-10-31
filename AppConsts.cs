@@ -15,7 +15,9 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const float SiftNodeMax = 543f;
+        public const int SiftMaxNodes = 256;
+        public const int SiftSplit = 1000;
+        public const float SiftLimit = 500f;
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;

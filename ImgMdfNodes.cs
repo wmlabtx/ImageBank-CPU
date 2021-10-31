@@ -71,11 +71,16 @@ namespace ImageBank
             }
         }
 
-        public static float GetNodeMaxDistance()
+        public static SiftNode GetMaxNode()
         {
             lock (_nodesLock) {
-                var maxdst = _nodesList.Where(e => e.Value.ChildId == 0 && e.Value.Cnt > 1).Max(e => e.Value.MaxDst);
-                return maxdst;
+                var scope = _nodesList.Select(e => e.Value).Where(e => e.ChildId == 0 && e.Cnt > AppConsts.SiftSplit).ToArray();
+                if (scope.Length == 0) {
+                    scope = _nodesList.Select(e => e.Value).Where(e => e.ChildId == 0).ToArray();
+                }
+
+                var node = scope.OrderByDescending(e => e.MaxDst).First();
+                return node;
             }
         }
 
@@ -88,20 +93,18 @@ namespace ImageBank
 
             Array.Sort(vector);
             lock (_nodesLock) {
-                SiftNode pnode = null;
-                foreach (var node in _nodesList.Where(e => e.Value.ChildId == 0 && e.Value.Cnt > 1).Select(e => e.Value)) {
-                    if (pnode == null || node.MaxDst > pnode.MaxDst) {
-                        pnode = node;
+                if (GetNodeCount() < AppConsts.SiftMaxNodes) {
+                    var pnode = GetMaxNode();
+                    if (pnode.Cnt > AppConsts.SiftSplit && pnode.MaxDst > AppConsts.SiftLimit) {
+                        var nextid = _nodesList.Max(e => e.Key) + 1;
+                        var siftnode0 = GetNewSiftNode(nextid);
+                        Add(siftnode0);
+                        var siftnode1 = GetNewSiftNode(nextid + 1);
+                        Add(siftnode1);
+                        pnode.ChildId = nextid;
+                        pnode.SumDst = 0f;
+                        pnode.MaxDst = 0f;
                     }
-                }
-
-                if (pnode != null && pnode.MaxDst > AppConsts.SiftNodeMax) {
-                    var nextid = _nodesList.Max(e => e.Key) + 1;
-                    var siftnode0 = GetNewSiftNode(nextid);
-                    Add(siftnode0);
-                    var siftnode1 = GetNewSiftNode(nextid + 1);
-                    Add(siftnode1);
-                    pnode.ChildId = nextid;
                 }
             }
 
@@ -123,7 +126,7 @@ namespace ImageBank
 
         public static float GetDistance(int[] x, int[] y)
         {
-            if (x == null || x.Length == 0 || y == null || y.Length == 0 || x.Length != y.Length) {
+            if (x == null || x.Length == 0 || y == null || y.Length == 0) {
                 return 100f;
             }
 
