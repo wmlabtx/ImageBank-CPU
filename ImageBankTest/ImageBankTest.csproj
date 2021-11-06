@@ -104,8 +104,6 @@
   <ItemGroup>
     <Compile Include="BitmapHelperTests.cs" />
     <Compile Include="EncryptionHelperTests.cs" />
-    <Compile Include="KHashExTests.cs" />
-    <Compile Include="MHashTests.cs" />
     <Compile Include="FileHelperTests.cs" />
     <Compile Include="MD5HashHelperTests.cs" />
     <Compile Include="MetadataExtractorTests.cs" />

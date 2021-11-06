@@ -32,41 +32,31 @@ namespace ImageBank
                     break;
                 }
 
-                if (img.Vector.Length > 0) {
-                    if (!CheckVector(img.Vector)) {
-                        img.Vector = Array.Empty<int>();
-                        img1 = img;
-                        break;
-                    }
-                }
-
                 if (img1 == null || img.LastCheck < img1.LastCheck) {
                     img1 = img;
                 }
             }
 
-            if (img1.Vector.Length == 0) {
-                var filename = FileHelper.NameToFileName(img1.Name);
-                var imagedata = FileHelper.ReadData(filename);
-                if (imagedata == null) {
+            var filename = FileHelper.NameToFileName(img1.Name);
+            var imagedata = FileHelper.ReadData(filename);
+            if (imagedata == null) {
+                Delete(img1.Id);
+                return;
+            }
+
+            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                if (bitmap == null) {
                     Delete(img1.Id);
                     return;
                 }
 
-                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
-                    if (bitmap == null) {
-                        Delete(img1.Id);
-                        return;
-                    }
-
-                    var matrix = BitmapHelper.GetMatrix(imagedata);
-                    var descriptors = SiftHelper.GetDescriptors(matrix);
-                    var vector = ComputeVector(descriptors);
-                    img1.Vector = vector;
-                }
+                var matrix = BitmapHelper.GetMatrix(imagedata);
+                var descriptors = SiftHelper.GetDescriptors(matrix);
+                var vector = ComputeVector(descriptors);
+                img1.Vector = vector;
             }
 
-            var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0 && CheckVector(e.Vector)).ToArray();
+            var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.Id;
                 var bestpdistance = 256;
@@ -101,11 +91,8 @@ namespace ImageBank
                 }
 
                 if (bestid != img1.BestId) {
-                    var nodecount = GetNodeCount();
-                    var maxnode = GetMaxNode();
-
                     _sb.Clear();
-                    _sb.Append($"n:{nodecount} ({maxnode.Id}/{maxnode.MaxDst:F1}/{maxnode.Cnt}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
+                    _sb.Append($"({_clustervictimid}/{_clustervictimdistance:F4}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                     img1.Counter = 0;

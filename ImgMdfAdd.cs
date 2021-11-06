@@ -14,20 +14,7 @@
         private static void Add(Img img)
         {
             AddToMemory(img);
-            SqlAdd(img);
-        }
-
-        private static void AddToMemory(SiftNode siftnode)
-        {
-            lock (_nodesLock) {
-                _nodesList.Add(siftnode.Id, siftnode);
-            }
-        }
-
-        private static void Add(SiftNode siftnode)
-        {
-            AddToMemory(siftnode);
-            SqlAdd(siftnode);
+            SqlAddImage(img);
         }
     }
 }

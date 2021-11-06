@@ -15,9 +15,7 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const int SiftMaxNodes = 256;
-        public const int SiftSplit = 1000;
-        public const float SiftLimit = 500f;
+        public const int MaxClusters = 10000;
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
@@ -37,12 +35,9 @@
         public const string AttrLastCheck = "LastCheck";
         public const string TableVars = "Vars";
         public const string AttrImportLimit = "ImportLimit";
-        public const string TableNodes = "Nodes";
-        public const string AttrCore = "Core";
-        public const string AttrSumDst = "SumDst";
-        public const string AttrMaxDst = "MaxDst";
-        public const string AttrCnt = "Cnt";
-        public const string AttrAvgDst = "AvgDst";
-        public const string AttrChildId = "ChildId";
+        public const string TableClusters = "Clusters";
+        public const string AttrDescriptor = "Descriptor";
+        public const string AttrDistance = "Distance";
+        public const string AttrNextId = "NextId";
     }
 }

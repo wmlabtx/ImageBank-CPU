@@ -51,8 +51,8 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             DisableElements();
-            await Task.Run(() => { ImgMdf.LoadNodes(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.LoadImgs(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.LoadClusters(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.LoadImages(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             

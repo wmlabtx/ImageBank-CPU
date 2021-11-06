@@ -1,8 +1,6 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
 using System;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace ImageBank
 {
@@ -25,6 +23,34 @@ namespace ImageBank
             }
         }
 
+        public static void SqlVarsUpdateProperty(string key, object val)
+        {
+            lock (_sqllock) {
+                var sqltext = $"UPDATE {AppConsts.TableVars} SET {key} = @{key}";
+                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                    sqlCommand.Parameters.AddWithValue($"@{key}", val);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public static void SqlClustersUpdateProperty(int id, string key, object val)
+        {
+            lock (_sqllock) {
+                try {
+                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                        sqlCommand.Connection = _sqlConnection;
+                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableClusters} SET {key} = @{key} WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}";
+                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException) {
+                }
+            }
+        }
+
         private static void SqlDeleteImage(int id)
         {
             lock (_sqllock) {
@@ -37,7 +63,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(Img img)
+        private static void SqlAddImage(Img img)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -89,43 +115,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAdd(SiftNode siftnode)
-        {
-            lock (_sqllock) {
-                using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                    sqlCommand.Connection = _sqlConnection;
-                    var sb = new StringBuilder();
-                    sb.Append($"INSERT INTO {AppConsts.TableNodes} (");
-                    sb.Append($"{AppConsts.AttrId}, ");
-                    sb.Append($"{AppConsts.AttrCore}, ");
-                    sb.Append($"{AppConsts.AttrSumDst}, ");
-                    sb.Append($"{AppConsts.AttrMaxDst}, ");
-                    sb.Append($"{AppConsts.AttrCnt}, ");
-                    sb.Append($"{AppConsts.AttrAvgDst}, ");
-                    sb.Append($"{AppConsts.AttrChildId}");
-                    sb.Append(") VALUES (");
-                    sb.Append($"@{AppConsts.AttrId}, ");
-                    sb.Append($"@{AppConsts.AttrCore}, ");
-                    sb.Append($"@{AppConsts.AttrSumDst}, ");
-                    sb.Append($"@{AppConsts.AttrMaxDst}, ");
-                    sb.Append($"@{AppConsts.AttrCnt}, ");
-                    sb.Append($"@{AppConsts.AttrAvgDst}, ");
-                    sb.Append($"@{AppConsts.AttrChildId}");
-                    sb.Append(')');
-                    sqlCommand.CommandText = sb.ToString();
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", siftnode.Id);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCore}", siftnode.Core);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSumDst}", siftnode.SumDst);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrMaxDst}", siftnode.MaxDst);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCnt}", siftnode.Cnt);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrAvgDst}", siftnode.AvgDst);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrChildId}", siftnode.ChildId);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public static void LoadImgs(IProgress<string> progress)
+        public static void LoadImages(IProgress<string> progress)
         {
             lock (_imglock) {
                 _imgList.Clear();
@@ -226,21 +216,16 @@ namespace ImageBank
             }
         }
 
-        public static void LoadNodes(IProgress<string> progress)
+        public static void LoadClusters(IProgress<string> progress)
         {
-            lock (_nodesLock) {
-                _nodesList.Clear();
-
+            lock (_clustersLock) {
                 var sb = new StringBuilder();
                 sb.Append("SELECT ");
                 sb.Append($"{AppConsts.AttrId}, "); // 0
-                sb.Append($"{AppConsts.AttrCore}, "); // 1
-                sb.Append($"{AppConsts.AttrSumDst}, "); // 2
-                sb.Append($"{AppConsts.AttrMaxDst}, "); // 3
-                sb.Append($"{AppConsts.AttrCnt}, "); // 4
-                sb.Append($"{AppConsts.AttrAvgDst}, "); // 5
-                sb.Append($"{AppConsts.AttrChildId} "); // 6
-                sb.Append($"FROM {AppConsts.TableNodes}");
+                sb.Append($"{AppConsts.AttrDescriptor}, "); // 1
+                sb.Append($"{AppConsts.AttrNextId}, "); // 2
+                sb.Append($"{AppConsts.AttrDistance} "); // 3
+                sb.Append($"FROM {AppConsts.TableClusters}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
                     using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -250,64 +235,23 @@ namespace ImageBank
                             var dtn = DateTime.Now;
                             while (reader.Read()) {
                                 var id = reader.GetInt32(0);
-                                var core = (byte[])reader[1];
-                                var sumdst = reader.GetFloat(2);
-                                var maxdst = reader.GetFloat(3);
-                                var cnt = reader.GetInt32(4);
-                                var avgdst = reader.GetFloat(5);
-                                var childid = reader.GetInt32(6);
-
-                                var siftnode = new SiftNode(
-                                    id: id,
-                                    core: core,
-                                    sumdst: sumdst,
-                                    maxdst: maxdst,
-                                    cnt: cnt,
-                                    avgdst: avgdst,
-                                    childid: childid
-                                   );
-
-                                AddToMemory(siftnode);
-
+                                var descriptor = (byte[])reader[1];
+                                var nextid = reader.GetInt32(2);
+                                var distance = reader.GetFloat(3);
+                                _clusters[id] = new Cluster(id: id, descriptor: descriptor, nextid: nextid, distance: distance);
                                 if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
                                     dtn = DateTime.Now;
                                     if (progress != null) {
-                                        progress.Report($"Loading nodes ({_nodesList.Count})...");
+                                        progress.Report($"Loading clusters ({id})...");
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
 
-        public static void SqlUpdateVar(string key, object val)
-        {
-            lock (_sqllock) {
-                var sqltext = $"UPDATE {AppConsts.TableVars} SET {key} = @{key}";
-                using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
-                    sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public static void SqlNodesUpdateProperty(int id, string key, object val)
-        {
-            lock (_sqllock) {
-                try {
-                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                        sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableNodes} SET {key} = @{key} WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}";
-                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
-                        sqlCommand.ExecuteNonQuery();
-                    }
-                }
-                catch (SqlException) {
-                }
-            }
+                UpdateVictimCluster();
+             }
         }
     }
 }

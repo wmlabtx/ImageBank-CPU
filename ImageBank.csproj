@@ -127,23 +127,18 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BitmapHelper.cs" />
-    <Compile Include="ColorLAB.cs" />
-    <Compile Include="ColorRGB.cs" />
+    <Compile Include="Cluster.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FHashEx.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="ImgMdfNodes.cs" />
-    <Compile Include="KHashEx.cs" />
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
-    <Compile Include="MHash.cs" />
-    <Compile Include="Node.cs" />
     <Compile Include="PHashEx.cs" />
     <Compile Include="PHash64.cs" />
     <Compile Include="SiftHelper.cs" />
-    <Compile Include="SiftNode.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

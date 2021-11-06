@@ -18,8 +18,10 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
-        private static readonly SortedDictionary<int, SiftNode> _nodesList = new SortedDictionary<int, SiftNode>();
-        private static object _nodesLock = new object();
+        private static readonly Cluster[] _clusters = new Cluster[AppConsts.MaxClusters];
+        private static int _clustervictimid = 0;
+        private static float _clustervictimdistance = 0f;
+        private static object _clustersLock = new object();
 
         private static int _id;
         private static int _importLimit;
@@ -34,14 +36,14 @@ namespace ImageBank
         private static int AllocateId()
         {
             _id++;
-            SqlUpdateVar(AppConsts.AttrId, _id);
+            SqlVarsUpdateProperty(AppConsts.AttrId, _id);
             return _id;
         }
 
         private static int DecreaseImportLimit()
         {
             _importLimit -= 10;
-            SqlUpdateVar(AppConsts.AttrImportLimit, _importLimit);
+            SqlVarsUpdateProperty(AppConsts.AttrImportLimit, _importLimit);
             return _id;
         }
 

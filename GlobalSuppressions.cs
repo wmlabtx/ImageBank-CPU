@@ -5,11 +5,13 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlAdd(ImageBank.Img)")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.LoadImgs(System.IProgress{System.String})")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlUpdateVar(System.String,System.Object)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlAddImage(ImageBank.Img)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.LoadImages(System.IProgress{System.String})")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlVarsUpdateProperty(System.String,System.Object)")]
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlImagesUpdateProperty(System.Int32,System.String,System.Object)")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.LoadNodes(System.IProgress{System.String})")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlNodesUpdateProperty(System.Int32,System.String,System.Object)")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlAdd(ImageBank.SiftNode)")]
-[assembly: SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "<Pending>", Scope = "member", Target = "~F:ImageBank.ImgMdf._nodesLock")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.LoadClusters(System.IProgress{System.String})")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlClustersUpdateProperty(System.Int32,System.String,System.Object)")]
+[assembly: SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "<Pending>", Scope = "member", Target = "~F:ImageBank.ImgMdf._clustersLock")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlDistancesUpdateProperty(System.Int32,System.Int32,System.String,System.Object)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlAddCluster(System.Int32,System.Byte[])")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.ImgMdf.SqlAddDistance(System.Int32,System.Int32,System.Single)")]

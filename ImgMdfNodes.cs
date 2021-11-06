@@ -5,123 +5,103 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static SiftNode GetNewSiftNode(int id)
+        private static void FindNearestCluster(byte[] descriptors, int offset, out int nearestnode, out float mindistance)
         {
-            var siftnode = new SiftNode(
-                id: id,
-                core: new byte[128],
-                sumdst: 0f,
-                maxdst: 0f,
-                cnt: 0,
-                avgdst: 0f,
-                childid: 0);
-
-            return siftnode;
-        }
-
-        public static SiftNode FindNode(byte[] array, int offset)
-        {
-            lock (_nodesLock) {
-                if (_nodesList.Count == 0) {
-                    var node = GetNewSiftNode(1);
-                    Add(node);
-                    return node;
-                }
-
-                var id = 1;
-                while (true) {
-                    var node = _nodesList[id];
-                    if (node.Cnt == 0 || node.ChildId == 0) {
-                        return node;
+            lock (_clustersLock) {
+                mindistance = float.MaxValue;
+                nearestnode = 0;
+                for (var i = 0; i < AppConsts.MaxClusters; i++) {
+                    var distance = SiftHelper.GetDistance(descriptors, offset, _clusters[i].Descriptor, 0);
+                    if (distance < mindistance) {
+                        nearestnode = i;
+                        mindistance = distance;
                     }
-
-                    var distance = SiftHelper.GetDistance(array, offset, node.Core, 0);
-                    id = distance < node.AvgDst ? node.ChildId : node.ChildId + 1;
                 }
             }
         }
 
-        private static int Compute(byte[] array, int offset)
+        private static void UpdateVictimCluster()
         {
-            lock (_nodesLock) {
-                var node = FindNode(array, offset);
-                if (node.Cnt == 0) {
-                    var core = new byte[128];
-                    Buffer.BlockCopy(array, offset, core, 0, 128);
-                    node.Core = core;
-                    node.Cnt = 1;
+            _clustervictimid = -1;
+            _clustervictimdistance = float.MaxValue;
+            lock (_clustersLock) {
+                for (var i = 0; i < AppConsts.MaxClusters; i++) {
+                    var distance = _clusters[i].Distance;
+                    if (distance < _clustervictimdistance) {
+                        _clustervictimid = i;
+                        _clustervictimdistance = distance;
+                    }
                 }
-                else {
-                    var distance = SiftHelper.GetDistance(array, offset, node.Core, 0);
-                    node.SumDst += distance;
-                    node.Cnt++;
-                    node.AvgDst = node.SumDst / node.Cnt;
-                    node.MaxDst = Math.Max(node.MaxDst, distance);
-                }
-
-                return node.Id;
             }
         }
 
-        public static float GetNodeCount()
+        private static void UpdateCluster(int id)
         {
-            lock (_nodesLock) {
-                var count = _nodesList.Count(e => e.Value.ChildId == 0);
-                return count;
-            }
-        }
-
-        public static SiftNode GetMaxNode()
-        {
-            lock (_nodesLock) {
-                var scope = _nodesList.Select(e => e.Value).Where(e => e.ChildId == 0 && e.Cnt > AppConsts.SiftSplit).ToArray();
-                if (scope.Length == 0) {
-                    scope = _nodesList.Select(e => e.Value).Where(e => e.ChildId == 0).ToArray();
+            var mindistance = float.MaxValue;
+            var minnextid = 0;
+            for (var j = 0; j < AppConsts.MaxClusters; j++) {
+                if (j == id) {
+                    continue;
                 }
 
-                var node = scope.OrderByDescending(e => e.MaxDst).First();
-                return node;
+                var distance = SiftHelper.GetDistance(_clusters[id].Descriptor, 0, _clusters[j].Descriptor, 0);
+                if (distance < mindistance) {
+                    mindistance = distance;
+                    minnextid = j;
+                }
+
+                if (distance < _clusters[j].Distance) {
+                    _clusters[j].NextId = id;
+                    _clusters[j].Distance = distance;
+                }
             }
+
+            _clusters[id].NextId = minnextid;
+            _clusters[id].Distance = mindistance;
         }
 
         public static int[] ComputeVector(byte[] descriptors)
         {
             var vector = new int[descriptors.Length / 128];
             for (var offset = 0; offset < descriptors.Length; offset += 128) {
-                vector[offset / 128] = Compute(descriptors, offset);
+                FindNearestCluster(descriptors, offset, out int nearestnode, out float mindistance);
+                if (mindistance > _clustervictimdistance) {
+                    lock (_clustersLock) {
+                        var buffer = new byte[128];
+                        Buffer.BlockCopy(descriptors, offset, buffer, 0, 128);
+                        _clusters[_clustervictimid].Descriptor = buffer;
+                        UpdateCluster(_clustervictimid);
+                        for (var i = 0; i < AppConsts.MaxClusters; i++) {
+                            if (_clusters[i].NextId == _clustervictimid) {
+                                UpdateCluster(i);
+                            }
+                        }
+                    }
+
+                    /*
+                    Img[] imgs;
+                    lock (_imglock) {
+                        imgs = _imgList.Select(e => e.Value).ToArray();
+                    }
+
+                    foreach (var img in imgs) {
+                        if (img.Vector.Length > 0 && Array.BinarySearch(img.Vector, _clustervictimid) >= 0) {
+                            img.Vector = Array.Empty<int>();
+                            img.LastCheck = GetMinLastCheck();
+                        }
+                    }
+                    */
+
+                    vector[offset / 128] = _clustervictimid;
+                    UpdateVictimCluster();
+                }
+                else {
+                    vector[offset / 128] = nearestnode;
+                }
             }
 
             Array.Sort(vector);
-            lock (_nodesLock) {
-                if (GetNodeCount() < AppConsts.SiftMaxNodes) {
-                    var pnode = GetMaxNode();
-                    if (pnode.Cnt > AppConsts.SiftSplit && pnode.MaxDst > AppConsts.SiftLimit) {
-                        var nextid = _nodesList.Max(e => e.Key) + 1;
-                        var siftnode0 = GetNewSiftNode(nextid);
-                        Add(siftnode0);
-                        var siftnode1 = GetNewSiftNode(nextid + 1);
-                        Add(siftnode1);
-                        pnode.ChildId = nextid;
-                        pnode.SumDst = 0f;
-                        pnode.MaxDst = 0f;
-                    }
-                }
-            }
-
             return vector;
-        }
-
-        public static bool CheckVector(int[] vector)
-        {
-            lock (_nodesLock) {
-                foreach (int v in vector) {
-                    if (!_nodesList.ContainsKey(v) || _nodesList[v].ChildId != 0) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
         }
 
         public static float GetDistance(int[] x, int[] y)
