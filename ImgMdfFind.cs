@@ -57,8 +57,16 @@ namespace ImageBank
                     }
                     */
 
-                    var lvmin = valid.Min(e => e.LastView);
-                    imgX = valid.First(e => e.LastView == lvmin);
+                    var scope = valid.Where(e => e.LastView.Year == 2020).ToArray();
+                    if (scope.Length == 0) {
+                        scope = valid;
+                    }
+
+                    imgX = scope
+                        .OrderByDescending(e => e.LastCheck)
+                        .Take(1000)
+                        .OrderBy(e => e.LastView)
+                        .First();
 
                     idX = imgX.Id;
 

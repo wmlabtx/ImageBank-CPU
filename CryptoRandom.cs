@@ -54,8 +54,8 @@ namespace ImageBank
 
             ulong diff = (ulong)(maxvalue - minvalue + 1);
             var random64 = GetRandom64();
-            var remainder = (short)(random64 % diff);
-            var randomnext = (short)(minvalue + remainder);
+            var remainder = (int)(random64 % diff);
+            var randomnext = minvalue + remainder;
             return randomnext;
         }
 

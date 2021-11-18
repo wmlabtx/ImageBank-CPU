@@ -16,15 +16,25 @@ namespace ImageBank
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
             Img[] shadowcopy = null;
+            Img[] scope = null;
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
 
+                scope = _imgList.Select(e => e.Value).Where(e => e.LastCheck.Year == 2020).ToArray();
+                if (scope.Length == 0) {
+                    scope = _imgList.Select(e => e.Value).ToArray();
+                }
+
                 shadowcopy = _imgList.OrderBy(e => e.Key).Select(e => e.Value).ToArray();
             }
 
+            var rindex = AppVars.Random.Next(0, scope.Length - 1);
+            var img1 = scope[rindex];
+
+            /*
             Img img1 = null;
             foreach (var img in shadowcopy) {
                 if (img.Vector.Length == 0 || img.BestId == 0 || !_imgList.ContainsKey(img.BestId)) {
@@ -36,6 +46,7 @@ namespace ImageBank
                     img1 = img;
                 }
             }
+            */
 
             var filename = FileHelper.NameToFileName(img1.Name);
             var imagedata = FileHelper.ReadData(filename);
@@ -210,8 +221,8 @@ namespace ImageBank
                 newfilename = FileHelper.NameToFileName(newname);
             } while (File.Exists(newfilename));
 
-            var lv = GetMinLastView();
-            var lc = GetMinLastCheck();
+            //var lv = GetMinLastView();
+            //var lc = GetMinLastCheck();
             var id = AllocateId();
 
             var nimg = new Img(
@@ -225,8 +236,8 @@ namespace ImageBank
                 bestid: id,
                 bestpdistance: 256,
                 bestvdistance: 100f,
-                lastview: lv,
-                lastcheck: lc);
+                lastview: new DateTime(2020, 1, 1),
+                lastcheck: new DateTime(2020, 1, 1));
 
             Add(nimg);
 

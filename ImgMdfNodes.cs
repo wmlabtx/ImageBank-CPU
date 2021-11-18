@@ -63,7 +63,8 @@ namespace ImageBank
         public static int[] ComputeVector(byte[] descriptors)
         {
             var vector = new int[descriptors.Length / 128];
-            for (var offset = 0; offset < descriptors.Length; offset += 128) {
+            var offset = 0;
+            while (offset < descriptors.Length) {
                 FindNearestCluster(descriptors, offset, out int nearestnode, out float mindistance);
                 if (mindistance > _clustervictimdistance) {
                     lock (_clustersLock) {
@@ -98,6 +99,8 @@ namespace ImageBank
                 else {
                     vector[offset / 128] = nearestnode;
                 }
+
+                offset += 128;
             }
 
             Array.Sort(vector);

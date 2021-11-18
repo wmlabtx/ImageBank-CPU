@@ -7,7 +7,6 @@
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
         public const string PathLe = @"D:\Users\Murad\Documents\Sdb\Le";
-        public const string FileSiftNodes = @"D:\Users\Murad\Documents\Sdb\Db\siftnodes.dat";
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -15,7 +14,7 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const int MaxClusters = 10000;
+        public const int MaxClusters = 4000;
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
