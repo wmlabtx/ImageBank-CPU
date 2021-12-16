@@ -18,10 +18,8 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
-        private static readonly Cluster[] _clusters = new Cluster[AppConsts.MaxClusters];
-        private static int _clustervictimid = 0;
-        private static float _clustervictimdistance = 0f;
-        private static object _clustersLock = new object();
+        private static readonly List<Cluster> _clusters = new List<Cluster>();
+
 
         private static int _id;
         private static int _importLimit;

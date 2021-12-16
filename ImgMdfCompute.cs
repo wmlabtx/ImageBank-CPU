@@ -15,29 +15,26 @@ namespace ImageBank
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
+            Img img1 = null;
             Img[] shadowcopy = null;
-            Img[] scope = null;
+            int activescope = 0;
+            int sig = 0;
+            int prevsig = 0;
             lock (_imglock) {
-                if (_imgList.Count < 2) {
+                if (_imgList.Count < 2)
+                {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
 
-                scope = _imgList.Select(e => e.Value).Where(e => e.LastCheck.Year == 2020).ToArray();
-                if (scope.Length == 0) {
-                    scope = _imgList.Select(e => e.Value).ToArray();
-                }
-
-                shadowcopy = _imgList.OrderBy(e => e.Key).Select(e => e.Value).ToArray();
+                shadowcopy = _imgList.Select(e => e.Value).ToArray();
             }
 
-            var rindex = AppVars.Random.Next(0, scope.Length - 1);
-            var img1 = scope[rindex];
+            activescope = shadowcopy.Count(e => e.Vector.Length != 0);
+            sig = _clusters.Count;
 
-            /*
-            Img img1 = null;
             foreach (var img in shadowcopy) {
-                if (img.Vector.Length == 0 || img.BestId == 0 || !_imgList.ContainsKey(img.BestId)) {
+                if (img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
                     img1 = img;
                     break;
                 }
@@ -46,71 +43,53 @@ namespace ImageBank
                     img1 = img;
                 }
             }
-            */
 
-            var filename = FileHelper.NameToFileName(img1.Name);
-            var imagedata = FileHelper.ReadData(filename);
-            if (imagedata == null) {
-                Delete(img1.Id);
-                return;
-            }
-
-            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
-                if (bitmap == null) {
+            prevsig = img1.Sig;
+            if (img1.Sig != sig) {
+                var filename = FileHelper.NameToFileName(img1.Name);
+                var imagedata = FileHelper.ReadData(filename);
+                if (imagedata == null)
+                {
                     Delete(img1.Id);
                     return;
                 }
 
-                var matrix = BitmapHelper.GetMatrix(imagedata);
-                var descriptors = SiftHelper.GetDescriptors(matrix);
-                var vector = ComputeVector(descriptors);
-                img1.Vector = vector;
+                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata))
+                {
+                    if (bitmap == null)
+                    {
+                        Delete(img1.Id);
+                        return;
+                    }
+
+                    var matrix = BitmapHelper.GetMatrix(imagedata);
+                    var descriptors = SiftHelper.GetDescriptors(matrix);
+                    var vector = ComputeVector(descriptors, backgroundworker);
+                    img1.Vector = vector;
+                }
+
+                img1.Sig = sig;
             }
 
             var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.Id;
-                var bestpdistance = 256;
                 var bestvdistance = 100f;
                 for (var i = 0; i < candidates.Length; i++) {
                     var img2 = candidates[i];
-                    var pdistance = img1.PHashEx.HammingDistance(img2.PHashEx);
                     var vdistance = GetDistance(img1.Vector, img2.Vector);
-                    if (pdistance < 80) {
-                        if (pdistance < bestpdistance) {
-                            bestid = img2.Id;
-                            bestpdistance = pdistance;
-                            bestvdistance = vdistance;
-                        }
-                    }
-                    else {
-                        if (bestpdistance >= 80) {
-                            if (vdistance < bestvdistance) {
-                                bestid = img2.Id;
-                                bestpdistance = pdistance;
-                                bestvdistance = vdistance;
-                            }
-                            else {
-                                if (vdistance == bestvdistance && pdistance < bestpdistance) {
-                                    bestid = img2.Id;
-                                    bestpdistance = pdistance;
-                                    bestvdistance = vdistance;
-                                }
-                            }
-                        }
+                    if (vdistance < bestvdistance) {
+                        bestid = img2.Id;
+                        bestvdistance = vdistance;
                     }
                 }
 
                 if (bestid != img1.BestId) {
                     _sb.Clear();
-                    _sb.Append($"({_clustervictimid}/{_clustervictimdistance:F4}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}-{bestid}] {img1.BestPDistance} ({img1.BestVDistance:F2}) -> {bestpdistance} ({bestvdistance:F2})");
+                    _sb.Append($"(n:{candidates.Length}/c:{_clusters.Count}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{prevsig}] {img1.BestVDistance:F2} \u2192 {bestvdistance:F2}");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                     img1.Counter = 0;
-                }
-
-                if (img1.BestPDistance != bestpdistance) {
-                    img1.BestPDistance = bestpdistance;
                 }
 
                 if (img1.BestVDistance != bestvdistance) {
@@ -222,22 +201,21 @@ namespace ImageBank
             } while (File.Exists(newfilename));
 
             //var lv = GetMinLastView();
-            //var lc = GetMinLastCheck();
+            var lc = GetMinLastCheck();
             var id = AllocateId();
 
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
-                phashex: phashex,
                 vector: Array.Empty<int>(),
                 year: year,
                 counter: 0,
                 bestid: id,
-                bestpdistance: 256,
+                sig: 0,
                 bestvdistance: 100f,
                 lastview: new DateTime(2020, 1, 1),
-                lastcheck: new DateTime(2020, 1, 1));
+                lastcheck: lc);
 
             Add(nimg);
 

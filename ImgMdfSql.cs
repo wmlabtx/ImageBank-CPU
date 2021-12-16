@@ -73,12 +73,11 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrId}, ");
                     sb.Append($"{AppConsts.AttrName}, ");
                     sb.Append($"{AppConsts.AttrHash}, ");
-                    sb.Append($"{AppConsts.AttrPHashEx}, ");
                     sb.Append($"{AppConsts.AttrVector}, ");
                     sb.Append($"{AppConsts.AttrYear}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
-                    sb.Append($"{AppConsts.AttrBestPDistance}, ");
+                    sb.Append($"{AppConsts.AttrSig}, ");
                     sb.Append($"{AppConsts.AttrBestVDistance}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}");
@@ -86,12 +85,11 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrId}, ");
                     sb.Append($"@{AppConsts.AttrName}, ");
                     sb.Append($"@{AppConsts.AttrHash}, ");
-                    sb.Append($"@{AppConsts.AttrPHashEx}, ");
                     sb.Append($"@{AppConsts.AttrVector}, ");
                     sb.Append($"@{AppConsts.AttrYear}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
-                    sb.Append($"@{AppConsts.AttrBestPDistance}, ");
+                    sb.Append($"@{AppConsts.AttrSig}, ");
                     sb.Append($"@{AppConsts.AttrBestVDistance}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}");
@@ -100,13 +98,12 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrPHashEx}", img.PHashEx.ToArray());
                     var array = Helper.ArrayFrom32(img.Vector);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", array);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestPDistance}", img.BestPDistance);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSig}", img.Sig);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestVDistance}", img.BestVDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
@@ -125,15 +122,14 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrId}, "); // 0
                 sb.Append($"{AppConsts.AttrName}, "); // 1
                 sb.Append($"{AppConsts.AttrHash}, "); // 2
-                sb.Append($"{AppConsts.AttrPHashEx}, "); // 3
-                sb.Append($"{AppConsts.AttrVector}, "); // 4
-                sb.Append($"{AppConsts.AttrYear}, "); // 5
-                sb.Append($"{AppConsts.AttrCounter}, "); // 6
-                sb.Append($"{AppConsts.AttrBestId}, "); // 7
-                sb.Append($"{AppConsts.AttrBestPDistance}, "); // 8
-                sb.Append($"{AppConsts.AttrBestVDistance}, "); // 9
-                sb.Append($"{AppConsts.AttrLastView}, "); // 10
-                sb.Append($"{AppConsts.AttrLastCheck} "); // 11
+                sb.Append($"{AppConsts.AttrVector}, "); // 3
+                sb.Append($"{AppConsts.AttrYear}, "); // 4
+                sb.Append($"{AppConsts.AttrCounter}, "); // 5
+                sb.Append($"{AppConsts.AttrBestId}, "); // 6
+                sb.Append($"{AppConsts.AttrSig}, "); // 7
+                sb.Append($"{AppConsts.AttrBestVDistance}, "); // 8
+                sb.Append($"{AppConsts.AttrLastView}, "); // 9
+                sb.Append($"{AppConsts.AttrLastCheck} "); // 10
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -146,28 +142,25 @@ namespace ImageBank
                                 var id = reader.GetInt32(0);
                                 var name = reader.GetString(1);
                                 var hash = reader.GetString(2);
-                                var phashexbuffer = (byte[])reader[3];
-                                var phashex = new PHashEx(phashexbuffer, 0);
-                                var array = (byte[])reader[4];
+                                var array = (byte[])reader[3];
                                 var vector = Helper.ArrayTo32(array);
-                                var year = reader.GetInt32(5);
-                                var counter = reader.GetInt32(6);
-                                var bestid = reader.GetInt32(7);
-                                var bestpdistance = reader.GetInt32(8);
-                                var bestvdistance = reader.GetFloat(9);
-                                var lastview = reader.GetDateTime(10);
-                                var lastcheck = reader.GetDateTime(11);
+                                var year = reader.GetInt32(4);
+                                var counter = reader.GetInt32(5);
+                                var bestid = reader.GetInt32(6);
+                                var sig = reader.GetInt32(7);
+                                var bestvdistance = reader.GetFloat(8);
+                                var lastview = reader.GetDateTime(9);
+                                var lastcheck = reader.GetDateTime(10);
 
                                 var img = new Img(
                                     id: id,
                                     name: name,
                                     hash: hash,
-                                    phashex: phashex,
                                     vector: vector,
                                     year: year,
                                     counter: counter, 
                                     bestid: bestid,
-                                    bestpdistance: bestpdistance,
+                                    sig: sig,
                                     bestvdistance: bestvdistance,
                                     lastview: lastview,
                                     lastcheck: lastcheck
@@ -216,42 +209,57 @@ namespace ImageBank
             }
         }
 
+        private static void SqlAddCluster(Cluster cluster)
+        {
+            lock (_sqllock)
+            {
+                using (var sqlCommand = _sqlConnection.CreateCommand())
+                {
+                    sqlCommand.Connection = _sqlConnection;
+                    var sb = new StringBuilder();
+                    sb.Append($"INSERT INTO {AppConsts.TableClusters} (");
+                    sb.Append($"{AppConsts.AttrId}, ");
+                    sb.Append($"{AppConsts.AttrDescriptor}");
+                    sb.Append(") VALUES (");
+                    sb.Append($"@{AppConsts.AttrId}, ");
+                    sb.Append($"@{AppConsts.AttrDescriptor}");
+                    sb.Append(')');
+                    sqlCommand.CommandText = sb.ToString();
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", cluster.Id);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptor}", cluster.Descriptor);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
         public static void LoadClusters(IProgress<string> progress)
         {
-            lock (_clustersLock) {
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttrId}, "); // 0
-                sb.Append($"{AppConsts.AttrDescriptor}, "); // 1
-                sb.Append($"{AppConsts.AttrNextId}, "); // 2
-                sb.Append($"{AppConsts.AttrDistance} "); // 3
-                sb.Append($"FROM {AppConsts.TableClusters}");
-                var sqltext = sb.ToString();
-                lock (_sqllock) {
-                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                        sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = sqltext;
-                        using (var reader = sqlCommand.ExecuteReader()) {
-                            var dtn = DateTime.Now;
-                            while (reader.Read()) {
-                                var id = reader.GetInt32(0);
-                                var descriptor = (byte[])reader[1];
-                                var nextid = reader.GetInt32(2);
-                                var distance = reader.GetFloat(3);
-                                _clusters[id] = new Cluster(id: id, descriptor: descriptor, nextid: nextid, distance: distance);
-                                if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
-                                    dtn = DateTime.Now;
-                                    if (progress != null) {
-                                        progress.Report($"Loading clusters ({id})...");
-                                    }
+            var sb = new StringBuilder();
+            sb.Append("SELECT ");
+            sb.Append($"{AppConsts.AttrId}, "); // 0
+            sb.Append($"{AppConsts.AttrDescriptor} "); // 1
+            sb.Append($"FROM {AppConsts.TableClusters}");
+            var sqltext = sb.ToString();
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    sqlCommand.CommandText = sqltext;
+                    using (var reader = sqlCommand.ExecuteReader()) {
+                        var dtn = DateTime.Now;
+                        while (reader.Read()) {
+                            var id = reader.GetInt32(0);
+                            var descriptor = (byte[])reader[1];
+                            _clusters.Add(new Cluster(id: id, descriptor: descriptor));
+                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
+                                dtn = DateTime.Now;
+                                if (progress != null) {
+                                    progress.Report($"Loading clusters ({id})...");
                                 }
                             }
                         }
                     }
                 }
-
-                UpdateVictimCluster();
-             }
+            }
         }
     }
 }

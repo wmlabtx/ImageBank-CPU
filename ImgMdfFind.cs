@@ -19,14 +19,13 @@ namespace ImageBank
                 if (idX == 0) {
                     imgX = null;
                     Img[] valid;
-                    lock (_imglock) {
+                    lock (_imglock)
+                    {
                         valid = _imgList
                             .Where(
                                 e => e.Value.BestId != 0 &&
                                 e.Value.BestId != e.Value.Id &&
-                                _imgList.ContainsKey(e.Value.BestId) &&
-                                e.Value.Vector.Length > 0 &&
-                                e.Value.Vector[0] != 0)
+                                _imgList.ContainsKey(e.Value.BestId))
                             .Select(e => e.Value)
                             .ToArray();
                     }
@@ -36,38 +35,7 @@ namespace ImageBank
                         return;
                     }
 
-                    /*
-                    var cmin = valid.Min(e => e.Counter);
-                    valid = valid.Where(e => e.Counter == cmin).ToArray();
-
-                    var realyear = valid.Where(e => e.Year != 0).ToArray();
-                    if (realyear.Length > 0) {
-                        var lv = realyear.Min(e => e.LastView);
-                        imgX = realyear.First(e => e.LastView == lv);
-                    }
-                    else {
-                        var bestpdistancemin = valid.Min(e => e.BestPDistance);
-                        if (bestpdistancemin < 80) {
-                            imgX = valid.First(e => e.BestPDistance == bestpdistancemin);
-                        }
-                        else {
-                            var bestvdistancemin = valid.Min(e => e.BestVDistance);
-                            imgX = valid.First(e => e.BestVDistance == bestvdistancemin);
-                        }
-                    }
-                    */
-
-                    var scope = valid.Where(e => e.LastView.Year == 2020).ToArray();
-                    if (scope.Length == 0) {
-                        scope = valid;
-                    }
-
-                    imgX = scope
-                        .OrderByDescending(e => e.LastCheck)
-                        .Take(1000)
-                        .OrderBy(e => e.LastView)
-                        .First();
-
+                    imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
                     idX = imgX.Id;
 
                     if (!_imgList.TryGetValue(imgX.BestId, out var imgBest)) {
@@ -106,7 +74,7 @@ namespace ImageBank
                 var diff = imgcount - _importLimit;
                 var g0 = _imgList.Count(e => e.Value.Counter == 0);
                 var g1 = _imgList.Count(e => e.Value.Counter == 1);
-                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance:{imgX.BestPDistance} ({imgX.BestVDistance:F2})");
+                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance: {imgX.BestVDistance:F2}");
             }
         }
 

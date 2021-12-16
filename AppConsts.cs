@@ -14,7 +14,7 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const int MaxClusters = 4000;
+        public const float MaxDistance = 400f;
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
@@ -23,20 +23,17 @@
         public const string AttrId = "Id";
         public const string AttrName = "Name";
         public const string AttrHash = "Hash";
-        public const string AttrPHashEx = "PHashEx";
         public const string AttrVector = "Vector";
         public const string AttrYear = "Year";
         public const string AttrCounter = "Counter";
         public const string AttrBestId = "BestId";
-        public const string AttrBestPDistance = "BestPDistance";
         public const string AttrBestVDistance = "BestVDistance";
         public const string AttrLastView = "LastView";
         public const string AttrLastCheck = "LastCheck";
+        public const string AttrSig = "Sig";
         public const string TableVars = "Vars";
         public const string AttrImportLimit = "ImportLimit";
         public const string TableClusters = "Clusters";
         public const string AttrDescriptor = "Descriptor";
-        public const string AttrDistance = "Distance";
-        public const string AttrNextId = "NextId";
     }
 }

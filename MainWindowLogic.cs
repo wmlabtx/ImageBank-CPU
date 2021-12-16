@@ -166,7 +166,7 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append(AppVars.ImgPanel[index].Img.Name);
+                sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
                     sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
