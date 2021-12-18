@@ -136,8 +136,6 @@
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
-    <Compile Include="PHashEx.cs" />
-    <Compile Include="PHash64.cs" />
     <Compile Include="SiftHelper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

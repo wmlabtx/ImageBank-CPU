@@ -8,12 +8,12 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private int[] _vector;
-        public int[] Vector {
+        private short[] _vector;
+        public short[] Vector {
             get => _vector;
             set {
                 _vector = value;
-                var array = Helper.ArrayFrom32(_vector);
+                var array = Helper.ArrayFrom16(_vector);
                 ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrVector, array);
             }
         }
@@ -85,7 +85,7 @@ namespace ImageBank
             int id,
             string name,
             string hash,
-            int[] vector,
+            short[] vector,
             int year,
             int counter,
             int bestid,

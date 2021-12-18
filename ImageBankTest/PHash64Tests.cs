@@ -3,6 +3,7 @@ using System;
 
 namespace ImageBank.Tests
 {
+    /*
     [TestClass()]
     public class PHash64Tests
     {
@@ -52,4 +53,5 @@ namespace ImageBank.Tests
             Assert.AreEqual(d, 256);
         }
     }
+    */
 }

@@ -2,7 +2,7 @@
 {
     public class Cluster
     {
-        public int Id { get; }
+        public short Id { get; }
 
         private byte[] _descriptor;
         public byte[] Descriptor {
@@ -14,7 +14,7 @@
         }
 
         public Cluster(
-            int id,
+            short id,
             byte[] descriptor
             )
         {

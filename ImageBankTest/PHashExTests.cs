@@ -3,6 +3,7 @@ using System.IO;
 
 namespace ImageBank.Tests
 {
+    /*
     [TestClass()]
     public class PHashExTests
     {
@@ -124,4 +125,5 @@ namespace ImageBank.Tests
             Assert.AreEqual(d_nosim, 110);
         }
     }
+    */
 }

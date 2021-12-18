@@ -186,8 +186,6 @@ namespace ImageBank
                 return;
             }
 
-            var matrix = BitmapHelper.GetMatrix(imagedata);
-            var phashex = new PHashEx(matrix);
             bitmap.Dispose();
 
             // we have to create unique name and a location in Hp folder
@@ -208,7 +206,7 @@ namespace ImageBank
                 id: id,
                 name: newname,
                 hash: hash,
-                vector: Array.Empty<int>(),
+                vector: Array.Empty<short>(),
                 year: year,
                 counter: 0,
                 bestid: id,

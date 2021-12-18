@@ -75,6 +75,20 @@ namespace ImageBank
 
         #region Buffers
 
+        public static byte[] ArrayFrom16(short[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(short)];
+            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
+            return buffer;
+        }
+
+        public static short[] ArrayTo16(byte[] buffer)
+        {
+            var array = new short[buffer.Length / sizeof(short)];
+            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            return array;
+        }
+
         public static byte[] ArrayFrom32(int[] array)
         {
             var buffer = new byte[array.Length * sizeof(int)];

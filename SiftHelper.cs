@@ -49,7 +49,7 @@ namespace ImageBank
             }
 
             var keypoints = _sift.Detect(mat);
-            keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(1000).ToArray();
+            keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
             using (var matdescriptors = new Mat()) {
                 _sift.Compute(mat, ref keypoints, matdescriptors);
                 /*
@@ -62,7 +62,7 @@ namespace ImageBank
                 using (var matflip = new Mat()) {
                     Cv2.Flip(mat, matflip, FlipMode.Y);
                     keypoints = _sift.Detect(matflip);
-                    keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(1000).ToArray();
+                    keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
                     using (var matdescriptorsflip = new Mat()) {
                         _sift.Compute(matflip, ref keypoints, matdescriptorsflip);
                         matdescriptors.PushBack(matdescriptorsflip);

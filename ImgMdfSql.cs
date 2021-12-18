@@ -98,7 +98,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrHash}", img.Hash);
-                    var array = Helper.ArrayFrom32(img.Vector);
+                    var array = Helper.ArrayFrom16(img.Vector);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrVector}", array);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
@@ -143,7 +143,7 @@ namespace ImageBank
                                 var name = reader.GetString(1);
                                 var hash = reader.GetString(2);
                                 var array = (byte[])reader[3];
-                                var vector = Helper.ArrayTo32(array);
+                                var vector = Helper.ArrayTo16(array);
                                 var year = reader.GetInt32(4);
                                 var counter = reader.GetInt32(5);
                                 var bestid = reader.GetInt32(6);
@@ -247,7 +247,7 @@ namespace ImageBank
                     using (var reader = sqlCommand.ExecuteReader()) {
                         var dtn = DateTime.Now;
                         while (reader.Read()) {
-                            var id = reader.GetInt32(0);
+                            var id = (short)reader.GetInt32(0);
                             var descriptor = (byte[])reader[1];
                             _clusters.Add(new Cluster(id: id, descriptor: descriptor));
                             if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
