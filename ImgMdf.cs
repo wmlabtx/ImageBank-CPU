@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
@@ -18,8 +19,8 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
-        private static readonly List<Cluster> _clusters = new List<Cluster>();
-
+        private static readonly BFMatcher _bfmatcher = new BFMatcher();
+        private static Mat _clusters;
 
         private static int _id;
         private static int _importLimit;

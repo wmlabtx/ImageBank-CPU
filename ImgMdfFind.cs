@@ -35,7 +35,8 @@ namespace ImageBank
                         return;
                     }
 
-                    imgX = valid.OrderBy(e => e.LastView).FirstOrDefault();
+                    var mincounter = valid.Min(e => e.Counter);
+                    imgX = valid.Where(e => e.Counter == mincounter).OrderBy(e => e.BestVDistance).FirstOrDefault();
                     idX = imgX.Id;
 
                     if (!_imgList.TryGetValue(imgX.BestId, out var imgBest)) {

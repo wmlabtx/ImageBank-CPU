@@ -1,4 +1,4 @@
-﻿using System;
+﻿using OpenCvSharp;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -7,61 +7,42 @@ namespace ImageBank
 {
     public partial class ImgMdf
     {
-        private static void FindNearestCluster(byte[] descriptors, int offset, out short nearestnode, out float mindistance)
+        private static void AddCluster(Mat matdescriptor)
         {
-            mindistance = float.MaxValue;
-            nearestnode = 0;
-            for (var i = 0; i < _clusters.Count; i++) {
-                var distance = SiftHelper.GetDistance(descriptors, offset, _clusters[i].Descriptor, 0);
-                if (distance < mindistance) {
-                    nearestnode = (short)i;
-                    mindistance = distance;
-                }
-            }
+            _clusters.PushBack(matdescriptor);
+            _clusters.GetArray<float>(out var floatbuffer);
+            var buffer = Helper.ArrayFromFloat(floatbuffer);
+            SqlVarsUpdateProperty(AppConsts.AttrClusters, buffer);
         }
 
-        private static void AddCluster(byte[] descriptors, int offset, short id)
+        public static ushort[] ComputeVector(Mat descriptors, BackgroundWorker backgroundworker)
         {
-            var buffer = new byte[128];
-            Buffer.BlockCopy(descriptors, offset, buffer, 0, 128);
-            var cluster = new Cluster(id: id, descriptor: buffer);
-            _clusters.Add(cluster);
-            SqlAddCluster(cluster);
-        }
-
-        public static short[] ComputeVector(byte[] descriptors, BackgroundWorker backgroundworker)
-        {
-            var list = new List<short>();
-            var offset = 0;
-            while (offset < descriptors.Length) {
-                short nearestnode = 0;
-                if (_clusters.Count == 0) {
-                    AddCluster(descriptors, offset, 0);
-                    list.Add(nearestnode);
+            var list = new List<ushort>();
+            for (var i = 0; i < descriptors.Rows; i++) {
+                if (_clusters.Rows == 0) {
+                    AddCluster(descriptors.Row(0));
+                    list.Add(0);
                 }
                 else {
-                    FindNearestCluster(descriptors, offset, out nearestnode, out float mindistance);
-                    if (mindistance > AppConsts.MaxDistance) {
-                        short id = (short)(_clusters.Max(e => e.Id) + 1);
-                        if (id < AppConsts.MaxClusters) {
-                            AddCluster(descriptors, offset, id);
-                            nearestnode = id;
-                            list.Add(nearestnode);
+                    var descriptor = descriptors.Row(i);
+                    var d = _bfmatcher.Match(descriptor, _clusters);
+                    if (d[0].Distance > AppConsts.MaxDistance) {
+                        if (_clusters.Rows < AppConsts.MaxClusters) {
+                            list.Add((ushort)_clusters.Rows);
+                            AddCluster(descriptor);
                         }
                     }
                     else {
-                        list.Add(nearestnode);
+                        list.Add((ushort)d[0].TrainIdx);
                     }
                 }
-
-                offset += 128;
             }
 
             var vector = list.OrderBy(e => e).ToArray();
             return vector;
         }
 
-        public static float GetDistance(short[] x, short[] y)
+        public static float GetDistance(ushort[] x, ushort[] y)
         {
             if (x == null || x.Length == 0 || y == null || y.Length == 0) {
                 return 100f;

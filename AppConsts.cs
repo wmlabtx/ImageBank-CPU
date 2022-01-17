@@ -14,7 +14,7 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const int MaxClusters = 32000;
+        public const int MaxClusters = 0x10000;
         public const int MaxDescriptors = 500;
         public const float MaxDistance = 400f;
 
@@ -35,7 +35,6 @@
         public const string AttrSig = "Sig";
         public const string TableVars = "Vars";
         public const string AttrImportLimit = "ImportLimit";
-        public const string TableClusters = "Clusters";
-        public const string AttrDescriptor = "Descriptor";
+        public const string AttrClusters = "Clusters";
     }
 }

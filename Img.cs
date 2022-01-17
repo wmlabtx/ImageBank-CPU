@@ -8,8 +8,8 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private short[] _vector;
-        public short[] Vector {
+        private ushort[] _vector;
+        public ushort[] Vector {
             get => _vector;
             set {
                 _vector = value;
@@ -85,7 +85,7 @@ namespace ImageBank
             int id,
             string name,
             string hash,
-            short[] vector,
+            ushort[] vector,
             int year,
             int counter,
             int bestid,

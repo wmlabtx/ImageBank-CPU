@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
 using System;
+using OpenCvSharp;
 
 namespace ImageBank
 {
@@ -30,23 +31,6 @@ namespace ImageBank
                 using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
                     sqlCommand.Parameters.AddWithValue($"@{key}", val);
                     sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public static void SqlClustersUpdateProperty(int id, string key, object val)
-        {
-            lock (_sqllock) {
-                try {
-                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                        sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableClusters} SET {key} = @{key} WHERE {AppConsts.AttrId} = @{AppConsts.AttrId}";
-                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", id);
-                        sqlCommand.ExecuteNonQuery();
-                    }
-                }
-                catch (SqlException) {
                 }
             }
         }
@@ -187,7 +171,8 @@ namespace ImageBank
                     sb.Length = 0;
                     sb.Append("SELECT ");
                     sb.Append($"{AppConsts.AttrId}, "); // 0
-                    sb.Append($"{AppConsts.AttrImportLimit} "); // 1
+                    sb.Append($"{AppConsts.AttrImportLimit}, "); // 1
+                    sb.Append($"{AppConsts.AttrClusters} "); // 2
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -196,6 +181,10 @@ namespace ImageBank
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
                                     _importLimit = reader.GetInt32(1);
+                                    var clusters = (byte[])reader[2];
+                                    var floatclusters = Helper.ArrayToFloat(clusters);
+                                    _clusters = new Mat(floatclusters.Length / 128, 128, MatType.CV_32F);
+                                    _clusters.SetArray(floatclusters);
                                     break;
                                 }
                             }
@@ -204,59 +193,6 @@ namespace ImageBank
 
                     if (progress != null) {
                         progress.Report("Database loaded");
-                    }
-                }
-            }
-        }
-
-        private static void SqlAddCluster(Cluster cluster)
-        {
-            lock (_sqllock)
-            {
-                using (var sqlCommand = _sqlConnection.CreateCommand())
-                {
-                    sqlCommand.Connection = _sqlConnection;
-                    var sb = new StringBuilder();
-                    sb.Append($"INSERT INTO {AppConsts.TableClusters} (");
-                    sb.Append($"{AppConsts.AttrId}, ");
-                    sb.Append($"{AppConsts.AttrDescriptor}");
-                    sb.Append(") VALUES (");
-                    sb.Append($"@{AppConsts.AttrId}, ");
-                    sb.Append($"@{AppConsts.AttrDescriptor}");
-                    sb.Append(')');
-                    sqlCommand.CommandText = sb.ToString();
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrId}", cluster.Id);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrDescriptor}", cluster.Descriptor);
-                    sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public static void LoadClusters(IProgress<string> progress)
-        {
-            var sb = new StringBuilder();
-            sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttrId}, "); // 0
-            sb.Append($"{AppConsts.AttrDescriptor} "); // 1
-            sb.Append($"FROM {AppConsts.TableClusters}");
-            var sqltext = sb.ToString();
-            lock (_sqllock) {
-                using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                    sqlCommand.Connection = _sqlConnection;
-                    sqlCommand.CommandText = sqltext;
-                    using (var reader = sqlCommand.ExecuteReader()) {
-                        var dtn = DateTime.Now;
-                        while (reader.Read()) {
-                            var id = (short)reader.GetInt32(0);
-                            var descriptor = (byte[])reader[1];
-                            _clusters.Add(new Cluster(id: id, descriptor: descriptor));
-                            if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
-                                dtn = DateTime.Now;
-                                if (progress != null) {
-                                    progress.Report($"Loading clusters ({id})...");
-                                }
-                            }
-                        }
                     }
                 }
             }

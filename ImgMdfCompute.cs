@@ -31,7 +31,7 @@ namespace ImageBank
             }
 
             activescope = shadowcopy.Count(e => e.Vector.Length != 0);
-            sig = _clusters.Count;
+            sig = _clusters.Rows;
 
             foreach (var img in shadowcopy) {
                 if (img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
@@ -45,7 +45,7 @@ namespace ImageBank
             }
 
             prevsig = img1.Sig;
-            if (img1.Sig != sig) {
+            if (img1.Sig != sig || img1.Vector.Length == 0) {
                 var filename = FileHelper.NameToFileName(img1.Name);
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata == null)
@@ -54,10 +54,8 @@ namespace ImageBank
                     return;
                 }
 
-                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata))
-                {
-                    if (bitmap == null)
-                    {
+                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                    if (bitmap == null) {
                         Delete(img1.Id);
                         return;
                     }
@@ -86,7 +84,7 @@ namespace ImageBank
 
                 if (bestid != img1.BestId) {
                     _sb.Clear();
-                    _sb.Append($"(n:{candidates.Length}/c:{_clusters.Count}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{prevsig}] {img1.BestVDistance:F2} \u2192 {bestvdistance:F2}");
+                    _sb.Append($"(n:{candidates.Length}/c:{_clusters.Rows}) a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{prevsig}] {img1.BestVDistance:F2} \u2192 {bestvdistance:F2}");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                     img1.Counter = 0;
@@ -206,7 +204,7 @@ namespace ImageBank
                 id: id,
                 name: newname,
                 hash: hash,
-                vector: Array.Empty<short>(),
+                vector: Array.Empty<ushort>(),
                 year: year,
                 counter: 0,
                 bestid: id,

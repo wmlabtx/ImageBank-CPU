@@ -9,10 +9,8 @@ namespace ImageBank
     {
         private static readonly SIFT _sift = SIFT.Create(10000);
 
-        public static byte[] GetDescriptors(float[][] matrix)
+        public static Mat GetDescriptors(float[][] matrix)
         {
-            byte[] descriptors;
-
             int numRows = matrix.Length;
             int numCols = matrix[0].Length;
 
@@ -50,46 +48,27 @@ namespace ImageBank
 
             var keypoints = _sift.Detect(mat);
             keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
-            using (var matdescriptors = new Mat()) {
-                _sift.Compute(mat, ref keypoints, matdescriptors);
-                /*
-                using (var matkeypoints = new Mat()) {
-                    Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
-                    matkeypoints.SaveImage("matkeypoints.png");
-                }
-                */
+            var matdescriptors = new Mat();
+            _sift.Compute(mat, ref keypoints, matdescriptors);
+            /*
+            using (var matkeypoints = new Mat()) {
+                Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
+                matkeypoints.SaveImage("matkeypoints.png");
+            }
+            */
 
-                using (var matflip = new Mat()) {
-                    Cv2.Flip(mat, matflip, FlipMode.Y);
-                    keypoints = _sift.Detect(matflip);
-                    keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
-                    using (var matdescriptorsflip = new Mat()) {
-                        _sift.Compute(matflip, ref keypoints, matdescriptorsflip);
-                        matdescriptors.PushBack(matdescriptorsflip);
-                    }
-                }
-
-                matdescriptors.GetArray(out float[] fdata);
-                descriptors = new byte[fdata.Length];
-                for (var i = 0; i < fdata.Length; i++) {
-                    descriptors[i] = (byte)Math.Floor(fdata[i]);
+            using (var matflip = new Mat()) {
+                Cv2.Flip(mat, matflip, FlipMode.Y);
+                keypoints = _sift.Detect(matflip);
+                keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(AppConsts.MaxDescriptors).ToArray();
+                using (var matdescriptorsflip = new Mat()) {
+                    _sift.Compute(matflip, ref keypoints, matdescriptorsflip);
+                    matdescriptors.PushBack(matdescriptorsflip);
                 }
             }
 
             mat.Dispose();
-            return descriptors;
-        }
-
-        public static float GetDistance(byte[] x, int xo, byte[] y, int yo)
-        {
-            float distance = 0f;
-            for (var i = 0; i < 128; i++) {
-                float dx = (float)x[xo + i] - y[yo + i];
-                distance += dx * dx;
-            }
-
-            distance = (float)Math.Sqrt(distance);
-            return distance;
+            return matdescriptors;
         }
     }
 }
