@@ -31,6 +31,9 @@ namespace ImageBank
                             list.Add((ushort)_clusters.Rows);
                             AddCluster(descriptor);
                         }
+                        else {
+                            list.Add((ushort)d[0].TrainIdx);
+                        }
                     }
                     else {
                         list.Add((ushort)d[0].TrainIdx);
@@ -43,6 +46,35 @@ namespace ImageBank
         }
 
         public static float GetDistance(ushort[] x, ushort[] y)
+        {
+            if (x == null || x.Length == 0 || y == null || y.Length == 0) {
+                return 100f;
+            }
+
+            var m = 0;
+            var i = 0;
+            var j = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i] == y[j]) {
+                    m++;
+                     i++;
+                    j++;
+                }
+                else {
+                    if (x[i] < y[j]) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+                }
+            }
+
+            var distance = 100f * (x.Length - m) / x.Length;
+            return distance;
+        }
+
+        public static float GetDistance(byte[] x, byte[] y)
         {
             if (x == null || x.Length == 0 || y == null || y.Length == 0) {
                 return 100f;

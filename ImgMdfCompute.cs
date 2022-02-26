@@ -27,14 +27,14 @@ namespace ImageBank
                     return;
                 }
 
-                shadowcopy = _imgList.Select(e => e.Value).ToArray();
+                shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.LastCheck).ToArray();
             }
 
             activescope = shadowcopy.Count(e => e.Vector.Length != 0);
             sig = _clusters.Rows;
 
             foreach (var img in shadowcopy) {
-                if (img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
+                if (img.Sig == 0 && img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
                     img1 = img;
                     break;
                 }
@@ -207,7 +207,7 @@ namespace ImageBank
                 vector: Array.Empty<ushort>(),
                 year: year,
                 counter: 0,
-                bestid: id,
+                bestid: 0,
                 sig: 0,
                 bestvdistance: 100f,
                 lastview: new DateTime(2020, 1, 1),

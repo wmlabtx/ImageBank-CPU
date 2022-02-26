@@ -67,8 +67,7 @@ namespace ImageBank
 
         private void OnStateChanged()
         {
-            if (WindowState == WindowState.Minimized)
-            {
+            if (WindowState == WindowState.Minimized) {
                 Hide();
                 _notifyIcon.Visible = true;
             }
@@ -141,8 +140,7 @@ namespace ImageBank
 
         private void ElementsEnable(bool enabled)
         {
-            foreach (System.Windows.Controls.MenuItem item in Menu.Items)
-            {
+            foreach (System.Windows.Controls.MenuItem item in Menu.Items) {
                 item.IsEnabled = enabled;
             }
 
@@ -187,7 +185,8 @@ namespace ImageBank
                 var scb = System.Windows.Media.Brushes.White;
 
                 if (AppVars.ImgPanel[index].Img.Year != 0) {
-                    scb = System.Windows.Media.Brushes.Yellow;
+                    scb = AppVars.ImgPanel[index].Size >= AppVars.ImgPanel[1 - index].Size ?
+                        System.Windows.Media.Brushes.Yellow : System.Windows.Media.Brushes.LightYellow;
                 }
 
                 if (index == 1) {

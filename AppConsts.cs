@@ -14,7 +14,7 @@
         public const string CorruptedExtension = ".corrupted";
         public const string BakExtension = ".bak";
 
-        public const int MaxClusters = 0x10000;
+        public const int MaxClusters = 8500;
         public const int MaxDescriptors = 500;
         public const float MaxDistance = 400f;
 

@@ -1,0 +1,1 @@
+﻿UPDATE Images SET Features = 0x

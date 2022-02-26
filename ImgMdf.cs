@@ -25,6 +25,8 @@ namespace ImageBank
         private static int _id;
         private static int _importLimit;
 
+        private static readonly CryptoRandom _random = new CryptoRandom();
+
         static ImgMdf()
         {
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
