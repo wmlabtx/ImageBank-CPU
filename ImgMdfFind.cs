@@ -42,10 +42,10 @@ namespace ImageBank
                         scope = scopelast;
                     }
 
-                    var rscope = scope.OrderBy(e => e.BestVDistance).Take(1000).ToArray();
-                    var rindex = _random.Next(0, rscope.Length - 1);
-                    imgX = rscope[rindex];
-                    //imgX = valid.Where(e => e.Counter == mincounter).OrderBy(e => e.BestVDistance).FirstOrDefault();
+                    //var rscope = scope.OrderBy(e => e.BestVDistance).Take(1000).ToArray();
+                    //var rindex = _random.Next(0, rscope.Length - 1);
+                    //imgX = rscope[rindex];
+                    imgX = scope.OrderBy(e => e.LastView).FirstOrDefault();
                     //imgX = scope[rindex];
                     idX = imgX.Id;
 
