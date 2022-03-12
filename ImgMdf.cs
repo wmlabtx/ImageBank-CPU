@@ -19,9 +19,6 @@ namespace ImageBank
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
-        private static readonly BFMatcher _bfmatcher = new BFMatcher();
-        private static Mat _clusters;
-
         private static int _id;
         private static int _importLimit;
 
@@ -32,6 +29,7 @@ namespace ImageBank
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
+            NeuralGas.Load();
         }
 
         private static int AllocateId()

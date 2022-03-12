@@ -5,14 +5,36 @@ using System.IO;
 namespace ImageBank.Tests
 {
     [TestClass()]
-    public class SiftHelperTests
+    public class RootSiftHelperTests
     {
         [TestMethod()]
-        public void PopulateTest()
+        public void ComputeTest()
         {
-            /*
-            if (File.Exists(AppConsts.FileSiftNodes)) {
-                File.Delete(AppConsts.FileSiftNodes);
+            var name = "gab_org.jpg";
+            var imagedata = File.ReadAllBytes(name);
+            var matrix = BitmapHelper.GetMatrix(imagedata);
+            Assert.IsNotNull(matrix);
+            var descriptors = RootSiftHelper.Compute(matrix, true);
+            Assert.IsNotNull(descriptors);
+        }
+
+        [TestMethod()]
+        public void InitLearnTest()
+        {
+            NeuralGas.Clear();
+
+            for (var i = 1; i < 30; i++) {
+                var name = $"train\\train{i:D2}.jpg";
+                var imagedata = File.ReadAllBytes(name);
+                var matrix = BitmapHelper.GetMatrix(imagedata);
+                Assert.IsNotNull(matrix);
+                var descriptors = RootSiftHelper.Compute(matrix, true);
+                if (NeuralGas.GetMaxId() == 0) {
+                    NeuralGas.Init(descriptors);
+                }
+
+                NeuralGas.LearnDescriptors(descriptors);
+                NeuralGas.Save();
             }
 
             for (var i = 1; i < 30; i++) {
@@ -20,27 +42,15 @@ namespace ImageBank.Tests
                 var imagedata = File.ReadAllBytes(name);
                 var matrix = BitmapHelper.GetMatrix(imagedata);
                 Assert.IsNotNull(matrix);
-                var descriptors = SiftHelper.GetDescriptors(matrix);
-                SiftHelper.Populate(descriptors);
+                var descriptors = RootSiftHelper.Compute(matrix, true);
+                NeuralGas.Compute(descriptors, out ushort[] vector, out float error);
+                Debug.WriteLine($"average error = {error:F2}");
             }
-
-            SiftHelper.SaveNodes();
-            for (var i = 1; i < 30; i++) {
-                var name = $"train\\train{i:D2}.jpg";
-                var imagedata = File.ReadAllBytes(name);
-                var matrix = BitmapHelper.GetMatrix(imagedata);
-                Assert.IsNotNull(matrix);
-                var descriptors = SiftHelper.GetDescriptors(matrix);
-                var vector = SiftHelper.ComputeVector(descriptors);
-                Assert.IsNotNull(vector);
-            }
-            */
         }
 
         [TestMethod()]
         public void ComparisonTest()
         {
-            /*
             var images = new string[] {
                 "gab_org", "gab_bw", "gab_scale", "gab_flip", "gab_r90", "gab_crop", "gab_toside",
                 "gab_blur", "gab_exp", "gab_logo", "gab_noice", "gab_r3", "gab_r10",
@@ -48,35 +58,32 @@ namespace ImageBank.Tests
                 "gab_nosim1", "gab_nosim2", "gab_nosim3", "gab_nosim4", "gab_nosim5", "gab_nosim6"
             };
 
-            SiftHelper.LoadNodes();
+            /*
+            var images = new string[] {
+                "gab_org", "gab_flip"
+            };
+            */
+
+            NeuralGas.Load();
+
+            var vectors = new ushort[images.Length][];
             for (var i = 0; i < images.Length; i++) {
                 var name = $"{images[i]}.jpg";
                 var imagedata = File.ReadAllBytes(name);
                 var matrix = BitmapHelper.GetMatrix(imagedata);
                 Assert.IsNotNull(matrix);
-                var descriptors = SiftHelper.GetDescriptors(matrix);
-                SiftHelper.Populate(descriptors);
-            }
-
-            SiftHelper.SaveNodes();
-
-            var vectors = new int[images.Length][];
-            for (var i = 0; i < images.Length; i++) {
-                var name = $"{images[i]}.jpg";
-                var imagedata = File.ReadAllBytes(name);
-                var matrix = BitmapHelper.GetMatrix(imagedata);
-                Assert.IsNotNull(matrix);
-                var descriptors = SiftHelper.GetDescriptors(matrix);
-                var vector = SiftHelper.ComputeVector(descriptors);
-                Assert.IsNotNull(vector);
+                var descriptors = RootSiftHelper.Compute(matrix, true);
+                NeuralGas.LearnDescriptors(descriptors);
+                NeuralGas.Save();
+                NeuralGas.Compute(descriptors, out ushort[] vector, out float error);
+                Debug.WriteLine($"average error = {error:F2}");
                 vectors[i] = vector;
             }
 
             for (var i = 0; i < vectors.Length; i++) {
-                var distance = SiftHelper.GetDistance(vectors[0], vectors[i]);
+                var distance = RootSiftHelper.GetDistance(vectors[0], vectors[i]);
                 Debug.WriteLine($"{images[i]} = {distance:F2}");
             }
-            */
         }
     }
 }

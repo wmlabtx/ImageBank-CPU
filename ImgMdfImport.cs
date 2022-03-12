@@ -77,6 +77,7 @@ namespace ImageBank
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
         }
 
+        /*
         public static void RandomLe(int max, IProgress<string> progress)
         {
             lock (_rwlock) {
@@ -135,5 +136,6 @@ namespace ImageBank
                 }
             }
         }
+        */
     }
 }

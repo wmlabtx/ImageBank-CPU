@@ -77,9 +77,6 @@
     <Reference Include="OpenCvSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
       <HintPath>packages\OpenCvSharp4.4.5.5.20211231\lib\netstandard2.0\OpenCvSharp.dll</HintPath>
     </Reference>
-    <Reference Include="OpenCvSharp.Extensions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6adad1e807fea099, processorArchitecture=MSIL">
-      <HintPath>packages\OpenCvSharp4.4.5.3.20211207\lib\net461\OpenCvSharp.Extensions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -126,16 +123,19 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Axon.cs" />
     <Compile Include="BitmapHelper.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FHashEx.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="ImgMdfNodes.cs" />
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
-    <Compile Include="SiftHelper.cs" />
+    <Compile Include="NeuralGas.cs" />
+    <Compile Include="Neuron.cs" />
+    <Compile Include="RootSiftDescriptor.cs" />
+    <Compile Include="RootSiftHelper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

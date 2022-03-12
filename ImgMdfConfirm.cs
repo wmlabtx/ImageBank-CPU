@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -9,12 +8,13 @@ namespace ImageBank
         {
             var imgX = AppVars.ImgPanel[0].Img;
             imgX.Counter++;
-            imgX.LastView = DateTime.Now;
+            UpdateLastView(0);
+            UpdateLastView(1);
         }
 
-        public static void UpdateLastViewOnly()
+        public static void UpdateLastView(int index)
         {
-            var imgX = AppVars.ImgPanel[0].Img;
+            var imgX = AppVars.ImgPanel[index].Img;
             imgX.LastView = DateTime.Now;
         }
     }

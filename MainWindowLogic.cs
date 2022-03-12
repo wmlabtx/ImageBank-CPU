@@ -83,24 +83,11 @@ namespace ImageBank
             Import(max);
         }
 
-        private void RandomLeClick(int max)
-        {
-            RandomLe(max);
-        }
-
         private async void Import(int max)
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Import(max, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void RandomLe(int max)
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.RandomLe(max, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -239,9 +226,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Id); }).ConfigureAwait(true);
-            if (index == 1) {
-                await Task.Run(() => { ImgMdf.UpdateLastViewOnly(); }).ConfigureAwait(true);
-            }
+            await Task.Run(() => { ImgMdf.UpdateLastView(1 - index); }).ConfigureAwait(true);
 
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();

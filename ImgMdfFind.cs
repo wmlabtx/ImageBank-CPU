@@ -18,43 +18,38 @@ namespace ImageBank
 
                 if (idX == 0) {
                     imgX = null;
-                    Img[] valid;
-                    lock (_imglock)
-                    {
-                        valid = _imgList
-                            .Where(
-                                e => e.Value.BestId != 0 &&
-                                e.Value.BestId != e.Value.Id &&
-                                _imgList.ContainsKey(e.Value.BestId))
-                            .Select(e => e.Value)
-                            .ToArray();
+                    double maxdays = 0.0;
+                    var now = DateTime.Now;
+                    lock (_imglock) {
+                        foreach (var img in _imgList.Values) {
+                            if (img.BestId == 0 || img.BestId == img.Id) {
+                                continue;
+                            }
+
+                            if (!_imgList.TryGetValue(img.BestId, out var imgnext)) {
+                                continue;
+                            }
+
+                            if (imgX != null && imgX.LastView.Year == 2020 && img.LastView.Year != 2020) {
+                                continue;
+                            }
+
+                            var a = now.Subtract(img.LastView).TotalDays;
+                            var b = now.Subtract(imgnext.LastView).TotalDays;
+                            var days = (a * a) + (b * b);
+                            if ((imgX != null && imgX.LastView.Year != 2020 && img.LastView.Year == 2020) || (days > maxdays)) {
+                                imgX = img;
+                                maxdays = days;
+                            }
+                        }
                     }
 
-                    if (valid.Length == 0) {
+                    if (imgX == null) {
                         progress.Report("No images to view");
                         return;
                     }
 
-                    var mincounter = valid.Min(e => e.Counter);
-                    var scope = valid.Where(e => e.Counter == mincounter).ToArray();
-                    var scopelast = scope.Where(e => e.LastView.Year == 2020).ToArray();
-                    if (scopelast.Length > 0) {
-                        scope = scopelast;
-                    }
-
-                    //var rscope = scope.OrderBy(e => e.BestVDistance).Take(1000).ToArray();
-                    //var rindex = _random.Next(0, rscope.Length - 1);
-                    //imgX = rscope[rindex];
-                    imgX = scope.OrderBy(e => e.LastView).FirstOrDefault();
-                    //imgX = scope[rindex];
                     idX = imgX.Id;
-
-                    if (!_imgList.TryGetValue(imgX.BestId, out var imgBest)) {
-                        Delete(imgX.BestId);
-                        progress.Report($"{imgX.BestId} deleted");
-                        idX = 0;
-                        continue;
-                    }
                 }
 
                 AppVars.ImgPanel[0] = GetImgPanel(idX);

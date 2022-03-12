@@ -87,10 +87,12 @@ namespace ImageBank
             ImportClick(1000000);
         }
 
+        /*
         private void RandomLeClick(object sender, RoutedEventArgs e)
         {
             RandomLeClick(10);
         }
+        */
 
         private void Rotate270Click(object sender, RoutedEventArgs e)
         {

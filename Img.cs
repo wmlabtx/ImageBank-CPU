@@ -45,15 +45,6 @@ namespace ImageBank
             }
         }
 
-        private int _sig;
-        public int Sig {
-            get => _sig;
-            set {
-                _sig = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrSig, value);
-            }
-        }
-
         private float _bestvdistance;
         public float BestVDistance {
             get => _bestvdistance;
@@ -89,7 +80,6 @@ namespace ImageBank
             int year,
             int counter,
             int bestid,
-            int sig,
             float bestvdistance,
             DateTime lastview,
             DateTime lastcheck
@@ -102,7 +92,6 @@ namespace ImageBank
             _year = year;
             _counter = counter;
             _bestid = bestid;
-            _sig = sig;
             _bestvdistance = bestvdistance;
             _lastview = lastview;
             _lastcheck = lastcheck;

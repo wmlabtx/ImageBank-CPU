@@ -61,7 +61,6 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttrYear}, ");
                     sb.Append($"{AppConsts.AttrCounter}, ");
                     sb.Append($"{AppConsts.AttrBestId}, ");
-                    sb.Append($"{AppConsts.AttrSig}, ");
                     sb.Append($"{AppConsts.AttrBestVDistance}, ");
                     sb.Append($"{AppConsts.AttrLastView}, ");
                     sb.Append($"{AppConsts.AttrLastCheck}");
@@ -73,7 +72,6 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttrYear}, ");
                     sb.Append($"@{AppConsts.AttrCounter}, ");
                     sb.Append($"@{AppConsts.AttrBestId}, ");
-                    sb.Append($"@{AppConsts.AttrSig}, ");
                     sb.Append($"@{AppConsts.AttrBestVDistance}, ");
                     sb.Append($"@{AppConsts.AttrLastView}, ");
                     sb.Append($"@{AppConsts.AttrLastCheck}");
@@ -87,7 +85,6 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrCounter}", img.Counter);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestId}", img.BestId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrSig}", img.Sig);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrBestVDistance}", img.BestVDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttrLastCheck}", img.LastCheck);
@@ -110,10 +107,9 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttrYear}, "); // 4
                 sb.Append($"{AppConsts.AttrCounter}, "); // 5
                 sb.Append($"{AppConsts.AttrBestId}, "); // 6
-                sb.Append($"{AppConsts.AttrSig}, "); // 7
-                sb.Append($"{AppConsts.AttrBestVDistance}, "); // 8
-                sb.Append($"{AppConsts.AttrLastView}, "); // 9
-                sb.Append($"{AppConsts.AttrLastCheck} "); // 10
+                sb.Append($"{AppConsts.AttrBestVDistance}, "); // 7
+                sb.Append($"{AppConsts.AttrLastView}, "); // 8
+                sb.Append($"{AppConsts.AttrLastCheck} "); // 9
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -131,10 +127,9 @@ namespace ImageBank
                                 var year = reader.GetInt32(4);
                                 var counter = reader.GetInt32(5);
                                 var bestid = reader.GetInt32(6);
-                                var sig = reader.GetInt32(7);
-                                var bestvdistance = reader.GetFloat(8);
-                                var lastview = reader.GetDateTime(9);
-                                var lastcheck = reader.GetDateTime(10);
+                                var bestvdistance = reader.GetFloat(7);
+                                var lastview = reader.GetDateTime(8);
+                                var lastcheck = reader.GetDateTime(9);
 
                                 var img = new Img(
                                     id: id,
@@ -144,7 +139,6 @@ namespace ImageBank
                                     year: year,
                                     counter: counter, 
                                     bestid: bestid,
-                                    sig: sig,
                                     bestvdistance: bestvdistance,
                                     lastview: lastview,
                                     lastcheck: lastcheck
@@ -171,8 +165,7 @@ namespace ImageBank
                     sb.Length = 0;
                     sb.Append("SELECT ");
                     sb.Append($"{AppConsts.AttrId}, "); // 0
-                    sb.Append($"{AppConsts.AttrImportLimit}, "); // 1
-                    sb.Append($"{AppConsts.AttrClusters} "); // 2
+                    sb.Append($"{AppConsts.AttrImportLimit} "); // 1
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -181,10 +174,6 @@ namespace ImageBank
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
                                     _importLimit = reader.GetInt32(1);
-                                    var clusters = (byte[])reader[2];
-                                    var floatclusters = Helper.ArrayToFloat(clusters);
-                                    _clusters = new Mat(floatclusters.Length / 128, 128, MatType.CV_32F);
-                                    _clusters.SetArray(floatclusters);
                                     break;
                                 }
                             }
