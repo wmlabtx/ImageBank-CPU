@@ -57,8 +57,6 @@ namespace ImageBank
             
             EnableElements();
 
-            AppVars.SuspendEvent = new ManualResetEvent(true);
-
             _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
             _backgroundWorker.DoWork += DoCompute;
             _backgroundWorker.ProgressChanged += DoComputeProgress;

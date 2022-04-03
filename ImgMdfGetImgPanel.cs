@@ -1,6 +1,6 @@
 ﻿namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         private static ImgPanel GetImgPanel(int id)
         {

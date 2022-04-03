@@ -3,12 +3,12 @@ using System.Security.Cryptography;
 
 namespace ImageBank
 {
-    public class CryptoRandom : IDisposable
+    public sealed class CryptoRandom : IDisposable
     {
         private readonly RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
         private byte[] _buffer;
         private int _bufferposition;
-        private bool disposedvalue;
+        private bool _isdisposed;
         private readonly object _this = new object();
 
         private void InitBuffer()
@@ -19,6 +19,8 @@ namespace ImageBank
 
             _rng.GetBytes(_buffer);
             _bufferposition = 0;
+
+            _isdisposed = false;
         }
 
         private void EnsureRandomBuffer(int requiredbytes)
@@ -28,7 +30,7 @@ namespace ImageBank
             }
 
             if (requiredbytes > _buffer.Length) {
-                throw new ArgumentOutOfRangeException(nameof(requiredbytes), "cannot be greater than random buffer");
+                throw new ArgumentOutOfRangeException(nameof(requiredbytes), @"cannot be greater than random buffer");
             }
 
             if ((_buffer.Length - _bufferposition) < requiredbytes) {
@@ -36,7 +38,7 @@ namespace ImageBank
             }
         }
 
-        public ulong GetRandom64()
+        private ulong GetRandom64()
         {
             lock (_this) {
                 EnsureRandomBuffer(sizeof(ulong));
@@ -52,34 +54,35 @@ namespace ImageBank
                 throw new ArgumentOutOfRangeException(nameof(minvalue));
             }
 
-            ulong diff = (ulong)(maxvalue - minvalue + 1);
+            var diff = (ulong)(maxvalue - minvalue + 1);
             var random64 = GetRandom64();
             var remainder = (int)(random64 % diff);
             var randomnext = minvalue + remainder;
             return randomnext;
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedvalue) {
-                if (disposing) {
-                    _rng.Dispose();
-                }
-
-                _buffer = null;
-                disposedvalue = true;
-            }
-        }
-
         ~CryptoRandom()
         {
-             Dispose(disposing: false);
+            Dispose();
         }
 
         public void Dispose()
         {
-            Dispose(disposing: true);
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_isdisposed) {
+                return;
+            }
+
+            if (disposing) {
+                _rng?.Dispose();
+            }
+
+            _isdisposed = true;
         }
     }
 }

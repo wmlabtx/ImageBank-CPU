@@ -22,7 +22,7 @@ namespace ImageBank
 
         public float GetDistance(RootSiftDescriptor other)
         {
-            float distance = 0f;
+            var distance = 0f;
             for (var i = 0; i < _vector.Length; i++) {
                 distance += (_vector[i] - other._vector[i]) * (_vector[i] - other._vector[i]);
             }

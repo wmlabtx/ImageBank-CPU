@@ -4,43 +4,29 @@ namespace ImageBank
 {
     public class Axon
     {
-        public int _idfrom;
-        public int _idto;
-        public int _age;
+        public ushort X { get; }
+        public ushort Y { get; }
+        public ushort Age { get; set; }
 
-        public int IdFrom => _idfrom;
-        public int IdTo => _idto;
-        public int Age => _age;
-
-        public Axon(int idfrom, int idto)
+        public Axon(ushort x, ushort y)
         {
-            _idfrom = idfrom;
-            _idto = idto;
-            _age = 0;
+            X = x;
+            Y = y;
+            Age = 0;
         }
 
         public Axon(BinaryReader br)
         {
-            _idfrom = br.ReadInt32();
-            _idto = br.ReadInt32();
-            _age = br.ReadInt32();
-        }
-
-        public void IncrementAge()
-        {
-            _age++;
-        }
-
-        public void ResetAge()
-        {
-            _age = 0;
+            X = br.ReadUInt16();
+            Y = br.ReadUInt16();
+            Age = br.ReadUInt16();
         }
 
         public void Save(BinaryWriter bw)
         {
-            bw.Write(_idfrom);
-            bw.Write(_idto);
-            bw.Write(_age);
+            bw.Write(X);
+            bw.Write(Y);
+            bw.Write(Age);
         }
     }
 }

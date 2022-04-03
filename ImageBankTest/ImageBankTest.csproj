@@ -103,9 +103,6 @@
     <Compile Include="EncryptionHelperTests.cs" />
     <Compile Include="FileHelperTests.cs" />
     <Compile Include="MD5HashHelperTests.cs" />
-    <Compile Include="MetadataExtractorTests.cs" />
-    <Compile Include="PHash64Tests.cs" />
-    <Compile Include="PHashExTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootSiftHelperTests.cs" />
   </ItemGroup>

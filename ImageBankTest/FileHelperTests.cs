@@ -1,11 +1,11 @@
-﻿using ImageBank;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.IO;
 using System.Linq;
-using System.IO;
+using ImageBank;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ImageBank.Tests
+namespace ImageBankTest
 {
-    [TestClass()]
+    [TestClass]
     public class FileHelperTests
     {
         [TestMethod("WriteData_ReadData")]
@@ -16,13 +16,13 @@ namespace ImageBank.Tests
             FileHelper.WriteData(filename, a1);
             var a2 = FileHelper.ReadData(filename);
             File.Delete(filename);
-            Assert.IsTrue(Enumerable.SequenceEqual(a1, a2));
+            Assert.IsTrue(a1.SequenceEqual(a2));
         }
 
         [TestMethod("HashToName")]
         public void GetNameTest()
         {
-            var hash = "d41d8cd98f00b204e9800998ecf8427e";
+            const string hash = "d41d8cd98f00b204e9800998ecf8427e";
             var name = FileHelper.HashToName(hash, 1);
             Assert.AreEqual(name, "d8cd98f00b");
         }
@@ -30,7 +30,7 @@ namespace ImageBank.Tests
         [TestMethod("NameToFileName")]
         public void GetFileNameTest()
         {
-            var hash = "d41d8cd98f";
+            const string hash = "d41d8cd98f";
             var filename = FileHelper.NameToFileName(hash);
             var filenameexpected = $"{AppConsts.PathHp}\\d4\\1d8cd98f{AppConsts.MzxExtension}";
             Assert.AreEqual(filename, filenameexpected);

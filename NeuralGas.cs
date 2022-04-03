@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -8,41 +7,90 @@ namespace ImageBank
 {
     public static class NeuralGas
     {
-        private const int MAXNEURONS = 5000;
-        private const int LAMBDA = 5000;
-        private const int MAXAXONAGE = 25;
-        private const float EW = 0.0001f;
-        private const float EA = 0.5f;
+        private const ushort Maxneurons = 4 * 1024;
+        private const int Maxaxonage = 256;
+        private const float Ew = 0.01f;
+        private const float Ex = 0.001f;
+        private const float Ea = 0.5f;
 
-        private static readonly SortedList<int, Neuron> _neurons = new SortedList<int, Neuron>();
+        private static readonly SortedList<ushort, Neuron> _neurons = new SortedList<ushort, Neuron>();
         private static readonly List<Axon> _axons = new List<Axon>();
-        private static int _descriptorscounter = 0;
 
         public static void Clear()
         {
             _neurons.Clear();
             _axons.Clear();
-            _descriptorscounter = 0;
         }
 
-        public static void Init(RootSiftDescriptor[] descriptors)
+        private static void Init(RootSiftDescriptor[] descriptors)
         {
             var n1 = new Neuron(1, descriptors[0]);
             var n2 = new Neuron(2, descriptors[1]);
             _neurons.Add(n1.Id, n1);
             _neurons.Add(n2.Id, n2);
-            var a = new Axon(1, 2);
-            _axons.Add(a);
+            ResetAxon(1, 2);
         }
 
-        private static void FindNeurons(RootSiftDescriptor descriptor, out int v, out float vd, out int w, out float wd)
+        private static void ResetAxon(ushort x, ushort y)
+        {
+            var a = _axons.FirstOrDefault(e => e.X == x && e.Y == y || e.X == y && e.Y == x);
+            if (a == null) {
+                _axons.Add(new Axon(x, y));
+            }
+            else {
+                 a.Age = 0;
+            }
+
+            var removed = false;
+            var list = _axons.Where(e => e.X == x || e.Y == x).ToArray();
+            foreach (var e in list) {
+                if (e.X == x && e.Y == y || e.X == y && e.Y == x) {
+                    continue;
+                }
+
+                e.Age++;
+                if (e.Age > Maxaxonage) {
+                    _axons.Remove(e);
+                    removed = true;
+                }
+            }
+
+            if (removed) {
+                DeleteIsolatedNeurons();
+            }
+        }
+
+        private static void DeleteIsolatedNeurons()
+        {
+            var dict = new SortedList<ushort, Neuron>(_neurons);
+            foreach (var e in _axons) {
+                if (dict.ContainsKey(e.X)) {
+                    dict.Remove(e.X);
+                }
+
+                if (dict.ContainsKey(e.Y)) {
+                    dict.Remove(e.Y);
+                }
+            }
+
+            if (dict.Count == 0) {
+                return;
+            }
+
+            foreach (var e in dict) {
+                _neurons.Remove(e.Key);
+            }
+        }
+
+        private static void FindTwoNeurons(RootSiftDescriptor descriptor, out ushort v, out float vd, out ushort w)
         {
             v = 0;
-            vd = float.MaxValue;
+            vd = 128f;
             w = 0;
-            wd = float.MaxValue;
-            for (var i = 0; i < _neurons.Keys.Count; i++) {
-                var distance = _neurons[_neurons.Keys[i]].GetDistance(descriptor);
+            var wd = 128f;
+            var neuronsarray = _neurons.ToArray();
+            for (var i = 0; i < neuronsarray.Length; i++) {
+                var distance = neuronsarray[i].Value.GetDistance(descriptor);
                 if (distance < vd) {
                     w = v;
                     wd = vd;
@@ -58,141 +106,87 @@ namespace ImageBank
             }
         }
 
-        private static Axon FindAxon(int v, int w)
+        private static IEnumerable<ushort> GetNeighbors(ushort x)
         {
-            for (var i = 0; i < _axons.Count; i++) {
-                if ((v == _axons[i].IdFrom && w == _axons[i].IdTo) || (v == _axons[i].IdTo && w == _axons[i].IdFrom)) {
-                    return _axons[i];
+            var list = new List<ushort>();
+            var axonsarray = _axons.ToArray();
+            foreach (var e in axonsarray) {
+                if (e.X == x) {
+                    list.Add(e.Y);
+                }
+                else {
+                    if (e.Y == x) {
+                        list.Add(e.X);
+                    }
                 }
             }
 
-            return null;
+            return list.ToArray();
         }
 
-        private static void DeleteOldAxons()
+        private static ushort GetAvailableNeuronId()
         {
-            _axons.RemoveAll(e => e.Age > MAXAXONAGE);
-        }
-
-        private static void DeleteOldNeurons()
-        {
-            var dict = new SortedList<int, Neuron>(_neurons);
-            foreach (var e in _axons) {
-                if (dict.ContainsKey(e.IdFrom)) {
-                    dict.Remove(e.IdFrom);
+            ushort id = 1;
+            while (id <= Maxneurons) {
+                if (!_neurons.ContainsKey(id)) {
+                    return id;
                 }
 
-                if (dict.ContainsKey(e.IdTo)) {
-                    dict.Remove(e.IdTo);
-                }
+                id++;
             }
 
-            if (dict.Count == 0) {
-                return;
-            }
-
-            foreach (var e in dict) {
-                _neurons.Remove(e.Key);
-                Debug.WriteLine($"delete neuron {e.Key}");
-            }
+            return 0;
         }
 
-        private static void AgeAxons(int v)
+        private static ushort FindMaxErrorNeuron()
         {
-            for (var i = 0; i < _axons.Count; i++) {
-                if (v == _axons[i].IdFrom || v == _axons[i].IdTo) {
-                    _axons[i].IncrementAge();
-                }
-            }
-        }
-
-        private static int FindMaxErrorNeuron()
-        {
-            var u = 0;
-            var maxerror = -1f;
-            for (var i = 0; i < _neurons.Keys.Count; i++) {
-                if (_neurons[_neurons.Keys[i]].Error > maxerror) {
-                    u = _neurons.Keys[i];
-                    maxerror = _neurons[u].Error;
+            ushort u = 0;
+            var maxerror = 0f;
+            var neuronsarray = _neurons.ToArray();
+            foreach (var t in neuronsarray) {
+                if (t.Value.Error > maxerror) {
+                    u = t.Key;
+                    maxerror = t.Value.Error;
                 }
             }
 
             return u;
         }
 
-        private static int FindMaxErrorNeuron(int u)
+        private static ushort FindMaxErrorNeuron(ushort u)
         {
-            var v = 0;
+            ushort v = 0;
             var maxerror = -1f;
-            for (var i = 0; i < _axons.Count; i++) {
-                int vx;
-                if (u == _axons[i].IdFrom) {
-                    vx = _axons[i].IdTo;
-                }
-                else {
-                    if (u == _axons[i].IdTo) {
-                        vx = _axons[i].IdFrom;
-                    }
-                    else {
-                        continue;
-                    }
-                }
-
-                if (_neurons[vx].Error > maxerror) {
-                    v = vx;
-                    maxerror = _neurons[vx].Error;
+            var neighbors = GetNeighbors(u);
+            foreach (var n in neighbors) {
+                if (_neurons[n].Error > maxerror) {
+                    v = n;
+                    maxerror = _neurons[n].Error;
                 }
             }
 
             return v;
         }
 
-        public static int GetMaxId()
+        private static void SplitNeuron()
         {
-            if (_neurons.Count == 0) {
-                return 0;
-            }
-
-            var result = _neurons.Max(e => e.Value.Id);
-            return result;
-        }
-
-        public static void LearnDescriptor(RootSiftDescriptor descriptor)
-        {
-            FindNeurons(descriptor, out int v, out float vd, out int w, out float wd);
-            _neurons[v].MoveToward(descriptor, EW);
-            _neurons[v].AddError(vd * vd);
-            AgeAxons(v);
-            var axon = FindAxon(v, w);
-            if (axon == null) {
-                var a = new Axon(v, w);
-                _axons.Add(a);
-            }
-            else {
-                axon.ResetAge();
-            }
-
-            DeleteOldAxons();
-            DeleteOldNeurons();
-
-            _descriptorscounter++;
-            if (_neurons.Count >= MAXNEURONS || _descriptorscounter % LAMBDA != 0) {
+            if (_neurons.Count >= Maxneurons) {
                 return;
             }
 
             var u = FindMaxErrorNeuron();
-            v = FindMaxErrorNeuron(u);
-            var r = GetMaxId() + 1;
-            var error = _neurons[u].Error * EA;
+            var v = FindMaxErrorNeuron(u);
+            var r = GetAvailableNeuronId();
+            var error = _neurons[u].Error * Ea;
             var newneuron = _neurons[u].Average(r, _neurons[v].GetVector());
             _neurons.Add(newneuron.Id, newneuron);
-            _neurons[u].SetError(error);
-            _neurons[r].SetError(error);
-            error = _neurons[v].Error * EA;
-            _neurons[v].SetError(error);
-            axon = FindAxon(u, v);
-            if (axon != null) {
-                _axons.Remove(axon);
+            _neurons[u].Error = error;
+            _neurons[r].Error = error;
+            error = _neurons[v].Error * Ea;
+            _neurons[v].Error = error;
+            var a = _axons.FirstOrDefault(e => e.X == u && e.Y == v || e.X == v && e.Y == u);
+            if (a != null) {
+                _axons.Remove(a);
             }
 
             var a1 = new Axon(u, r);
@@ -201,40 +195,60 @@ namespace ImageBank
             _axons.Add(a2);
         }
 
-        public static void LearnDescriptors(RootSiftDescriptor[] descriptors)
+        private static void LearnDescriptor(RootSiftDescriptor descriptor)
         {
-            for (var i = 0; i < descriptors.Length; i++) {
-                LearnDescriptor(descriptors[i]);                
+            FindTwoNeurons(descriptor, out var v, out var vd, out var w);
+            _neurons[v].MoveToward(descriptor, Ew);
+            _neurons[v].Error += vd * vd;
+            var neighbors = GetNeighbors(v);
+            foreach (var n in neighbors) {
+                _neurons[n].MoveToward(descriptor, Ex);
             }
 
-            Debug.WriteLine($"neurons={_neurons.Count}, axons={_axons.Count}");
+            ResetAxon(v, w);
+        }
+
+        public static void LearnDescriptors(RootSiftDescriptor[] descriptors)
+        {
+            if (_neurons.Count == 0) {
+                Init(descriptors);
+            }
+
+            foreach (var t in descriptors) {
+                LearnDescriptor(t);
+            }
+
+            SplitNeuron();
+            //Debug.WriteLine($"neurons={_neurons.Count}, axons={_axons.Count}");
         }
 
         private static void FindNeuron(RootSiftDescriptor descriptor, out ushort id, out float error)
         {
             id = 0;
-            error = float.MaxValue;
-            for (var i = 0; i < _neurons.Keys.Count; i++) {
-                var distance = _neurons[_neurons.Keys[i]].GetDistance(descriptor);
+            error = 128f;
+            var neuronsarray = _neurons.ToArray();
+            foreach (var t in neuronsarray) {
+                var distance = t.Value.GetDistance(descriptor);
                 if (distance < error) {
-                    id = (ushort)_neurons.Keys[i];
+                    id = t.Key;
                     error = distance;
                 }
             }
         }
 
-        public static void Compute(RootSiftDescriptor[] descriptors, out ushort[] vector, out float averageerror)
+        public static void Compute(RootSiftDescriptor[] descriptors, out ushort[] vector, out float minerror, out float maxerror)
         {            
             vector = new ushort[descriptors.Length];
-            averageerror = 0f;
+            minerror = 128f;
+            maxerror = 0f;
             for (var i = 0; i < descriptors.Length; i++) {
-                FindNeuron(descriptors[i], out ushort id, out float error);
+                FindNeuron(descriptors[i], out var id, out var error);
                 vector[i] = id;
-                averageerror += error;
+                minerror = Math.Min(minerror, error);
+                maxerror = Math.Max(maxerror, error);
             }
 
             Array.Sort(vector);
-            averageerror /= descriptors.Length;
         }
 
         public static void Save()
@@ -250,15 +264,16 @@ namespace ImageBank
 
             using (var fs = new FileStream(AppConsts.FileNeuralGas, FileMode.CreateNew, FileAccess.Write))
             using (var bw = new BinaryWriter(fs)) {
-                bw.Write(_descriptorscounter);
-                bw.Write(_neurons.Keys.Count);
-                for (var i = 0; i < _neurons.Keys.Count; i++) {
-                    _neurons[_neurons.Keys[i]].Save(bw);
+                var neuronsarray = _neurons.ToArray();
+                bw.Write(neuronsarray.Length);
+                foreach (var t in neuronsarray) {
+                    t.Value.Save(bw);
                 }
 
-                bw.Write(_axons.Count);
-                for (var i = 0; i < _axons.Count; i++) {
-                    _axons[i].Save(bw);
+                var axonsarray = _axons.ToArray();
+                bw.Write(axonsarray.Length);
+                foreach (var t in axonsarray) {
+                    t.Save(bw);
                 }
             }
         }
@@ -268,19 +283,24 @@ namespace ImageBank
             Clear();
             using (var fs = new FileStream(AppConsts.FileNeuralGas, FileMode.Open, FileAccess.Read))
             using (var br = new BinaryReader(fs)) {
-                _descriptorscounter = br.ReadInt32();
-                var counter = br.ReadInt32();
-                for (var i = 0; i < counter; i++) {
+                var neuronscounter = br.ReadInt32();
+                for (var i = 0; i < neuronscounter; i++) {
                     var neuron = new Neuron(br);
                     _neurons.Add(neuron.Id, neuron);
                 }
 
-                counter = br.ReadInt32();
-                for (var i = 0; i < counter; i++) {
+                var axonscounter = br.ReadInt32();
+                for (var i = 0; i < axonscounter; i++) {
                     var axon = new Axon(br);
                     _axons.Add(axon);
                 }
             }
+        }
+
+        public static void GetStats(out int neurons, out int axons)
+        {
+            neurons = _neurons.Count;
+            axons = _axons.Count;
         }
     }
 }

@@ -10,9 +10,7 @@
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
-        public const string JpgExtension = ".jpg";
         public const string CorruptedExtension = ".corrupted";
-        public const string BakExtension = ".bak";
 
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;

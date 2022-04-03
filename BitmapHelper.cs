@@ -45,7 +45,7 @@ namespace ImageBank
             catch (MagickMissingDelegateErrorException) {
                 return null;
             }
-            catch (ImageMagick.MagickCorruptImageErrorException) {
+            catch (MagickCorruptImageErrorException) {
                 return null;
             }
         }

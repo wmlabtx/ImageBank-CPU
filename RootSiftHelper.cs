@@ -9,7 +9,7 @@ namespace ImageBank
     {
         private static readonly SIFT _sift = SIFT.Create(10000);
         private const int MAXDIM = 768;
-        private const int MAXDESCRIPTORS = 250;
+        private const int MAXDESCRIPTORS = 500;
 
         public static RootSiftDescriptor[] Compute(float[][] matrix, bool draw = false)
         {
@@ -56,7 +56,6 @@ namespace ImageBank
                 keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
                 using (var matdescriptors = new Mat()) {
                     _sift.Compute(mat, ref keypoints, matdescriptors);
-                    //matdescriptors.GetArray(out float[] f);
                     if (draw) {
                         using (var matkeypoints = new Mat()) {
                             Cv2.DrawKeypoints(mat, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
@@ -75,7 +74,6 @@ namespace ImageBank
                         keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
                         using (var matdescriptorsflip = new Mat()) {
                             _sift.Compute(matflip, ref keypoints, matdescriptorsflip);
-                            //matdescriptorsflip.GetArray(out float[] fflip);
                             if (draw) {
                                 using (var matkeypoints = new Mat()) {
                                     Cv2.DrawKeypoints(matflip, keypoints, matkeypoints, null, DrawMatchesFlags.DrawRichKeypoints);
@@ -105,19 +103,6 @@ namespace ImageBank
             }
 
             return result;
-        }
-
-        public static float GetMinDistance(RootSiftDescriptor[] x, RootSiftDescriptor[] y)
-        {
-            var mindistance = float.MaxValue;
-            for (var i = 0; i < x.Length; i++) {
-                for (var j = 0; j < y.Length; j++) {
-                    var distance = x[i].GetDistance(y[j]);
-                    mindistance = Math.Min(mindistance, distance);
-                }
-            }
-
-            return mindistance;
         }
 
         public static float GetDistance(ushort[] x, ushort[] y)

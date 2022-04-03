@@ -1,11 +1,10 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
 using System;
-using OpenCvSharp;
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         public static void SqlImagesUpdateProperty(int id, string key, object val)
         {

@@ -55,7 +55,6 @@ namespace ImageBank
         #region CleanupDirectories
         public static void CleanupDirectories(string startLocation, IProgress<string> progress)
         {
-            Contract.Requires(progress != null);
             foreach (var directory in Directory.GetDirectories(startLocation)) {
                 Helper.CleanupDirectories(directory, progress);
                 if (Directory.GetFiles(directory).Length != 0 || Directory.GetDirectories(directory).Length != 0) {

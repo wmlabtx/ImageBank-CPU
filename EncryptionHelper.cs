@@ -7,7 +7,7 @@ namespace ImageBank
     public static class EncryptionHelper
     {
         private const string PasswordSole = "{mzx}";
-        private static readonly byte[] AES_IV = {
+        private static readonly byte[] _aesIv = {
             0xE1, 0xD9, 0x94, 0xE6, 0xE6, 0x43, 0x39, 0x34,
             0x33, 0x0A, 0xCC, 0x9E, 0x7D, 0x66, 0x97, 0x16
         };
@@ -22,7 +22,7 @@ namespace ImageBank
                 aes.KeySize = 256;
                 aes.Key = passwordkey256;
                 aes.BlockSize = 128;
-                aes.IV = AES_IV;
+                aes.IV = _aesIv;
                 aes.Mode = CipherMode.CBC;
                 return aes;
             }
@@ -65,7 +65,7 @@ namespace ImageBank
                             var count = cs.Read(array, 0, array.Length);
                             decoded = new byte[count];
                             ms.Seek(0, SeekOrigin.Begin);
-                            ms.Read(decoded, 0, count);
+                            var read = ms.Read(decoded, 0, count);
                         }
 
                         return decoded;
@@ -80,7 +80,7 @@ namespace ImageBank
             }
         }
 
-        private static readonly byte[] SaltBytes = { 0xFF, 0x15, 0x20, 0xD5, 0x24, 0x1E, 0x12, 0xAA, 0xCC, 0xFF };
+        private static readonly byte[] _saltBytes = { 0xFF, 0x15, 0x20, 0xD5, 0x24, 0x1E, 0x12, 0xAA, 0xCC, 0xFF };
         private const int Interations = 1000;
 
         public static byte[] DecryptDat(byte[] bytesToBeDecrypted, string password)
@@ -98,7 +98,7 @@ namespace ImageBank
                     aes.BlockSize = 128;
                     var passwordBytes = Encoding.ASCII.GetBytes(password);
 #pragma warning disable CA5379 // Do Not Use Weak Key Derivation Function Algorithm
-                    using (var key = new Rfc2898DeriveBytes(passwordBytes, SaltBytes, Interations)) {
+                    using (var key = new Rfc2898DeriveBytes(passwordBytes, _saltBytes, Interations)) {
 #pragma warning restore CA5379 // Do Not Use Weak Key Derivation Function Algorithm
                         aes.Key = key.GetBytes(aes.KeySize / 8);
                         aes.IV = key.GetBytes(aes.BlockSize / 8);

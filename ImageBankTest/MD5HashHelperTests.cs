@@ -1,10 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
+using ImageBank;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ImageBank.Tests
+namespace ImageBankTest
 {
     [TestClass()]
-    public class MD5HashHelperTests
+    public class Md5HashHelperTests
     {
         [TestMethod("Compute")]
         public void ComputeTest()

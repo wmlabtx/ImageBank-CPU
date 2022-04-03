@@ -3,11 +3,11 @@ using System.Linq;
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
-        public static void Find(int idX, IProgress<string> progress)
+        private static void Find(int idX, IProgress<string> progress)
         {
-            Img imgX = null;
+            Img imgX;
             do {
                 lock (_imglock) {
                     if (_imgList.Count < 2) {
@@ -18,7 +18,7 @@ namespace ImageBank
 
                 if (idX == 0) {
                     imgX = null;
-                    double maxdays = 0.0;
+                    var maxdays = 0.0;
                     var now = DateTime.Now;
                     lock (_imglock) {
                         foreach (var img in _imgList.Values) {
@@ -80,7 +80,7 @@ namespace ImageBank
                 var diff = imgcount - _importLimit;
                 var g0 = _imgList.Count(e => e.Value.Counter == 0);
                 var g1 = _imgList.Count(e => e.Value.Counter == 1);
-                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance: {imgX.BestVDistance:F2}");
+                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance: {imgX.BestVDistance:F1}");
             }
         }
 

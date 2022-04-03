@@ -2,20 +2,19 @@
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         public static void Confirm()
         {
-            var imgX = AppVars.ImgPanel[0].Img;
-            imgX.Counter++;
-            UpdateLastView(0);
+            AppVars.ImgPanel[0].Img.Counter++;
             UpdateLastView(1);
+            UpdateLastView(0);
         }
 
         public static void UpdateLastView(int index)
         {
-            var imgX = AppVars.ImgPanel[index].Img;
-            imgX.LastView = DateTime.Now;
+            var dtx = index == 0 ? 0 : -10;
+            AppVars.ImgPanel[index].Img.LastView = DateTime.Now.AddSeconds(dtx);
         }
     }
 }

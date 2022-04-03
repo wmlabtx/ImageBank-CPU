@@ -1,8 +1,9 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
+using ImageBank;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ImageBank.Tests
+namespace ImageBankTest
 {
     [TestClass()]
     public class RootSiftHelperTests
@@ -10,7 +11,7 @@ namespace ImageBank.Tests
         [TestMethod()]
         public void ComputeTest()
         {
-            var name = "gab_org.jpg";
+            const string name = "gab_org.jpg";
             var imagedata = File.ReadAllBytes(name);
             var matrix = BitmapHelper.GetMatrix(imagedata);
             Assert.IsNotNull(matrix);
@@ -29,10 +30,6 @@ namespace ImageBank.Tests
                 var matrix = BitmapHelper.GetMatrix(imagedata);
                 Assert.IsNotNull(matrix);
                 var descriptors = RootSiftHelper.Compute(matrix, true);
-                if (NeuralGas.GetMaxId() == 0) {
-                    NeuralGas.Init(descriptors);
-                }
-
                 NeuralGas.LearnDescriptors(descriptors);
                 NeuralGas.Save();
             }
@@ -43,8 +40,8 @@ namespace ImageBank.Tests
                 var matrix = BitmapHelper.GetMatrix(imagedata);
                 Assert.IsNotNull(matrix);
                 var descriptors = RootSiftHelper.Compute(matrix, true);
-                NeuralGas.Compute(descriptors, out ushort[] vector, out float error);
-                Debug.WriteLine($"average error = {error:F2}");
+                NeuralGas.Compute(descriptors, out ushort[] vector, out float minerror, out float maxerror);
+                Debug.WriteLine($"minerror = {minerror:F2}, maxerror = {minerror:F2}");
             }
         }
 
@@ -75,8 +72,8 @@ namespace ImageBank.Tests
                 var descriptors = RootSiftHelper.Compute(matrix, true);
                 NeuralGas.LearnDescriptors(descriptors);
                 NeuralGas.Save();
-                NeuralGas.Compute(descriptors, out ushort[] vector, out float error);
-                Debug.WriteLine($"average error = {error:F2}");
+                NeuralGas.Compute(descriptors, out var vector, out var minerror, out var maxerror);
+                Debug.WriteLine($"average error = {minerror:F2} / {maxerror:F2}");
                 vectors[i] = vector;
             }
 

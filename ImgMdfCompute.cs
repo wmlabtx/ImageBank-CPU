@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         private static int _added;
         private static int _found;
@@ -16,19 +16,15 @@ namespace ImageBank
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
             Img img1 = null;
-            Img[] shadowcopy = null;
-            int activescope = 0;
+            Img[] shadowcopy;
             lock (_imglock) {
-                if (_imgList.Count < 2)
-                {
+                if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
 
                 shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.LastCheck).ToArray();
             }
-
-            activescope = shadowcopy.Count(e => e.Vector.Length != 0);
 
             foreach (var img in shadowcopy) {
                 if (img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
@@ -39,6 +35,10 @@ namespace ImageBank
                 if (img1 == null || img.LastCheck < img1.LastCheck) {
                     img1 = img;
                 }
+            }
+
+            if (img1 == null) {
+                return;
             }
 
             var filename = FileHelper.NameToFileName(img1.Name);
@@ -53,15 +53,14 @@ namespace ImageBank
             var descriptors = RootSiftHelper.Compute(matrix);
             NeuralGas.LearnDescriptors(descriptors);
             NeuralGas.Save();
-            NeuralGas.Compute(descriptors, out ushort[] vector, out float error);
+            NeuralGas.Compute(descriptors, out var vector, out var minerror, out var maxerror);
             img1.Vector = vector;
 
             var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0).ToArray();
             if (candidates.Length > 0) {
                 var bestid = img1.Id;
                 var bestvdistance = 100f;
-                for (var i = 0; i < candidates.Length; i++) {
-                    var img2 = candidates[i];
+                foreach (var img2 in candidates) {
                     var vdistance = RootSiftHelper.GetDistance(img1.Vector, img2.Vector);
                     if (vdistance < bestvdistance) {
                         bestid = img2.Id;
@@ -70,14 +69,15 @@ namespace ImageBank
                 }
 
                 if (bestid != img1.BestId) {
+                    NeuralGas.GetStats(out var neurons, out var axons);
                     _sb.Clear();
-                    _sb.Append($"(n:{candidates.Length}/a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{error:F2}] {img1.BestVDistance:F1} \u2192 {bestvdistance:F1}");
+                    _sb.Append($"({neurons}:{axons}) n:{candidates.Length}/a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{minerror:F2}-{maxerror:F2}] {img1.BestVDistance:F1} \u2192 {bestvdistance:F1}");
                     backgroundworker.ReportProgress(0, _sb.ToString());
                     img1.BestId = bestid;
                     img1.Counter = 0;
                 }
 
-                if (img1.BestVDistance != bestvdistance) {
+                if (Math.Abs(img1.BestVDistance - bestvdistance) > 0.0001f) {
                     img1.BestVDistance = bestvdistance;
                 }
 
@@ -86,24 +86,18 @@ namespace ImageBank
             img1.LastCheck = DateTime.Now;
         }
 
-        private static void ImportInternal(BackgroundWorker backgroundworker)
+        private static void ImportInternal()
         {
             FileInfo fileinfo;
             lock (_rwlock) {
                 if (_rwList.Count == 0) {
-                    //ComputeInternal(backgroundworker);
                     return;
                 }
 
-                fileinfo = _rwList.ElementAt(0);
-                _rwList.RemoveAt(0);
+                var rindex = _random.Next(0, _rwList.Count - 1);
+                fileinfo = _rwList.ElementAt(rindex);
+                _rwList.RemoveAt(rindex);
             }
-
-            /*
-            _sb.Clear();
-            _sb.Append($"a:{_added}/f:{_found}/b:{_bad}");
-            backgroundworker.ReportProgress(0, _sb.ToString());
-            */
 
             var orgfilename = fileinfo.FullName;
             if (!File.Exists(orgfilename)) {
@@ -111,7 +105,7 @@ namespace ImageBank
             }
 
             var imagedata = File.ReadAllBytes(orgfilename);
-            if (imagedata == null || imagedata.Length < 256) {
+            if (imagedata.Length < 256) {
                 FileHelper.MoveCorruptedFile(orgfilename);
                 _bad++;
                 return;
@@ -217,7 +211,7 @@ namespace ImageBank
 
         public static void Compute(BackgroundWorker backgroundworker)
         {
-            ImportInternal(backgroundworker);
+            ImportInternal();
             ComputeInternal(backgroundworker);
             ComputeInternal(backgroundworker);
         }   

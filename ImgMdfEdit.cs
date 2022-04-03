@@ -1,10 +1,8 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System.Drawing;
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         public static void Rotate(int id, RotateFlipType rft)
         {

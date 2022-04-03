@@ -1,10 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using ImageBank;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ImageBank.Tests
+namespace ImageBankTest
 {
     [TestClass()]
     public class BitmapHelperTests
@@ -13,51 +14,51 @@ namespace ImageBank.Tests
         public void ImageDataToBitmapSourceTest()
         {
             var imagedata = File.ReadAllBytes("testnotimage.jpg");
-            var bitmap_notimage = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNull(bitmap_notimage);
+            var bitmapNotimage = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNull(bitmapNotimage);
 
             imagedata = File.ReadAllBytes("testjpg.jpg");
-            var bitmap_jpg = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_jpg);
-            Assert.AreEqual(bitmap_jpg.PixelFormat, PixelFormat.Format24bppRgb);
-            bitmap_jpg.Save("testjpg_.jpg");
+            var bitmapJpg = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapJpg);
+            Assert.AreEqual(bitmapJpg.PixelFormat, PixelFormat.Format24bppRgb);
+            bitmapJpg.Save("testjpg_.jpg");
 
             imagedata = File.ReadAllBytes("testjpg8.jpg");
-            var bitmap8_jpg = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap8_jpg);
-            Assert.AreEqual(bitmap8_jpg.PixelFormat, PixelFormat.Format24bppRgb);
-            bitmap8_jpg.Save("testjpg8_.jpg");
+            var bitmap8Jpg = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmap8Jpg);
+            Assert.AreEqual(bitmap8Jpg.PixelFormat, PixelFormat.Format24bppRgb);
+            bitmap8Jpg.Save("testjpg8_.jpg");
 
             imagedata = File.ReadAllBytes("testpng.png");
-            var bitmap_png = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_png);
-            bitmap_png.Save("testpng_.jpg");
+            var bitmapPng = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapPng);
+            bitmapPng.Save("testpng_.jpg");
 
             imagedata = File.ReadAllBytes("testwebp.webp");
-            var bitmap_webp = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_webp);
-            bitmap_webp.Save("testwebp_.jpg");
+            var bitmapWebp = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapWebp);
+            bitmapWebp.Save("testwebp_.jpg");
 
             imagedata = File.ReadAllBytes("testheic.heic");
-            var bitmap_heic = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_heic);
-            bitmap_webp.Save("testheic_.jpg");
+            var bitmapHeic = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapHeic);
+            bitmapWebp.Save("testheic_.jpg");
 
             imagedata = File.ReadAllBytes("testgif.gif");
-            var bitmap_gif = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_gif);
-            bitmap_gif.Save("testgif_.jpg");
+            var bitmapGif = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapGif);
+            bitmapGif.Save("testgif_.jpg");
         }
 
-        [TestMethod()]
+        [TestMethod]
         public void BitmapToImageDataTest()
         {
             var imagedata = File.ReadAllBytes("testjpg.jpg");
-            var bitmap_jpg = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap_jpg);
-            Assert.AreEqual(bitmap_jpg.PixelFormat, PixelFormat.Format24bppRgb);
+            var bitmapJpg = BitmapHelper.ImageDataToBitmap(imagedata);
+            Assert.IsNotNull(bitmapJpg);
+            Assert.AreEqual(bitmapJpg.PixelFormat, PixelFormat.Format24bppRgb);
 
-            var jxlimagedata = BitmapHelper.BitmapToImageData(bitmap_jpg);
+            var jxlimagedata = BitmapHelper.BitmapToImageData(bitmapJpg);
             Assert.IsNotNull(jxlimagedata);
             File.WriteAllBytes("testjxl.jxl", jxlimagedata);
         }
@@ -77,12 +78,12 @@ namespace ImageBank.Tests
             Assert.IsTrue(Math.Abs(lwhite - 100.00) < 0.01);
         }
 
-        [TestMethod()]
+        [TestMethod]
         public void GetMatrixTest()
         {
-            using (var bitmap3x5 = new Bitmap(3, 5, PixelFormat.Format24bppRgb)) {
-                bitmap3x5.SetPixel(0, 4, Color.White);
-                var imagedata = BitmapHelper.BitmapToImageData(bitmap3x5);
+            using (var bitmap3X5 = new Bitmap(3, 5, PixelFormat.Format24bppRgb)) {
+                bitmap3X5.SetPixel(0, 4, Color.White);
+                var imagedata = BitmapHelper.BitmapToImageData(bitmap3X5);
                 Assert.IsNotNull(imagedata);
                 var matrix = BitmapHelper.GetMatrix(imagedata);
                 Assert.IsNotNull(matrix);

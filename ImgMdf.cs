@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
@@ -7,7 +6,7 @@ using System.Linq;
 
 namespace ImageBank
 {
-    public partial class ImgMdf
+    public static partial class ImgMdf
     {
         private static readonly object _sqllock = new object();
         private static readonly SqlConnection _sqlConnection;
@@ -39,33 +38,13 @@ namespace ImageBank
             return _id;
         }
 
-        private static int DecreaseImportLimit()
+        private static void DecreaseImportLimit()
         {
             _importLimit -= 10;
             SqlVarsUpdateProperty(AppConsts.AttrImportLimit, _importLimit);
-            return _id;
         }
 
-        public static DateTime GetMinLastView()
-        {
-            lock (_imglock)
-            {
-                if (_imgList.Count == 0) {
-                    return DateTime.Now;
-                }
-
-                var scope = _imgList.ToArray();
-                if (scope.Length == 0) {
-                    return DateTime.Now;
-                }
-
-                return scope 
-                    .Min(e => e.Value.LastView)
-                    .AddSeconds(-1);
-            }
-        }
-
-        public static DateTime GetMinLastCheck()
+        private static DateTime GetMinLastCheck()
         {
             lock (_imglock) {
                 if (_imgList.Count == 0) {
