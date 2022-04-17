@@ -123,7 +123,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Axon.cs" />
     <Compile Include="BitmapHelper.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FileHelper.cs" />
@@ -131,8 +130,6 @@
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="CryptoRandom.cs" />
-    <Compile Include="NeuralGas.cs" />
-    <Compile Include="Neuron.cs" />
     <Compile Include="RootSiftDescriptor.cs" />
     <Compile Include="RootSiftHelper.cs" />
     <Page Include="MainWindow.xaml">

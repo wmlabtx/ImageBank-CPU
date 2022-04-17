@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using OpenCvSharp.Features2D;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ImageBank
@@ -8,20 +9,20 @@ namespace ImageBank
     public static class RootSiftHelper
     {
         private static readonly SIFT _sift = SIFT.Create(10000);
-        private const int MAXDIM = 768;
-        private const int MAXDESCRIPTORS = 500;
+        private const int Maxdim = 768;
+        private const int Maxdescriptors = 500;
 
-        public static RootSiftDescriptor[] Compute(float[][] matrix, bool draw = false)
+        public static void Compute(float[][] matrix, out RootSiftDescriptor[][] descriptors, bool draw = false)
         {
-            RootSiftDescriptor[] result;
+            descriptors = new RootSiftDescriptor[2][];
 
-            int numRows = matrix.Length;
-            int numCols = matrix[0].Length;
+            var numRows = matrix.Length;
+            var numCols = matrix[0].Length;
 
-            float fmin = float.MaxValue;
-            float fmax = float.MinValue;
-            for (int i = 0; i < numRows; i++) {
-                for (int j = 0; j < numCols; j++) {
+            var fmin = float.MaxValue;
+            var fmax = float.MinValue;
+            for (var i = 0; i < numRows; i++) {
+                for (var j = 0; j < numCols; j++) {
                     if (matrix[i][j] < fmin) {
                         fmin = matrix[i][j];
                     }
@@ -33,16 +34,16 @@ namespace ImageBank
             }
 
             Mat mat = null;
-            try {                
+            try {
                 using (var matraw = new Mat(numRows, numCols, MatType.CV_8U)) {
-                    for (int i = 0; i < numRows; i++) {
-                        for (int j = 0; j < numCols; j++) {
-                            byte val = (byte)(255f * (matrix[i][j] - fmin) / (fmax - fmin));
+                    for (var i = 0; i < numRows; i++) {
+                        for (var j = 0; j < numCols; j++) {
+                            var val = (byte)(255f * (matrix[i][j] - fmin) / (fmax - fmin));
                             matraw.At<byte>(i, j) = val;
                         }
                     }
 
-                    var f = MAXDIM / (float)Math.Min(matraw.Width, matraw.Height);
+                    var f = Maxdim / (float)Math.Min(matraw.Width, matraw.Height);
                     if (f < 1f) {
                         mat = new Mat();
                         Cv2.Resize(matraw, mat, new Size(0, 0), f, f, InterpolationFlags.Cubic);
@@ -53,7 +54,7 @@ namespace ImageBank
                 }
 
                 var keypoints = _sift.Detect(mat);
-                keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+                keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(Maxdescriptors).ToArray();
                 using (var matdescriptors = new Mat()) {
                     _sift.Compute(mat, ref keypoints, matdescriptors);
                     if (draw) {
@@ -68,10 +69,17 @@ namespace ImageBank
                     }
 
                     Cv2.Sqrt(matdescriptors, matdescriptors);
+                    matdescriptors.GetArray(out float[] fmatdescriptors);
+
+                    descriptors[0] = new RootSiftDescriptor[fmatdescriptors.Length / 128];
+                    for (var i = 0; i < descriptors[0].Length; i++) {
+                        descriptors[0][i] = new RootSiftDescriptor(fmatdescriptors, i * 128 * sizeof(float));
+                    }
+
                     using (var matflip = new Mat()) {
                         Cv2.Flip(mat, matflip, FlipMode.Y);
                         keypoints = _sift.Detect(matflip);
-                        keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(MAXDESCRIPTORS).ToArray();
+                        keypoints = keypoints.OrderByDescending(e => e.Size).ThenBy(e => e.Response).Take(Maxdescriptors).ToArray();
                         using (var matdescriptorsflip = new Mat()) {
                             _sift.Compute(matflip, ref keypoints, matdescriptorsflip);
                             if (draw) {
@@ -86,11 +94,11 @@ namespace ImageBank
                             }
 
                             Cv2.Sqrt(matdescriptorsflip, matdescriptorsflip);
-                            matdescriptors.PushBack(matdescriptorsflip);
-                            matdescriptors.GetArray(out float[] fmatdescriptors);
-                            result = new RootSiftDescriptor[fmatdescriptors.Length / 128];
-                            for (var i = 0; i < result.Length; i++) {
-                                result[i] = new RootSiftDescriptor(fmatdescriptors, i * 128 * sizeof(float));
+                            matdescriptorsflip.GetArray(out float[] fmatdescriptorsflip);
+
+                            descriptors[1] = new RootSiftDescriptor[fmatdescriptorsflip.Length / 128];
+                            for (var i = 0; i < descriptors[1].Length; i++) {
+                                descriptors[1][i] = new RootSiftDescriptor(fmatdescriptorsflip, i * 128 * sizeof(float));
                             }
                         }
                     }
@@ -101,11 +109,32 @@ namespace ImageBank
             finally {
                 mat.Dispose();
             }
-
-            return result;
         }
 
-        public static float GetDistance(ushort[] x, ushort[] y)
+        private static float GetDistance(IReadOnlyList<RootSiftDescriptor> x, IReadOnlyList<RootSiftDescriptor> y)
+        {
+            var mindistance = x[0].GetDistance(y[0]);
+            mindistance = (from tx in x from ty in y select tx.GetDistance(ty)).Prepend(mindistance).Min();
+            return mindistance;
+        }
+
+        public static float GetDistance(RootSiftDescriptor[][] x, RootSiftDescriptor[][] y)
+        {
+            var d0 = GetDistance(x[0], y[0]);
+            var d1 = GetDistance(x[0], y[1]);
+            var distance = Math.Min(d0, d1);
+            return distance;
+        }
+
+        public static float GetDistance(ulong[][] x, ulong[][] y)
+        {
+            var d0 = GetDistance(x[0], y[0]);
+            var d1 = GetDistance(x[0], y[1]);
+            var distance = Math.Min(d0, d1);
+            return distance;
+        }
+
+        private static float GetDistance(ulong[] x, ulong[] y)
         {
             if (x == null || x.Length == 0 || y == null || y.Length == 0) {
                 return 100f;
@@ -132,6 +161,21 @@ namespace ImageBank
 
             var distance = 100f * (x.Length - m) / x.Length;
             return distance;
+        }
+
+        public static ulong[][] GetFingerprints(RootSiftDescriptor[][] descriptors)
+        {
+            var result = new ulong[2][];
+            for (var i = 0; i < 2; i++) {
+                result[i] = new ulong[descriptors[i].Length];
+                for (var j = 0; j < descriptors[i].Length; j++) {
+                    result[i][j] = descriptors[i][j].Fingerprint;
+                }
+
+                Array.Sort(result[i]);
+            }
+
+            return result;
         }
     }
 }

@@ -8,32 +8,40 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private ushort[] _vector;
-        public ushort[] Vector {
-            get => _vector;
-            set {
-                _vector = value;
-                var array = Helper.ArrayFrom16(_vector);
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrVector, array);
+        private ulong[][] _fingerprints;
+        public ulong[][] Fingerprints
+        {
+            get => _fingerprints;
+            set
+            {
+                _fingerprints = value;
+                var buffer = Helper.ArrayFrom64(_fingerprints[0]);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFp, buffer);
+                var bufferflip = Helper.ArrayFrom64(_fingerprints[1]);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFpFlip, bufferflip);
             }
         }
 
-        private int _year;
-        public int Year {
-            get => _year;
-            set {
-                _year = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrYear, value);
-            }
+        public int Year { get; private set; }
+
+        public void SetActualYear()
+        {
+            Year = DateTime.Now.Year;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeYear, Year);
         }
 
-        private int _counter;
-        public int Counter {
-            get => _counter;
-            set {
-                _counter = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrCounter, value);
-            }
+        public int Counter { get; private set; }
+
+        public void IncreaseCounter()
+        {
+            Counter++;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeCounter, Counter);
+        }
+
+        public void ResetCounter()
+        {
+            Counter = 0;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeCounter, Counter);
         }
 
         private int _bestid;
@@ -41,7 +49,7 @@ namespace ImageBank
             get => _bestid;
             set {
                 _bestid = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestId, value);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestId, value);
             }
         }
 
@@ -50,51 +58,49 @@ namespace ImageBank
             get => _bestvdistance;
             set {
                 _bestvdistance = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrBestVDistance, value);
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestVDistance, value);
             }
         }
 
-        private DateTime _lastview;
-        public DateTime LastView {
-            get => _lastview;
-            set {
-                _lastview = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastView, value);
-            }
+        public DateTime LastView { get; private set; }
+
+        public void SetLastView()
+        {
+            LastView = DateTime.Now;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
 
-        private DateTime _lastcheck;
-        public DateTime LastCheck {
-            get => _lastcheck;
-            set {
-                _lastcheck = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttrLastCheck, value);
-            }
+        public DateTime LastCheck { get; private set; }
+
+        public void SetLastCheck()
+        {
+            LastCheck = DateTime.Now;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastCheck, LastCheck);
         }
 
         public Img(
             int id,
             string name,
             string hash,
-            ushort[] vector,
+            ulong[][] fingerprints,
             int year,
             int counter,
             int bestid,
             float bestvdistance,
             DateTime lastview,
-            DateTime lastcheck
-            )
+            DateTime lastcheck 
+        )
         {
             Id = id;
             Name = name;
             Hash = hash;
-            _vector = vector;
-            _year = year;
-            _counter = counter;
+            _fingerprints = fingerprints;
+            Year = year;
+            Counter = counter;
             _bestid = bestid;
             _bestvdistance = bestvdistance;
-            _lastview = lastview;
-            _lastcheck = lastcheck;
+            LastView = lastview;
+            LastCheck = lastcheck;
         }
     }
 }

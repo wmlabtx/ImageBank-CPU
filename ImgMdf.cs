@@ -28,20 +28,19 @@ namespace ImageBank
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
-            NeuralGas.Load();
         }
 
         private static int AllocateId()
         {
             _id++;
-            SqlVarsUpdateProperty(AppConsts.AttrId, _id);
+            SqlVarsUpdateProperty(AppConsts.AttributeId, _id);
             return _id;
         }
 
         private static void DecreaseImportLimit()
         {
             _importLimit -= 10;
-            SqlVarsUpdateProperty(AppConsts.AttrImportLimit, _importLimit);
+            SqlVarsUpdateProperty(AppConsts.AttributeImportLimit, _importLimit);
         }
 
         private static DateTime GetMinLastCheck()

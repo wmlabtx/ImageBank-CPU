@@ -3,7 +3,7 @@ using System.Text;
 
 namespace ImageBank
 {
-    public static class MD5HashHelper
+    public static class Md5HashHelper
     {
         public static string Compute(byte[] array)
         {

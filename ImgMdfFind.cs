@@ -63,7 +63,7 @@ namespace ImageBank
                 imgX = AppVars.ImgPanel[0].Img;
                 var idY = imgX.BestId;
 
-                AppVars.ImgPanel[1] = GetImgPanel(idY);
+                  AppVars.ImgPanel[1] = GetImgPanel(idY);
                 if (AppVars.ImgPanel[1] == null) {
                     Delete(idY);
                     progress.Report($"{idY} deleted");
@@ -78,9 +78,12 @@ namespace ImageBank
             lock (_imglock) {
                 var imgcount = _imgList.Count;
                 var diff = imgcount - _importLimit;
-                var g0 = _imgList.Count(e => e.Value.Counter == 0);
-                var g1 = _imgList.Count(e => e.Value.Counter == 1);
-                progress.Report($"0:{g0} 1:{g1} images:{imgcount}({diff}) distance: {imgX.BestVDistance:F1}");
+                var now = DateTime.Now;
+                var array = _imgList.Select(e => now.Subtract(e.Value.LastView).TotalDays).OrderByDescending(e => e).ToArray();
+                var pindex = array.Length / 100;
+                var th = array[pindex];
+                var countmaxdays = array.Count(e => e > th);
+                progress.Report($"{th:F1}d:{countmaxdays} images:{imgcount}({diff}) distance: {imgX.BestVDistance:F1}");
             }
         }
 

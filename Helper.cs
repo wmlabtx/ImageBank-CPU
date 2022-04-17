@@ -102,6 +102,20 @@ namespace ImageBank
             return array;
         }
 
+        public static byte[] ArrayFrom64(ulong[] array)
+        {
+            var buffer = new byte[array.Length * sizeof(ulong)];
+            Buffer.BlockCopy(array, 0, buffer, 0, buffer.Length);
+            return buffer;
+        }
+
+        public static ulong[] ArrayTo64(byte[] buffer)
+        {
+            var array = new ulong[buffer.Length / sizeof(ulong)];
+            Buffer.BlockCopy(buffer, 0, array, 0, buffer.Length);
+            return array;
+        }
+
         public static byte[] ArrayFromFloat(float[] array)
         {
             var buffer = new byte[array.Length * sizeof(float)];

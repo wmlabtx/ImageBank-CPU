@@ -103,7 +103,7 @@ namespace ImageBank
         private async void ButtonLeftNextMouseClick()
         {            
             DisableElements();
-            await Task.Run(() => { ImgMdf.Confirm(); }).ConfigureAwait(true);
+            await Task.Run(ImgMdf.Confirm).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
@@ -165,6 +165,7 @@ namespace ImageBank
                 }
 
                 sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
+                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
 
                 pLabels[index].Text = sb.ToString();
                 var scb = System.Windows.Media.Brushes.White;

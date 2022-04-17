@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace ImageBank
 {
@@ -11,7 +10,6 @@ namespace ImageBank
         private static int _added;
         private static int _found;
         private static int _bad;
-        private static readonly StringBuilder _sb = new StringBuilder();
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
@@ -23,11 +21,11 @@ namespace ImageBank
                     return;
                 }
 
-                shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.LastCheck).ToArray();
+                shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.Id).ToArray();
             }
 
             foreach (var img in shadowcopy) {
-                if (img.BestId == 0 || img.BestId == img.Id || !_imgList.ContainsKey(img.BestId)) {
+                if (img.BestId == 0 || !_imgList.ContainsKey(img.BestId) || img.Fingerprints[0].Length == 0) {
                     img1 = img;
                     break;
                 }
@@ -41,49 +39,51 @@ namespace ImageBank
                 return;
             }
 
-            var filename = FileHelper.NameToFileName(img1.Name);
-            var imagedata = FileHelper.ReadData(filename);
-            if (imagedata == null)
-            {
-                Delete(img1.Id);
-                return;
+            if (img1.Fingerprints[0].Length == 0) {
+                var filename = FileHelper.NameToFileName(img1.Name);
+                var imagedata = FileHelper.ReadData(filename);
+                if (imagedata == null) {
+                    Delete(img1.Id);
+                    return;
+                }
+
+                var matrix = BitmapHelper.GetMatrix(imagedata);
+                if (matrix == null) {
+                    Delete(img1.Id);
+                    return;
+                }
+
+                RootSiftHelper.Compute(matrix, out var descriptors);
+                img1.Fingerprints = RootSiftHelper.GetFingerprints(descriptors);
             }
 
-            var matrix = BitmapHelper.GetMatrix(imagedata);
-            var descriptors = RootSiftHelper.Compute(matrix);
-            NeuralGas.LearnDescriptors(descriptors);
-            NeuralGas.Save();
-            NeuralGas.Compute(descriptors, out var vector, out var minerror, out var maxerror);
-            img1.Vector = vector;
-
-            var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Vector.Length != 0).ToArray();
-            if (candidates.Length > 0) {
+            var candidates = shadowcopy.Where(e => e.Id != img1.Id && e.Fingerprints[0].Length != 0).ToArray();
+            if (candidates.Length == 0) {
+                img1.BestId = img1.Id;
+                img1.BestVDistance = 100f;
+                img1.ResetCounter();
+            }
+            else {
                 var bestid = img1.Id;
                 var bestvdistance = 100f;
                 foreach (var img2 in candidates) {
-                    var vdistance = RootSiftHelper.GetDistance(img1.Vector, img2.Vector);
+                    var vdistance = RootSiftHelper.GetDistance(img1.Fingerprints, img2.Fingerprints);
                     if (vdistance < bestvdistance) {
                         bestid = img2.Id;
                         bestvdistance = vdistance;
                     }
                 }
 
-                if (bestid != img1.BestId) {
-                    NeuralGas.GetStats(out var neurons, out var axons);
-                    _sb.Clear();
-                    _sb.Append($"({neurons}:{axons}) n:{candidates.Length}/a:{_added}/f:{_found}/b:{_bad} [{img1.Id}:{minerror:F2}-{maxerror:F2}] {img1.BestVDistance:F1} \u2192 {bestvdistance:F1}");
-                    backgroundworker.ReportProgress(0, _sb.ToString());
+                if (bestid != img1.BestId || Math.Abs(img1.BestVDistance - bestvdistance) > 0.0001f) {
+                    var message = $"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}] {img1.BestVDistance:F1} \u2192 {bestvdistance:F1}";
+                    backgroundworker.ReportProgress(0, message);
                     img1.BestId = bestid;
-                    img1.Counter = 0;
-                }
-
-                if (Math.Abs(img1.BestVDistance - bestvdistance) > 0.0001f) {
                     img1.BestVDistance = bestvdistance;
+                    img1.ResetCounter();
                 }
-
             }
 
-            img1.LastCheck = DateTime.Now;
+            img1.SetLastCheck();
         }
 
         private static void ImportInternal()
@@ -126,7 +126,7 @@ namespace ImageBank
                 }
             }
 
-            var hash = MD5HashHelper.Compute(imagedata);
+            var hash = Md5HashHelper.Compute(imagedata);
             bool found;
             Img imgfound;
             lock (_imglock) {
@@ -140,7 +140,7 @@ namespace ImageBank
                     // no reason to add the same image from a heap; we have one
                     FileHelper.DeleteToRecycleBin(orgfilename);
                     if (imgfound.Year == 0 && year != 0) {
-                        imgfound.Year = year;
+                        imgfound.SetActualYear();
                     }
 
                     _found++;
@@ -151,8 +151,8 @@ namespace ImageBank
                 Delete(imgfound.Id);
             }
 
-            var bitmap = BitmapHelper.ImageDataToBitmap(imagedata);
-            if (bitmap == null) {
+            var matrix = BitmapHelper.GetMatrix(imagedata);
+            if (matrix == null) {
                 var badname = Path.GetFileName(orgfilename);
                 var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
                 if (File.Exists(badfilename)) {
@@ -164,8 +164,9 @@ namespace ImageBank
                 _bad++;
                 return;
             }
-
-            bitmap.Dispose();
+            
+            RootSiftHelper.Compute(matrix, out var descriptors);
+            var fingerprints = RootSiftHelper.GetFingerprints(descriptors);
 
             // we have to create unique name and a location in Hp folder
             string newname;
@@ -177,7 +178,6 @@ namespace ImageBank
                 newfilename = FileHelper.NameToFileName(newname);
             } while (File.Exists(newfilename));
 
-            //var lv = GetMinLastView();
             var lc = GetMinLastCheck();
             var id = AllocateId();
 
@@ -185,7 +185,7 @@ namespace ImageBank
                 id: id,
                 name: newname,
                 hash: hash,
-                vector: Array.Empty<ushort>(),
+                fingerprints: fingerprints,
                 year: year,
                 counter: 0,
                 bestid: 0,
