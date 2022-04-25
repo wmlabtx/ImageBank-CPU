@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using Tedd;
 
 namespace ImageBank
 {
@@ -28,7 +29,7 @@ namespace ImageBank
         public static Bitmap ImageDataToBitmap(byte[] imagedata)
         {
             try {
-                using (MagickImage image = new MagickImage(imagedata)) {
+                using (var image = new MagickImage(imagedata)) {
                     var bitmap = image.ToBitmap();
                     if (bitmap.PixelFormat == PixelFormat.Format24bppRgb) {
                         return bitmap;
@@ -97,7 +98,7 @@ namespace ImageBank
 
                 width = bitmap.Width;
                 height = bitmap.Height;
-                BitmapData bitmapdata = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+                var bitmapdata = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
                 stride = bitmapdata.Stride;
                 data = new byte[Math.Abs(bitmapdata.Stride * bitmapdata.Height)];
                 Marshal.Copy(bitmapdata.Scan0, data, 0, data.Length);
@@ -122,6 +123,36 @@ namespace ImageBank
             }
 
             return matrix;
+        }
+
+        public static uint GetHist(float[][] matrix)
+        {
+            var rhist = new long[33];
+            for (var y = 0; y < matrix.Length; y++) {
+                for (var x = 0; x < matrix[y].Length; x++) {
+                    var b = (int)Math.Round(matrix[y][x] * 31.99 / 100.0);
+                    rhist[b]++;
+                }
+            }
+
+            uint hist = 0;
+            uint mask = 0x80000000;
+            for (var i = 0; i < 32; i++){
+                if (rhist[i + 1] > rhist[i]) {
+                    hist |= mask;
+                }
+
+                mask >>= 1;
+            }
+
+            return hist;
+        }
+
+        public static int GetDistance(uint x, uint y)
+        {
+            var z = x ^ y;
+            var h = z.PopCount();
+            return h;
         }
     }
 }
