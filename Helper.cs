@@ -131,5 +131,38 @@ namespace ImageBank
         }
 
         #endregion
+
+        #region Match
+
+        public static int GetMatch(byte[] x, byte[] y)
+        {
+            if (x == null || x.Length == 0 || y == null || y.Length == 0) {
+                return 0;
+            }
+
+            var m = 0;
+            var i = 0;
+            var j = 0;
+            while (i < x.Length && j < y.Length) {
+                if (x[i] == y[j]) {
+                    m++;
+                    i++;
+                    j++;
+                }
+                else {
+                    if (x[i] < y[j]) {
+                        i++;
+                    }
+                    else {
+                        j++;
+                    }
+                }
+            }
+
+            return m;
+        }
+
+        #endregion
+
     }
 }

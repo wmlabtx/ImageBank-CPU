@@ -26,7 +26,10 @@
         public const string AttributeLastCheck = "LastCheck";
         public const string AttributeFp = "Fp";
         public const string AttributeFpFlip = "FpFlip";
+        public const string AttributeFeatures = "Features";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
+        public const string TableFeatures = "Features";
+        public const string AttributeDescription = "Description";
     }
 }

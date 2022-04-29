@@ -11,9 +11,8 @@ namespace ImageBank
         private static int _found;
         private static int _bad;
 
-        private static void ComputeInternal(BackgroundWorker backgroundworker)
+        public static void FindNext(Img img1, BackgroundWorker backgroundworker)
         {
-            Img img1 = null;
             Img[] shadowcopy;
             lock (_imglock) {
                 if (_imgList.Count < 2) {
@@ -22,21 +21,6 @@ namespace ImageBank
                 }
 
                 shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.Id).ToArray();
-            }
-
-            foreach (var img in shadowcopy) {
-                if (img.BestId == 0 || !_imgList.ContainsKey(img.BestId) || img.Fingerprints[0].Length == 0) {
-                    img1 = img;
-                    break;
-                }
-
-                if (img1 == null || img.LastCheck < img1.LastCheck) {
-                    img1 = img;
-                }
-            }
-
-            if (img1 == null) {
-                return;
             }
 
             if (img1.Fingerprints[0].Length == 0) {
@@ -66,12 +50,25 @@ namespace ImageBank
             else {
                 var bestid = img1.Id;
                 var bestvdistance = 100f;
+                var bestmatch = 0;
+                float vdistance;
+
                 foreach (var img2 in candidates) {
-                    var vdistance = RootSiftHelper.GetDistance(img1.Fingerprints, img2.Fingerprints);
-                    if (vdistance < bestvdistance) {
+                    var match = Helper.GetMatch(img1.Features, img2.Features);
+                    if (match > bestmatch) {
                         bestid = img2.Id;
-                        bestvdistance = vdistance;
+                        bestmatch = match;
+                        bestvdistance = RootSiftHelper.GetDistance(img1.Fingerprints, img2.Fingerprints);
                     }
+                    else {
+                        if (match == bestmatch) {
+                            vdistance = RootSiftHelper.GetDistance(img1.Fingerprints, img2.Fingerprints);
+                            if (vdistance < bestvdistance) {
+                                bestid = img2.Id;
+                                bestvdistance = vdistance;
+                            }
+                        }
+                    }                  
                 }
 
                 if (bestid != img1.BestId || Math.Abs(img1.BestVDistance - bestvdistance) > 0.0001f) {
@@ -84,6 +81,37 @@ namespace ImageBank
             }
 
             img1.SetLastCheck();
+        }
+
+        private static void ComputeInternal(BackgroundWorker backgroundworker)
+        {
+            Img img1 = null;
+            Img[] shadowcopy;
+            lock (_imglock) {
+                if (_imgList.Count < 2) {
+                    backgroundworker.ReportProgress(0, "no images");
+                    return;
+                }
+
+                shadowcopy = _imgList.Select(e => e.Value).OrderBy(e => e.Id).ToArray();
+            }
+
+            foreach (var img in shadowcopy) {
+                if (img.BestId == 0 || !_imgList.ContainsKey(img.BestId) || img.Fingerprints[0].Length == 0) {
+                    img1 = img;
+                    break;
+                }
+
+                if (img1 == null || img.LastCheck < img1.LastCheck) {
+                    img1 = img;
+                }
+            }
+
+            if (img1 == null) {
+                return;
+            }
+
+            FindNext(img1, backgroundworker);
         }
 
         private static void ImportInternal()
@@ -186,6 +214,7 @@ namespace ImageBank
                 name: newname,
                 hash: hash,
                 fingerprints: fingerprints,
+                features: Array.Empty<byte>(),
                 year: year,
                 counter: 0,
                 bestid: 0,

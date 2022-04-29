@@ -14,6 +14,8 @@ namespace ImageBank
         private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
         private static readonly SortedDictionary<string, Img> _nameList = new SortedDictionary<string, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
+        private static readonly object _flock = new object();
+        public static SortedDictionary<byte, string> FeaturesList { get; } = new SortedDictionary<byte, string>();
 
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();

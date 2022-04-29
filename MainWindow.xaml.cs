@@ -87,13 +87,6 @@ namespace ImageBank
             ImportClick(1000000);
         }
 
-        /*
-        private void RandomLeClick(object sender, RoutedEventArgs e)
-        {
-            RandomLeClick(10);
-        }
-        */
-
         private void Rotate270Click(object sender, RoutedEventArgs e)
         {
             Rotate270Click();
@@ -103,8 +96,19 @@ namespace ImageBank
         {
             if (e.Key == Key.Z) {
                 ButtonLeftNextMouseClick();
-                return;
             }
+        }
+
+        private void AddFeatureClick(object sender, EventArgs e)
+        {
+            var feature = (byte)((MenuItem)sender).Tag;
+            AddFeatureClick(feature);
+        }
+
+        private void RemoveFeatureClick(object sender, EventArgs e)
+        {
+            var feature = (byte)((MenuItem)sender).Tag;
+            RemoveFeatureClick(feature);
         }
     }
 }

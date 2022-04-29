@@ -44,6 +44,17 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeCounter, Counter);
         }
 
+        private byte[] _features;
+        public byte[] Features
+        {
+            get => _features;
+            set
+            {
+                _features = value;
+                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFeatures, value);
+            }
+        }
+
         private int _bestid;
         public int BestId {
             get => _bestid;
@@ -83,6 +94,7 @@ namespace ImageBank
             string name,
             string hash,
             ulong[][] fingerprints,
+            byte[] features,
             int year,
             int counter,
             int bestid,
@@ -101,6 +113,7 @@ namespace ImageBank
             _bestvdistance = bestvdistance;
             LastView = lastview;
             LastCheck = lastcheck;
+            _features = features;
         }
     }
 }

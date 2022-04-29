@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="ImageBank" Height="446" Width="800" Loaded="WindowLoaded" WindowStartupLocation="Manual" Closing="WindowClosing" Icon="app.ico" Cursor="Arrow" SizeToContent="Manual" ResizeMode="CanMinimize" KeyDown="MainWindow_KeyDown">
+        Title="ImageBank" Height="446" Width="800" Loaded="WindowLoaded" WindowStartupLocation="Manual" Closing="WindowClosing" Icon="app.ico" Cursor="Arrow" SizeToContent="Manual" ResizeMode="CanMinimize" SizeChanged="WindowSizeChanged" KeyDown="MainWindow_KeyDown">
     <DockPanel Name="DockPanel" LastChildFill="true">
         <Menu Name="Menu" DockPanel.Dock="Top">
             <MenuItem Header="File">
@@ -16,6 +16,10 @@
                 <MenuItem Header="Rotate 90" Click="Rotate90Click" />
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
+            </MenuItem>
+            <MenuItem Name="AddFeatureMenu"  Header="Add">
+            </MenuItem>
+            <MenuItem Name="RemoveFeatureMenu" Header="Remove">
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

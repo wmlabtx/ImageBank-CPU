@@ -5,7 +5,7 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private static void Find(int idX, IProgress<string> progress)
+        public static void Find(int idX, IProgress<string> progress)
         {
             Img imgX;
             do {
