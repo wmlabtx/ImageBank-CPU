@@ -9,7 +9,53 @@ namespace ImageBank
     {
         private static readonly BFMatcher _bfmatcher = new BFMatcher();
         private static readonly MSER _mser = MSER.Create();
-        private const int Maxdim = 768;
+        private const int Maxdim = 480;
+
+        public static Mat GetColors(byte[] imagedata)
+        {
+            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata))
+            using (var matrgb = BitmapConverter.ToMat(bitmap))
+            using (var matlab = new Mat())
+            using (var matresize = new Mat()) {
+                Cv2.CvtColor(matrgb, matlab, ColorConversionCodes.BGR2Lab);
+                var f = Maxdim / (float)Math.Min(matlab.Width, matlab.Height);
+                Cv2.Resize(matlab, matresize, new Size(0, 0), f, f, InterpolationFlags.Cubic);
+                var matpixels = matresize.Reshape(1, matresize.Cols * matresize.Rows);
+                return matpixels;
+            }
+        }
+
+        public static float[] GetLab(Mat matcolors, Mat matcenters)
+        {
+            var hist = new float[256];
+            using (var matf = new Mat()) {
+                matcolors.ConvertTo(matf, MatType.CV_32F);
+                var matches = _bfmatcher.KnnMatch(matf, matcenters, k:2);
+                foreach (var items in matches.Where(x => x.Length > 1)) {
+                    if (items[0].Distance < 0.5f * items[1].Distance) {
+                        hist[items[0].TrainIdx]++;
+                    }
+                }
+
+                var sum = hist.Sum();
+                for (var i = 0; i < 256; i++) {
+                    hist[i] = (float)Math.Sqrt(hist[i] / sum);
+                }
+            }
+
+            return hist;
+        }
+
+        public static float GetDistance(float[] x, float[] y)
+        {
+            var sum = 0f;
+            for (var i = 0; i < x.Length; i++) {
+                 sum += x[i] * y[i];
+            }
+
+            var sim = (float)Math.Sqrt(1f - sum);
+            return sim;
+        }
 
         public static Mat GetLab(byte[] imagedata, string name)
         {

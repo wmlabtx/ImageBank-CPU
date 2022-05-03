@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
@@ -54,7 +53,6 @@ namespace ImageBank
             DisableElements();
             await Task.Run(() => { ImgMdf.LoadImages(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
             DrawCanvas();
             
             EnableElements();
@@ -88,7 +86,6 @@ namespace ImageBank
             DisableElements();
             await Task.Run(() => { ImgMdf.Import(max, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
             DrawCanvas();
             EnableElements();
         }
@@ -108,7 +105,6 @@ namespace ImageBank
             DisableElements();
             await Task.Run(ImgMdf.Confirm).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
             DrawCanvas();
             EnableElements();
         }
@@ -140,85 +136,6 @@ namespace ImageBank
             LabelRight.IsEnabled = enabled;
         }
 
-        private void DrawFeaturesMenu()
-        {
-            AddFeatureMenu.Items.Clear();
-            RemoveFeatureMenu.Items.Clear();
-            if (AppVars.ImgPanel[0] == null) {
-                return;
-            }
-
-            ImgMdf.LoadFeatures();
-            var flist = new SortedDictionary<byte, string>(ImgMdf.FeaturesList);
-            int i;
-            foreach (var e in AppVars.ImgPanel[0].Img.Features) {
-                var descriptor = flist[e];
-                for (i = 0; i < RemoveFeatureMenu.Items.Count; i++) {
-                    var item = (System.Windows.Controls.MenuItem)RemoveFeatureMenu.Items[i];
-                    if (((string)item.Header).Substring(0, 1).Equals(descriptor.Substring(0, 1))) {
-                        var mi = new System.Windows.Controls.MenuItem {
-                            Header = descriptor,
-                            Tag = e
-                        };
-
-                        mi.Click += RemoveFeatureClick;
-                        item.Items.Add(mi);
-                        break;
-                    }
-                }
-
-                if (i == RemoveFeatureMenu.Items.Count) {
-                    var miparent = new System.Windows.Controls.MenuItem {
-                        Header = descriptor.Substring(0, 1)
-                    };
-
-                    RemoveFeatureMenu.Items.Add(miparent);
-                    var mi = new System.Windows.Controls.MenuItem {
-                        Header = descriptor,
-                        Tag = e
-                    };
-
-                    mi.Click += RemoveFeatureClick;
-                    miparent.Items.Add(mi);
-                }
-
-                flist.Remove(e);
-            }
-
-            foreach (var e in flist) {
-                var id = e.Key;
-                var descriptor = e.Value;
-                for (i = 0; i < AddFeatureMenu.Items.Count; i++) {
-                    var item = (System.Windows.Controls.MenuItem)AddFeatureMenu.Items[i];
-                    if (((string)item.Header).Substring(0, 1).Equals(descriptor.Substring(0, 1))) {
-                        var mi = new System.Windows.Controls.MenuItem {
-                            Header = descriptor,
-                            Tag = id
-                        };
-
-                        mi.Click += AddFeatureClick;
-                        item.Items.Add(mi);
-                        break;
-                    }
-                }
-
-                if (i == AddFeatureMenu.Items.Count) {
-                    var miparent = new System.Windows.Controls.MenuItem {
-                        Header = descriptor.Substring(0, 1)
-                    };
-
-                    AddFeatureMenu.Items.Add(miparent);
-                    var mi = new System.Windows.Controls.MenuItem {
-                        Header = descriptor,
-                        Tag = id
-                    };
-
-                    mi.Click += AddFeatureClick;
-                    miparent.Items.Add(mi);
-                }
-            }
-        }
-
         private void DrawCanvas()
         {
             if (AppVars.ImgPanel[0] == null || AppVars.ImgPanel[1] == null) {
@@ -232,13 +149,12 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
-                if (AppVars.ImgPanel[index].Img.Features.Length > 0) {
-                    var features = ImgMdf.GetFeaturesString(AppVars.ImgPanel[index].Img.Features);
-                    sb.Append($" {features}");
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                    sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
                 }
 
                 if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
+                    sb.Append($" #{AppVars.ImgPanel[index].Img.Counter}");
                 }
 
                 sb.AppendLine();
@@ -262,6 +178,14 @@ namespace ImageBank
                         System.Windows.Media.Brushes.Yellow : System.Windows.Media.Brushes.LightYellow;
                 }
 
+                if (AppVars.ImgPanel[index].Img.Counter > 0) {
+                    var counter = AppVars.ImgPanel[index].Img.Counter;
+                    var h = (counter % 36) * 10.0;
+                    var l = (counter % 7) / 14.0 + 0.5;
+                    var s = (counter % 5) / 10.0 + 0.5;
+                    scb = new System.Windows.Media.SolidColorBrush(ColorFromHSL(h, l, s));
+                }
+
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
                         scb = System.Windows.Media.Brushes.LightGray;
@@ -273,6 +197,38 @@ namespace ImageBank
             }
 
             RedrawCanvas();
+        }
+
+        private static System.Windows.Media.Color ColorFromHSL(double h, double s, double l)
+        {
+            double q = (l < 0.5) ? (l * (1.0 + s)) : (l + s - (l * s));
+            double p = (2.0 * l) - q;
+
+            double Hk = h / 360.0;
+            double[] T = new double[3];
+            T[0] = Hk + (1.0 / 3.0);    // Tr
+            T[1] = Hk;                // Tb
+            T[2] = Hk - (1.0 / 3.0);    // Tg
+
+            for (int i = 0; i < 3; i++) {
+                if (T[i] < 0) T[i] += 1.0;
+                if (T[i] > 1) T[i] -= 1.0;
+
+                if ((T[i] * 6) < 1) {
+                    T[i] = p + ((q - p) * 6.0 * T[i]);
+                }
+                else if ((T[i] * 2.0) < 1) //(1.0/6.0)<=T[i] && T[i]<0.5
+                {
+                    T[i] = q;
+                }
+                else if ((T[i] * 3.0) < 2) // 0.5<=T[i] && T[i]<(2.0/3.0)
+                {
+                    T[i] = p + (q - p) * ((2.0 / 3.0) - T[i]) * 6.0;
+                }
+                else T[i] = p;
+            }
+
+            return System.Windows.Media.Color.FromRgb((byte)(T[0] * 255.0), (byte)(T[1] * 255.0), (byte)(T[2] * 255.0));
         }
 
         private void RedrawCanvas()
@@ -312,10 +268,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Delete(AppVars.ImgPanel[index].Img.Id); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.UpdateLastView(1 - index); }).ConfigureAwait(true);
-
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
             DrawCanvas();
             EnableElements();
         }
@@ -325,7 +278,6 @@ namespace ImageBank
             DisableElements();
             await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
             DrawCanvas();
             EnableElements();
         }
@@ -382,28 +334,6 @@ namespace ImageBank
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
-        }
-
-        private async void AddFeatureClick(byte feature)
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.AddFeature(feature); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.FindNext(AppVars.ImgPanel[0].Img, _backgroundWorker); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.ImgPanel[0].Img.Id, AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void RemoveFeatureClick(byte feature)
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.RemoveFeature(feature); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.FindNext(AppVars.ImgPanel[0].Img, _backgroundWorker); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.ImgPanel[0].Img.Id, AppVars.Progress); }).ConfigureAwait(true);
-            DrawFeaturesMenu();
-            DrawCanvas();
-            EnableElements();
         }
     }
 }

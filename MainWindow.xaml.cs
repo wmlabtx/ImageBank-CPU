@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -97,18 +96,6 @@ namespace ImageBank
             if (e.Key == Key.Z) {
                 ButtonLeftNextMouseClick();
             }
-        }
-
-        private void AddFeatureClick(object sender, EventArgs e)
-        {
-            var feature = (byte)((MenuItem)sender).Tag;
-            AddFeatureClick(feature);
-        }
-
-        private void RemoveFeatureClick(object sender, EventArgs e)
-        {
-            var feature = (byte)((MenuItem)sender).Tag;
-            RemoveFeatureClick(feature);
         }
     }
 }

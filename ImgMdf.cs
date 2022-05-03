@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
@@ -14,14 +15,13 @@ namespace ImageBank
         private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
         private static readonly SortedDictionary<string, Img> _nameList = new SortedDictionary<string, Img>();
         private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
-        private static readonly object _flock = new object();
-        public static SortedDictionary<byte, string> FeaturesList { get; } = new SortedDictionary<byte, string>();
 
         private static readonly object _rwlock = new object();
         private static List<FileInfo> _rwList = new List<FileInfo>();
 
         private static int _id;
         private static int _importLimit;
+        private static Mat _centers;
 
         private static readonly CryptoRandom _random = new CryptoRandom();
 
@@ -30,6 +30,11 @@ namespace ImageBank
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
+        }
+
+        public static Mat GetCenters()
+        {
+            return _centers;
         }
 
         private static int AllocateId()

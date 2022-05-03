@@ -8,18 +8,17 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private ulong[][] _fingerprints;
-        public ulong[][] Fingerprints
+        private float[] _histogram;
+        public float[] GetHistogram()
         {
-            get => _fingerprints;
-            set
-            {
-                _fingerprints = value;
-                var buffer = Helper.ArrayFrom64(_fingerprints[0]);
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFp, buffer);
-                var bufferflip = Helper.ArrayFrom64(_fingerprints[1]);
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFpFlip, bufferflip);
-            }
+            return _histogram;
+        }
+
+        public void SetHistogram(float[] histogram)
+        {
+            _histogram = histogram;
+            var buffer = Helper.ArrayFromFloat(histogram);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistogram, buffer);
         }
 
         public int Year { get; private set; }
@@ -30,30 +29,7 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeYear, Year);
         }
 
-        public int Counter { get; private set; }
-
-        public void IncreaseCounter()
-        {
-            Counter++;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeCounter, Counter);
-        }
-
-        public void ResetCounter()
-        {
-            Counter = 0;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeCounter, Counter);
-        }
-
-        private byte[] _features;
-        public byte[] Features
-        {
-            get => _features;
-            set
-            {
-                _features = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeFeatures, value);
-            }
-        }
+        public int Counter => GetHistorySize();
 
         private int _bestid;
         public int BestId {
@@ -61,15 +37,6 @@ namespace ImageBank
             set {
                 _bestid = value;
                 ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestId, value);
-            }
-        }
-
-        private float _bestvdistance;
-        public float BestVDistance {
-            get => _bestvdistance;
-            set {
-                _bestvdistance = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestVDistance, value);
             }
         }
 
@@ -89,31 +56,81 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastCheck, LastCheck);
         }
 
+        private int[] _history;
+
+        public int[] GetHistory()
+        {
+            return _history;
+        }
+
+        public int GetHistorySize()
+        {
+            return _history.Length;
+        }
+
+        public bool IsInHistory(int id)
+        {
+            var pos = Array.BinarySearch(_history, id);
+            return (pos >= 0);
+        }
+
+        public void AddToHistory(int id)
+        {
+            if (IsInHistory(id)) {
+                return;
+            }
+
+            var result = new int[_history.Length + 1];
+            _history.CopyTo(result, 0);
+            result[_history.Length] = id;
+            _history = result;
+            Array.Sort(_history);
+            var buffer = Helper.ArrayFrom32(_history);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistory, buffer);
+        }
+
+        public void RemoveFromHistory(int id)
+        {
+            var pos = Array.BinarySearch(_history, id);
+            if (pos < 0) {
+                return;
+            }
+
+            var result = new int[_history.Length - 1];
+            if (pos > 0) {
+                Array.Copy(_history, 0, result, 0, pos);
+            }
+
+            if (pos < _history.Length - 1) {
+                Array.Copy(_history, pos + 1, result, pos, _history.Length - pos - 1);
+            }
+
+            _history = result;
+            var buffer = Helper.ArrayFrom32(_history);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistory, buffer);
+        }
+
         public Img(
             int id,
             string name,
             string hash,
-            ulong[][] fingerprints,
-            byte[] features,
+            float[] histogram,
             int year,
-            int counter,
             int bestid,
-            float bestvdistance,
             DateTime lastview,
-            DateTime lastcheck 
+            DateTime lastcheck,
+            int[] history
         )
         {
             Id = id;
             Name = name;
             Hash = hash;
-            _fingerprints = fingerprints;
+            _histogram = histogram;
             Year = year;
-            Counter = counter;
             _bestid = bestid;
-            _bestvdistance = bestvdistance;
             LastView = lastview;
             LastCheck = lastcheck;
-            _features = features;
+            _history = history;
         }
     }
 }

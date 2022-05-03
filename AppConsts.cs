@@ -18,18 +18,14 @@
         public const string AttributeId = "Id";
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
+        public const string AttributeHistogram = "Histogram";
         public const string AttributeYear = "Year";
-        public const string AttributeCounter = "Counter";
         public const string AttributeBestId = "BestId";
-        public const string AttributeBestVDistance = "BestVDistance";
         public const string AttributeLastView = "LastView";
-        public const string AttributeLastCheck = "LastCheck";
-        public const string AttributeFp = "Fp";
-        public const string AttributeFpFlip = "FpFlip";
-        public const string AttributeFeatures = "Features";
+        public const string AttributeLastCheck = "LastCheck";        
+        public const string AttributeHistory = "History";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
-        public const string TableFeatures = "Features";
-        public const string AttributeDescription = "Description";
+        public const string AttributeLabCenters = "LabCenters";
     }
 }

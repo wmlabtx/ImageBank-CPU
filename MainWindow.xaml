@@ -17,10 +17,6 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <MenuItem Name="AddFeatureMenu"  Header="Add">
-            </MenuItem>
-            <MenuItem Name="RemoveFeatureMenu" Header="Remove">
-            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

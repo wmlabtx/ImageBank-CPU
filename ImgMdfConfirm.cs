@@ -4,14 +4,11 @@
     {
         public static void Confirm()
         {
-            AppVars.ImgPanel[0].Img.IncreaseCounter();
-            UpdateLastView(1);
-            UpdateLastView(0);
-        }
+            var imgX = AppVars.ImgPanel[0].Img;
+            var imgY = AppVars.ImgPanel[1].Img;
 
-        public static void UpdateLastView(int index)
-        {
-            AppVars.ImgPanel[index].Img.SetLastView();
+            imgX.AddToHistory(imgY.Id);
+            imgX.SetLastView();
         }
     }
 }

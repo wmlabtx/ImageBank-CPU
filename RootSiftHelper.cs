@@ -126,18 +126,18 @@ namespace ImageBank
             return distance;
         }
 
-        public static float GetDistance(ulong[][] x, ulong[][] y)
+        public static int GetMatch(ulong[][] x, ulong[][] y)
         {
-            var d0 = GetDistance(x[0], y[0]);
-            var d1 = GetDistance(x[0], y[1]);
-            var distance = Math.Min(d0, d1);
+            var d0 = GetMatch(x[0], y[0]);
+            var d1 = GetMatch(x[0], y[1]);
+            var distance = Math.Max(d0, d1);
             return distance;
         }
 
-        private static float GetDistance(ulong[] x, ulong[] y)
+        private static int GetMatch(ulong[] x, ulong[] y)
         {
             if (x == null || x.Length == 0 || y == null || y.Length == 0) {
-                return 100f;
+                return 0;
             }
 
             var m = 0;
@@ -159,8 +159,7 @@ namespace ImageBank
                 }
             }
 
-            var distance = 100f * (x.Length - m) / x.Length;
-            return distance;
+            return m;
         }
 
         public static ulong[][] GetFingerprints(RootSiftDescriptor[][] descriptors)

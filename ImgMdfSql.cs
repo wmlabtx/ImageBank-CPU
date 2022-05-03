@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Data.SqlClient;
 using System;
+using OpenCvSharp;
 
 namespace ImageBank
 {
@@ -56,71 +57,36 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeId}, ");
                     sb.Append($"{AppConsts.AttributeName}, ");
                     sb.Append($"{AppConsts.AttributeHash}, ");
-                    sb.Append($"{AppConsts.AttributeFp}, ");
-                    sb.Append($"{AppConsts.AttributeFpFlip}, ");
-                    sb.Append($"{AppConsts.AttributeFeatures}, ");
+                    sb.Append($"{AppConsts.AttributeHistogram}, ");
                     sb.Append($"{AppConsts.AttributeYear}, ");
-                    sb.Append($"{AppConsts.AttributeCounter}, ");
                     sb.Append($"{AppConsts.AttributeBestId}, ");
-                    sb.Append($"{AppConsts.AttributeBestVDistance}, ");
                     sb.Append($"{AppConsts.AttributeLastView}, ");
-                    sb.Append($"{AppConsts.AttributeLastCheck}");
+                    sb.Append($"{AppConsts.AttributeLastCheck}, ");
+                    sb.Append($"{AppConsts.AttributeHistory}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttributeId}, ");
                     sb.Append($"@{AppConsts.AttributeName}, ");
                     sb.Append($"@{AppConsts.AttributeHash}, ");
-                    sb.Append($"@{AppConsts.AttributeFp}, ");
-                    sb.Append($"@{AppConsts.AttributeFpFlip}, ");
-                    sb.Append($"@{AppConsts.AttributeFeatures}, ");
+                    sb.Append($"@{AppConsts.AttributeHistogram}, ");
                     sb.Append($"@{AppConsts.AttributeYear}, ");
-                    sb.Append($"@{AppConsts.AttributeCounter}, ");
                     sb.Append($"@{AppConsts.AttributeBestId}, ");
-                    sb.Append($"@{AppConsts.AttributeBestVDistance}, ");
                     sb.Append($"@{AppConsts.AttributeLastView}, ");
-                    sb.Append($"@{AppConsts.AttributeLastCheck}");
+                    sb.Append($"@{AppConsts.AttributeLastCheck}, ");
+                    sb.Append($"@{AppConsts.AttributeHistory}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
-                    var buffer = Helper.ArrayFrom64(img.Fingerprints[0]);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFp}", buffer);
-                    var bufferflip = Helper.ArrayFrom64(img.Fingerprints[1]);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFpFlip}", bufferflip);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFeatures}", img.Features);
+                    var buffer = Helper.ArrayFromFloat(img.GetHistogram());
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHistogram}", buffer);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeCounter}", img.Counter);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestId}", img.BestId);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestVDistance}", img.BestVDistance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastCheck}", img.LastCheck);
+                    var bufferhistory = Helper.ArrayFrom32(img.GetHistory());
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHistory}", bufferhistory);
                     sqlCommand.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public static void LoadFeatures()
-        {
-            lock (_flock) {
-                FeaturesList.Clear();
-
-                var sb = new StringBuilder();
-                sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttributeId}, "); // 0
-                sb.Append($"{AppConsts.AttributeDescription} "); // 1
-                sb.Append($"FROM {AppConsts.TableFeatures}");
-                lock (_sqllock) {
-                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
-                        sqlCommand.Connection = _sqlConnection;
-                        sqlCommand.CommandText = sb.ToString();
-                        using (var reader = sqlCommand.ExecuteReader()) {
-                            while (reader.Read()) {
-                                var id = reader.GetByte(0);
-                                var descriptor = reader.GetString(1);
-                                FeaturesList.Add(id, descriptor);
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -135,15 +101,12 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttributeId}, "); // 0
                 sb.Append($"{AppConsts.AttributeName}, "); // 1
                 sb.Append($"{AppConsts.AttributeHash}, "); // 2
-                sb.Append($"{AppConsts.AttributeFp}, "); // 3
-                sb.Append($"{AppConsts.AttributeFpFlip}, "); // 4
-                sb.Append($"{AppConsts.AttributeYear}, "); // 5
-                sb.Append($"{AppConsts.AttributeCounter}, "); // 6
-                sb.Append($"{AppConsts.AttributeBestId}, "); // 7
-                sb.Append($"{AppConsts.AttributeBestVDistance}, "); // 8
-                sb.Append($"{AppConsts.AttributeLastView}, "); // 9
-                sb.Append($"{AppConsts.AttributeLastCheck}, "); // 10
-                sb.Append($"{AppConsts.AttributeFeatures} "); // 11
+                sb.Append($"{AppConsts.AttributeHistogram}, "); // 3
+                sb.Append($"{AppConsts.AttributeYear}, "); // 4
+                sb.Append($"{AppConsts.AttributeBestId}, "); // 5
+                sb.Append($"{AppConsts.AttributeLastView}, "); // 6
+                sb.Append($"{AppConsts.AttributeLastCheck}, "); // 7
+                sb.Append($"{AppConsts.AttributeHistory} "); // 8
                 sb.Append($"FROM {AppConsts.TableImages}");
                 var sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -156,29 +119,22 @@ namespace ImageBank
                                 var id = reader.GetInt32(0);
                                 var name = reader.GetString(1);
                                 var hash = reader.GetString(2);
-                                var fingerprints = new ulong[2][];
-                                fingerprints[0] = Helper.ArrayTo64((byte[])reader[3]);
-                                fingerprints[1] = Helper.ArrayTo64((byte[])reader[4]);
-                                var year = reader.GetInt32(5);
-                                var counter = reader.GetInt32(6);
-                                var bestid = reader.GetInt32(7);
-                                var bestvdistance = reader.GetFloat(8);
-                                var lastview = reader.GetDateTime(9);
-                                var lastcheck = reader.GetDateTime(10);
-                                var features = (byte[])reader[11];
-
+                                var histogram = Helper.ArrayToFloat((byte[])reader[3]);
+                                var year = reader.GetInt32(4);
+                                var bestid = reader.GetInt32(5);
+                                var lastview = reader.GetDateTime(6);
+                                var lastcheck = reader.GetDateTime(7);
+                                var history = Helper.ArrayTo32((byte[])reader[8]);
                                 var img = new Img(
                                     id: id,
                                     name: name,
                                     hash: hash,
-                                    fingerprints: fingerprints,
-                                    features: features,
+                                    histogram: histogram,
                                     year: year,
-                                    counter: counter, 
                                     bestid: bestid,
-                                    bestvdistance: bestvdistance,
                                     lastview: lastview,
-                                    lastcheck: lastcheck
+                                    lastcheck: lastcheck,
+                                    history: history
                                    );
 
                                 AddToMemory(img);
@@ -198,7 +154,8 @@ namespace ImageBank
                     sb.Length = 0;
                     sb.Append("SELECT ");
                     sb.Append($"{AppConsts.AttributeId}, "); // 0
-                    sb.Append($"{AppConsts.AttributeImportLimit} "); // 1
+                    sb.Append($"{AppConsts.AttributeImportLimit}, "); // 1
+                    sb.Append($"{AppConsts.AttributeLabCenters} "); // 2
                     sb.Append($"FROM {AppConsts.TableVars}");
                     sqltext = sb.ToString();
                     lock (_sqllock) {
@@ -207,6 +164,10 @@ namespace ImageBank
                                 while (reader.Read()) {
                                     _id = reader.GetInt32(0);
                                     _importLimit = reader.GetInt32(1);
+                                    var buffer = (byte[])reader[2];
+                                    var farray = Helper.ArrayToFloat(buffer);
+                                    _centers = new Mat(256, 3, MatType.CV_32F);
+                                    _centers.SetArray(farray);
                                     break;
                                 }
                             }
