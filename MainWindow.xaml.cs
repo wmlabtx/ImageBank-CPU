@@ -97,5 +97,25 @@ namespace ImageBank
                 ButtonLeftNextMouseClick();
             }
         }
+
+        private void ExportClick(object sender, RoutedEventArgs e)
+        {
+            ExportClick();
+        }
+
+        private void CombineClick(object sender, RoutedEventArgs e)
+        {
+            CombineClick();
+        }
+
+        private void DetachLeftClick(object sender, RoutedEventArgs e)
+        {
+            DetachLeftClick();
+        }
+
+        private void DetachRightClick(object sender, RoutedEventArgs e)
+        {
+            DetachRightClick();
+        }
     }
 }

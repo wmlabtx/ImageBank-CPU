@@ -6,6 +6,7 @@
         public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
+        public const string FilePalette = @"D:\Users\Murad\Documents\Sdb\Db\palette.png";
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -18,7 +19,9 @@
         public const string AttributeId = "Id";
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
-        public const string AttributeHistogram = "Histogram";
+        public const string AttributePalette = "Palette";
+        public const string AttributeSceneId = "SceneId";
+        public const string AttributeDistance = "Distance";
         public const string AttributeYear = "Year";
         public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";

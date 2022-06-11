@@ -9,6 +9,7 @@ namespace ImageBankTest
     [TestClass()]
     public class RootSiftHelperTests
     {
+        /*
         [TestMethod]
         public void ComparisonTest()
         {
@@ -35,7 +36,6 @@ namespace ImageBankTest
             }
         }
 
-        /*
         [TestMethod]
         public void ComparisonTest2()
         {

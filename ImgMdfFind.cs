@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ImageBank
@@ -7,7 +8,10 @@ namespace ImageBank
     {
         public static void Find(int idX, IProgress<string> progress)
         {
-            Img imgX;
+            Img imgX = null;
+            int totalcount;
+            int luftcount;
+            int zerocount;
             do {
                 lock (_imglock) {
                     if (_imgList.Count < 2) {
@@ -15,60 +19,52 @@ namespace ImageBank
                         return;
                     }
 
+                    totalcount = _imgList.Count;
+                    luftcount = totalcount - _importLimit;
+                    zerocount = _imgList.Count(e => e.Value.Counter == 0);
+                    var validscope = _imgList.Where(e => e.Key != e.Value.BestId && _imgList.ContainsKey(e.Value.BestId)).Select(e => e.Value).ToArray();
+                    var minc = validscope.Min(e => e.Counter);
+                    validscope = validscope.Where(e => e.Counter == minc).ToArray();
+                    var scope = new List<Img>();
+                    var newscope = validscope.Where(e => e.LastView.Year == 2020).Take(1000).ToList();
+                    scope.AddRange(newscope);
+                    var more = newscope.Count > 0 ? 100 : 500;
+                    var similarscope = validscope.OrderBy(e => e.Distance).Take(more).ToList();
+                    scope.AddRange(similarscope);
+                    var oldestscope = validscope.Where(e => e.LastView.Year > 2020).OrderBy(e => e.LastView).Take(more).ToList();
+                    scope.AddRange(oldestscope);
+
                     if (idX == 0) {
                         imgX = null;
-                        var lcnext = DateTime.MaxValue;
-                        lock (_imglock) {
-                            foreach (var img in _imgList.Values) {
-                                if (img.BestId == img.Id || !_imgList.TryGetValue(img.BestId, out var imgnext)) {
-                                    continue;
+                        if (_lastviewed.Count == 0) {
+                            var minlv = scope.Min(e => e.LastView);
+                            imgX = scope.FirstOrDefault(e => e.LastView == minlv);
+                        }
+                        else {
+                            var maxd = 0f;
+                            foreach (var img in scope) {
+                                var mind = float.MaxValue;
+                                foreach (var limg in _lastviewed) {
+                                    var distance = GetDistance(img.GetPalette(), limg);
+                                    if (distance < mind) {
+                                        mind = distance;
+                                    }
                                 }
 
-                                if (imgX == null) {
+                                if (mind > maxd) {
+                                    maxd = mind;
                                     imgX = img;
-                                    lcnext = imgnext.LastView;
-                                    continue;
-                                }
-
-                                if (img.Counter < imgX.Counter) {
-                                    imgX = img;
-                                    lcnext = imgnext.LastView;
-                                    continue;
-                                }
-
-                                if (img.Counter > imgX.Counter) {
-                                    continue;
-                                }
-
-                                if (img.LastView < imgX.LastView) {
-                                    imgX = img;
-                                    lcnext = imgnext.LastView;
-                                    continue;
-                                }
-
-                                if (img.LastView > imgX.LastView) {
-                                    continue;
-                                }
-
-                                if (imgnext.LastView < lcnext) {
-                                    imgX = img;
-                                    lcnext = imgnext.LastView;
-                                    continue;
-                                }
-
-                                if (imgnext.LastView > lcnext) {
-                                    continue;
                                 }
                             }
                         }
-
-                        if (imgX == null) {
-                            progress.Report("No images to view");
-                            return;
-                        }
-
-                        idX = imgX.Id;
                     }
+
+                    if (imgX == null) {
+                        progress.Report("No images to view");
+                        return;
+                    }
+
+                    idX = imgX.Id;
                 }
 
                 AppVars.ImgPanel[0] = GetImgPanel(idX);
@@ -93,16 +89,7 @@ namespace ImageBank
             }
             while (true);
 
-            lock (_imglock) {
-                var imgcount = _imgList.Count;
-                var diff = imgcount - _importLimit;
-                var now = DateTime.Now;
-                var array = _imgList.Select(e => now.Subtract(e.Value.LastView).TotalDays).OrderByDescending(e => e).ToArray();
-                var pindex = array.Length / 100;
-                var th = array[pindex];
-                var countmaxdays = array.Count(e => e > th);
-                progress.Report($"{th:F1}d:{countmaxdays} images:{imgcount}({diff})");
-            }
+            progress.Report($"0:{zerocount}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
         }
 
         public static void Find(IProgress<string> progress) => Find(0, progress);

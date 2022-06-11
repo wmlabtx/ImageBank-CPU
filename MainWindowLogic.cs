@@ -81,6 +81,13 @@ namespace ImageBank
             Import(max);
         }
 
+        private async void ExportClick()
+        {
+            await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[0].Img, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[1].Img, AppVars.Progress); }).ConfigureAwait(true);
+            EnableElements();
+        }
+
         private async void Import(int max)
         {
             DisableElements();
@@ -153,8 +160,10 @@ namespace ImageBank
                     sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
                 }
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    sb.Append($" #{AppVars.ImgPanel[index].Img.Counter}");
+                if (AppVars.ImgPanel[index].Img.SceneId > 0) {
+                    sb.Append($" #{AppVars.ImgPanel[index].Img.SceneId}");
+                    var size = ImgMdf.GetSceneSize(AppVars.ImgPanel[index].Img.SceneId);
+                    sb.Append($"-{size}");
                 }
 
                 sb.AppendLine();
@@ -178,12 +187,23 @@ namespace ImageBank
                         System.Windows.Media.Brushes.Yellow : System.Windows.Media.Brushes.LightYellow;
                 }
 
-                if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    var counter = AppVars.ImgPanel[index].Img.Counter;
-                    var h = (counter % 36) * 10.0;
-                    var l = (counter % 7) / 14.0 + 0.5;
-                    var s = (counter % 5) / 10.0 + 0.5;
-                    scb = new System.Windows.Media.SolidColorBrush(ColorFromHSL(h, l, s));
+                if (AppVars.ImgPanel[index].Img.SceneId > 0) {
+                    if (index == 0) {
+                        scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
+                    }
+                    else {
+                        if (AppVars.ImgPanel[0].Img.SceneId == 0) {
+                            scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
+                        }
+                        else {
+                            if (AppVars.ImgPanel[0].Img.SceneId == AppVars.ImgPanel[1].Img.SceneId) {
+                                scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
+                            }
+                            else {
+                                scb = ImgMdf.GetBrush(AppVars.ImgPanel[0].Img.SceneId, true);
+                            }
+                        }
+                    }
                 }
 
                 if (index == 1) {
@@ -197,38 +217,6 @@ namespace ImageBank
             }
 
             RedrawCanvas();
-        }
-
-        private static System.Windows.Media.Color ColorFromHSL(double h, double s, double l)
-        {
-            double q = (l < 0.5) ? (l * (1.0 + s)) : (l + s - (l * s));
-            double p = (2.0 * l) - q;
-
-            double Hk = h / 360.0;
-            double[] T = new double[3];
-            T[0] = Hk + (1.0 / 3.0);    // Tr
-            T[1] = Hk;                // Tb
-            T[2] = Hk - (1.0 / 3.0);    // Tg
-
-            for (int i = 0; i < 3; i++) {
-                if (T[i] < 0) T[i] += 1.0;
-                if (T[i] > 1) T[i] -= 1.0;
-
-                if ((T[i] * 6) < 1) {
-                    T[i] = p + ((q - p) * 6.0 * T[i]);
-                }
-                else if ((T[i] * 2.0) < 1) //(1.0/6.0)<=T[i] && T[i]<0.5
-                {
-                    T[i] = q;
-                }
-                else if ((T[i] * 3.0) < 2) // 0.5<=T[i] && T[i]<(2.0/3.0)
-                {
-                    T[i] = p + (q - p) * ((2.0 / 3.0) - T[i]) * 6.0;
-                }
-                else T[i] = p;
-            }
-
-            return System.Windows.Media.Color.FromRgb((byte)(T[0] * 255.0), (byte)(T[1] * 255.0), (byte)(T[2] * 255.0));
         }
 
         private void RedrawCanvas()
@@ -334,6 +322,32 @@ namespace ImageBank
         {
             _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
+        }
+
+        private async void CombineClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.CombineScene(); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void DetachClick(int index)
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.DetachScene(index); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private void DetachLeftClick()
+        {
+            DetachClick(0);
+        }
+
+        private void DetachRightClick()
+        {
+            DetachClick(1);
         }
     }
 }

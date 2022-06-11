@@ -8,17 +8,17 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private float[] _histogram;
-        public float[] GetHistogram()
+        private float[] _palette;
+        public float[] GetPalette()
         {
-            return _histogram;
+            return _palette;
         }
 
-        public void SetHistogram(float[] histogram)
+        public void SetPalette(float[] palette)
         {
-            _histogram = histogram;
-            var buffer = Helper.ArrayFromFloat(histogram);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistogram, buffer);
+            _palette = palette;
+            var buffer = Helper.ArrayFromFloat(palette);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributePalette, buffer);
         }
 
         public int Year { get; private set; }
@@ -31,13 +31,12 @@ namespace ImageBank
 
         public int Counter => GetHistorySize();
 
-        private int _bestid;
-        public int BestId {
-            get => _bestid;
-            set {
-                _bestid = value;
-                ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestId, value);
-            }
+        public int BestId { get; private set; }
+
+        public void SetBestId(int bestid)
+        {
+            BestId = bestid;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestId, BestId);
         }
 
         public DateTime LastView { get; private set; }
@@ -110,11 +109,29 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistory, buffer);
         }
 
+        public int SceneId { get; private set; }
+
+        public void SetSceneId(int sceneid)
+        {
+            SceneId = sceneid;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeSceneId, SceneId);
+        }
+
+        public float Distance { get; private set; }
+
+        public void SetDistance(float distance)
+        {
+            Distance = distance;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
+        }
+
         public Img(
             int id,
             string name,
             string hash,
-            float[] histogram,
+            float[] palette,
+            int sceneid,
+            float distance,
             int year,
             int bestid,
             DateTime lastview,
@@ -125,9 +142,11 @@ namespace ImageBank
             Id = id;
             Name = name;
             Hash = hash;
-            _histogram = histogram;
+            _palette = palette;
+            SceneId = sceneid;
             Year = year;
-            _bestid = bestid;
+            BestId = bestid;
+            Distance = distance;
             LastView = lastview;
             LastCheck = lastcheck;
             _history = history;

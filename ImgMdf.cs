@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
@@ -21,7 +20,9 @@ namespace ImageBank
 
         private static int _id;
         private static int _importLimit;
-        private static Mat _centers;
+        private static int _sceneid;
+        private const int SIMMAX = 157;
+        private static readonly List<float[]> _lastviewed = new List<float[]>();
 
         private static readonly CryptoRandom _random = new CryptoRandom();
 
@@ -32,9 +33,9 @@ namespace ImageBank
             _sqlConnection.Open();
         }
 
-        public static Mat GetCenters()
+        public static float[] GetPalette()
         {
-            return _centers;
+            return _palette;
         }
 
         private static int AllocateId()
@@ -42,6 +43,13 @@ namespace ImageBank
             _id++;
             SqlVarsUpdateProperty(AppConsts.AttributeId, _id);
             return _id;
+        }
+
+        private static int AllocateSceneId()
+        {
+            _sceneid++;
+            SqlVarsUpdateProperty(AppConsts.AttributeSceneId, _sceneid);
+            return _sceneid;
         }
 
         private static void DecreaseImportLimit()

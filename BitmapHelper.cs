@@ -1,11 +1,10 @@
 ﻿using ImageMagick;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using Tedd;
 
 namespace ImageBank
 {
@@ -50,109 +49,91 @@ namespace ImageBank
                 return null;
             }
         }
-
-        public static byte[] BitmapToImageData(Bitmap bitmap)
+        
+        public static Bitmap ScaleAndCut(Bitmap bitmap, int dim, int border)
         {
-            try {
-                var mf = new MagickFactory();
-                using (var image = new MagickImage(mf.Image.Create(bitmap))) {
-                    image.Format = MagickFormat.Jxl;
-                    image.Quality = 100;
-                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
-                    using (var ms = new MemoryStream()) {
-                        image.Write(ms);
-                        var imagedata = ms.ToArray();
-                        return imagedata;
-                    }
+            Bitmap bitmapdim;
+            var bigdim = dim + border * 2;
+            int width;
+            int height;
+            if (bitmap.Width >= bitmap.Height) {
+                height = bigdim;
+                width = (int)Math.Round(bitmap.Width * bigdim / (float)bitmap.Height);
+            }
+            else {
+                width = bigdim;
+                height = (int)Math.Round(bitmap.Height * bigdim / (float)bitmap.Width);
+
+            }
+
+            using (Bitmap bitmapbigdim = new Bitmap(width, height, PixelFormat.Format24bppRgb)) {
+                using (Graphics g = Graphics.FromImage(bitmapbigdim)) {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.DrawImage(bitmap, 0, 0, width, height);
                 }
+
+                int x;
+                int y;
+                if (width >= height) {
+                    x = border + (width - height) / 2;
+                    y = border;
+                }
+                else {
+                    x = border;
+                    y = border + (height - width) / 2;
+                }
+
+                //bitmapbigdim.Save("bdim.png", ImageFormat.Png);
+                bitmapdim = bitmapbigdim.Clone(new Rectangle(x, y, dim, dim), PixelFormat.Format24bppRgb);
             }
-            catch (MagickException) {
-                return null;
-            }
+
+            return bitmapdim;
         }
 
-        public static float GetBrightness(byte red, byte green, byte blue)
+        public static void ToLAB(byte rbyte, byte gbyte, byte bbyte, out float lfloat, out float afloat, out float bfloat)
         {
-            var r = red / 255.0;
-            var g = green / 255.0;
-            var b = blue / 255.0;
+            var r = rbyte / 255.0;
+            var g = gbyte / 255.0;
+            var b = bbyte / 255.0;
+
             r = (r > 0.04045) ? Math.Pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
             g = (g > 0.04045) ? Math.Pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
             b = (b > 0.04045) ? Math.Pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+            var x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
             var y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+            var z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+            x = (x > 0.008856) ? Math.Pow(x, 1.0 / 3.0) : (7.787 * x) + 16.0 / 116.0;
             y = (y > 0.008856) ? Math.Pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
-            var l = (float)((116.0 * y) - 16.0);
-            return l;
+            z = (z > 0.008856) ? Math.Pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
+
+            lfloat = (float)((116.0 * y) - 16.0);
+            afloat = (float)(500.0 * (x - y));
+            bfloat = (float)(200.0 * (y - z));
         }
 
-        public static float[][] GetMatrix(byte[] imagedata)
+        public static void ToRGB(float lfloat, float afloat, float bfloat, out byte rbyte, out byte gbyte, out byte bbyte)
         {
-            int width;
-            int height;
-            int stride;
-            byte[] data;
-            using (var bitmap = ImageDataToBitmap(imagedata)) {
-                if (bitmap == null) {
-                    return null;
-                }
+            var y = (lfloat + 16.0) / 116.0;
+            var x = afloat / 500.0 + y;
+            var z = y - bfloat / 200.0;
 
-                width = bitmap.Width;
-                height = bitmap.Height;
-                var bitmapdata = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                stride = bitmapdata.Stride;
-                data = new byte[Math.Abs(bitmapdata.Stride * bitmapdata.Height)];
-                Marshal.Copy(bitmapdata.Scan0, data, 0, data.Length);
-                bitmap.UnlockBits(bitmapdata);
-            }
+            x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16.0 / 116.0) / 7.787);
+            y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16.0 / 116.0) / 7.787);
+            z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16.0 / 116.0) / 7.787);
 
-            var matrix = new float[height][];
-            var offsety = 0;
-            for (var y = 0; y < height; y++) {
-                matrix[y] = new float[width];
-                var offsetx = offsety;
-                for (var x = 0; x < width; x++) {
-                    var r = data[offsetx + 2];
-                    var g = data[offsetx + 1];
-                    var b = data[offsetx];
-                    var l = GetBrightness(r, g, b);
-                    matrix[y][x] = l;
-                    offsetx += 3;
-                }
+            var r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+            var g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+            var b = x * 0.0557 + y * -0.2040 + z * 1.0570;
 
-                offsety += stride;
-            }
+            r = (r > 0.0031308) ? (1.055 * Math.Pow(r, 1.0 / 2.4) - 0.055) : 12.92 * r;
+            g = (g > 0.0031308) ? (1.055 * Math.Pow(g, 1.0 / 2.4) - 0.055) : 12.92 * g;
+            b = (b > 0.0031308) ? (1.055 * Math.Pow(b, 1.0 / 2.4) - 0.055) : 12.92 * b;
 
-            return matrix;
-        }
-
-        public static uint GetHist(float[][] matrix)
-        {
-            var rhist = new long[33];
-            for (var y = 0; y < matrix.Length; y++) {
-                for (var x = 0; x < matrix[y].Length; x++) {
-                    var b = (int)Math.Round(matrix[y][x] * 31.99 / 100.0);
-                    rhist[b]++;
-                }
-            }
-
-            uint hist = 0;
-            uint mask = 0x80000000;
-            for (var i = 0; i < 32; i++){
-                if (rhist[i + 1] > rhist[i]) {
-                    hist |= mask;
-                }
-
-                mask >>= 1;
-            }
-
-            return hist;
-        }
-
-        public static int GetDistance(uint x, uint y)
-        {
-            var z = x ^ y;
-            var h = z.PopCount();
-            return h;
+            rbyte = (byte)(Math.Max(0, Math.Min(1.0, r)) * 255);
+            gbyte = (byte)(Math.Max(0, Math.Min(1.0, g)) * 255);
+            bbyte = (byte)(Math.Max(0, Math.Min(1.0, b)) * 255);
         }
     }
 }

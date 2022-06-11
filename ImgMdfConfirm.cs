@@ -9,6 +9,11 @@
 
             imgX.AddToHistory(imgY.Id);
             imgX.SetLastView();
+
+            _lastviewed.Add(imgX.GetPalette());
+            while (_lastviewed.Count > SIMMAX) {
+                _lastviewed.RemoveAt(0);
+            }
         }
     }
 }

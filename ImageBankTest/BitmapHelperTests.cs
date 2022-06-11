@@ -10,6 +10,7 @@ namespace ImageBankTest
     [TestClass()]
     public class BitmapHelperTests
     {
+        /*
         [TestMethod()]
         public void ImageDataToBitmapSourceTest()
         {
@@ -93,5 +94,6 @@ namespace ImageBankTest
                 Assert.AreEqual(matrix[4][2], 0);
             }
         }
+        */
     }
 }
