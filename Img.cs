@@ -2,7 +2,7 @@
 
 namespace ImageBank
 {
-    public class Img
+    public class Img : ICloneable
     {
         public int Id { get; }
         public string Name { get; }
@@ -123,6 +123,24 @@ namespace ImageBank
         {
             Distance = distance;
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
+        }
+
+        public object Clone()
+        {
+            var clone = new Img(
+                id: Id,
+                name: (string)Name.Clone(),
+                hash: (string)Hash.Clone(),
+                palette: (float[])GetPalette().Clone(),
+                distance: Distance,
+                sceneid: SceneId,
+                year: Year,
+                bestid: BestId,
+                lastview: LastView,
+                lastcheck: LastCheck,
+                history: (int[])GetHistory().Clone());
+
+            return clone;
         }
 
         public Img(

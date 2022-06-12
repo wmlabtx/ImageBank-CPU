@@ -13,79 +13,116 @@ namespace ImageBank
         private static int _found;
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
-        {
-            Img img1 = null;
-            SortedDictionary<int, Img> shadowcopy;
+        {            
             lock (_imglock) {
                 if (_imgList.Count < 2) {
                     backgroundworker.ReportProgress(0, "no images");
                     return;
                 }
-
-                shadowcopy = new SortedDictionary<int, Img>(_imgList);
             }
 
-            foreach (var img in shadowcopy) {
-                if (img.Value.GetPalette().Length == 0 || !shadowcopy.ContainsKey(img.Value.BestId)) {
-                    img1 = img.Value;
-                    break;
-                }
+            var img1Key = 0;
+            var img1LastCheck = DateTime.Now;
+            lock (_imglock) {
+                foreach (var img in _imgList) {
+                    if (img.Value.GetPalette().Length == 0 || !_imgList.ContainsKey(img.Value.BestId)) {
+                        img1Key = img.Key;
+                        img1LastCheck = img.Value.LastCheck;
+                        break;
+                    }
 
-                if (img1 == null || img.Value.LastCheck < img1.LastCheck) {
-                    img1 = img.Value;
+                    if (img1Key == 0 || img.Value.LastCheck < img1LastCheck) {
+                        img1Key = img.Key;
+                        img1LastCheck = img.Value.LastCheck;
+                    }
                 }
             }
 
-            if (img1 == null) {
+            if (img1Key == 0) {
                 return;
             }
 
-            var filename = FileHelper.NameToFileName(img1.Name);
+            string name;
+            lock (_imglock) {
+                if (!_imgList.TryGetValue(img1Key, out var img1)) {
+                    return;
+                }
+
+                name = img1.Name;
+            }
+
+            var filename = FileHelper.NameToFileName(name);
             var imagedata = FileHelper.ReadData(filename);
             if (imagedata == null) {
-                Delete(img1.Id);
+                Delete(img1Key);
                 return;
             }
 
             using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                 if (bitmap == null) {
-                    Delete(img1.Id);
+                    Delete(img1Key);
                     return;
                 }
 
-                var palette = ComputePalette(bitmap);
-                img1.SetPalette(palette);
+                var newpalette = ComputePalette(bitmap);
+                lock (_imglock) {
+                    if (!_imgList.TryGetValue(img1Key, out var img1)) {
+                        return;
+                    }
+
+                    img1.SetPalette(newpalette);
+                }
             }
 
-            var history = img1.GetHistory();
-            foreach (var id in history) {
-                if (!shadowcopy.ContainsKey(id)) { 
-                    img1.RemoveFromHistory(id);
+            int[] history;
+            float[] palette;
+            List<Tuple<int, float[]>> shadow = new List<Tuple<int, float[]>>();
+            lock (_imglock) {
+                if (!_imgList.TryGetValue(img1Key, out var img1)) {
+                    return;
                 }
-            } 
 
-            Img bestimg = null;
+                history = (int[])img1.GetHistory().Clone();
+                foreach (var id in history) {
+                    if (!_imgList.ContainsKey(id)) {
+                        img1.RemoveFromHistory(id);
+                    }
+                }
+
+                palette = (float[])img1.GetPalette().Clone();
+                foreach (var img in _imgList) {
+                    shadow.Add(new Tuple<int, float[]>(img.Key, (float[])img.Value.GetPalette().Clone()));
+                }
+            }
+
+            var bestid = 0;
             var bestdistance = 2f;
-            foreach (var img in shadowcopy) {
-                if (img1.Id == img.Key || img.Value.GetPalette().Length == 0 || img1.IsInHistory(img.Key)) {
+            foreach (var e in shadow) {
+                if (img1Key == e.Item1 || e.Item2.Length == 0 || history.Contains(e.Item1)) {
                     continue;
                 }
 
-                var distance = GetDistance(img1.GetPalette(), img.Value.GetPalette());
-                if (bestimg == null || distance < bestdistance) {
-                    bestimg = img.Value;
+                var distance = GetDistance(palette, e.Item2);
+                if (bestid == 0 || distance < bestdistance) {
+                    bestid = e.Item1;
                     bestdistance = distance;
                 }
             }
 
-            if (img1.BestId != bestimg.Id) {
-                var message = $"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}] {img1.Distance:F2} \u2192 {bestdistance:F2}";
-                backgroundworker.ReportProgress(0, message);
-                img1.SetBestId(bestimg.Id);                
-            }
+            lock (_imglock) {
+                if (!_imgList.TryGetValue(img1Key, out var img1)) {
+                    return;
+                }
 
-            img1.SetDistance(bestdistance);
-            img1.SetLastCheck();
+                if (img1.BestId != bestid) {
+                    var message = $"a:{_added}/f:{_found}/b:{_bad} [{img1.Id}] {img1.Distance:F2} \u2192 {bestdistance:F2}";
+                    backgroundworker.ReportProgress(0, message);
+                    img1.SetBestId(bestid);
+                }
+
+                img1.SetDistance(bestdistance);
+                img1.SetLastCheck();
+            }
         }
 
         private static void ImportInternal()
