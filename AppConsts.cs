@@ -20,13 +20,11 @@
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
         public const string AttributePalette = "Palette";
-        public const string AttributeSceneId = "SceneId";
         public const string AttributeDistance = "Distance";
         public const string AttributeYear = "Year";
         public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";
-        public const string AttributeLastCheck = "LastCheck";        
-        public const string AttributeHistory = "History";
+        public const string AttributeSceneId = "SceneId";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
         public const string AttributeLabCenters = "LabCenters";

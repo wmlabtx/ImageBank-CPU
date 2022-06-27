@@ -1,30 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
 
 namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private static readonly object _sqllock = new object();
-        private static readonly SqlConnection _sqlConnection;
-        private static readonly object _imglock = new object();
-        private static readonly SortedDictionary<int, Img> _imgList = new SortedDictionary<int, Img>();
-        private static readonly SortedDictionary<string, Img> _nameList = new SortedDictionary<string, Img>();
-        private static readonly SortedDictionary<string, Img> _hashList = new SortedDictionary<string, Img>();
-
-        private static readonly object _rwlock = new object();
-        private static List<FileInfo> _rwList = new List<FileInfo>();
+        private const int SIMMAX = 157;
 
         private static int _id;
         private static int _importLimit;
-        private static int _sceneid;
-        private const int SIMMAX = 157;
-        private static readonly List<float[]> _lastviewed = new List<float[]>();
 
+        private static readonly object _sqllock = new object();
+        private static readonly SqlConnection _sqlConnection;
+        private static readonly SortedList<int, Img> _imgList = new SortedList<int, Img>();
+        private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
+        private static readonly SortedList<string, Img> _hashList = new SortedList<string, Img>();
+        private static readonly List<float[]> _lastviewed = new List<float[]>();
         private static readonly CryptoRandom _random = new CryptoRandom();
+
+        public static readonly SortedList<int, string> BinsList = new SortedList<int, string>();
 
         static ImgMdf()
         {
@@ -45,35 +39,10 @@ namespace ImageBank
             return _id;
         }
 
-        private static int AllocateSceneId()
-        {
-            _sceneid++;
-            SqlVarsUpdateProperty(AppConsts.AttributeSceneId, _sceneid);
-            return _sceneid;
-        }
-
         private static void DecreaseImportLimit()
         {
             _importLimit -= 10;
             SqlVarsUpdateProperty(AppConsts.AttributeImportLimit, _importLimit);
-        }
-
-        private static DateTime GetMinLastCheck()
-        {
-            lock (_imglock) {
-                if (_imgList.Count == 0) {
-                    return DateTime.Now;
-                }
-
-                var scope = _imgList.ToArray();
-                if (scope.Length == 0) {
-                    return DateTime.Now;
-                }
-
-                return scope
-                    .Min(e => e.Value.LastCheck)
-                    .AddSeconds(-1);
-            }
         }
     }
 }

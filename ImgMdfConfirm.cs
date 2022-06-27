@@ -5,11 +5,7 @@
         public static void Confirm()
         {
             var imgX = AppVars.ImgPanel[0].Img;
-            var imgY = AppVars.ImgPanel[1].Img;
-
-            imgX.AddToHistory(imgY.Id);
-            imgX.SetLastView();
-
+            imgX.SetLastView(System.DateTime.Now);
             _lastviewed.Add(imgX.GetPalette());
             while (_lastviewed.Count > SIMMAX) {
                 _lastviewed.RemoveAt(0);

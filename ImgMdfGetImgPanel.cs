@@ -4,11 +4,8 @@
     {
         private static ImgPanel GetImgPanel(int id)
         {
-            Img img;
-            lock (_imglock) {
-                if (!_imgList.TryGetValue(id, out img)) {
-                    return null;
-                }
+            if (!_imgList.TryGetValue(id, out Img img)) {
+                return null;
             }
 
             var filename = FileHelper.NameToFileName(img.Name);

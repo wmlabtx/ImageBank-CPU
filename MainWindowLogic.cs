@@ -1,8 +1,8 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -16,7 +16,6 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
-        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -56,11 +55,6 @@ namespace ImageBank
             DrawCanvas();
             
             EnableElements();
-
-            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
-            _backgroundWorker.DoWork += DoCompute;
-            _backgroundWorker.ProgressChanged += DoComputeProgress;
-            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -69,11 +63,6 @@ namespace ImageBank
                 Hide();
                 _notifyIcon.Visible = true;
             }
-        }
-
-        private void WindowSizeChanged()
-        {
-            //RedrawCanvas();
         }
 
         private void ImportClick(int max)
@@ -154,16 +143,14 @@ namespace ImageBank
             for (var index = 0; index < 2; index++) {
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
+                var scb = System.Windows.Media.Brushes.White;
+
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
-                if (AppVars.ImgPanel[index].Img.Counter > 0) {
-                    sb.Append($" [{AppVars.ImgPanel[index].Img.Counter}]");
-                }
-
-                if (AppVars.ImgPanel[index].Img.SceneId > 0) {
-                    sb.Append($" #{AppVars.ImgPanel[index].Img.SceneId}");
-                    var size = ImgMdf.GetSceneSize(AppVars.ImgPanel[index].Img.SceneId);
-                    sb.Append($"-{size}");
+                if (AppVars.ImgPanel[index].Img.SceneId != 0) {
+                    var size = ImgMdf.GetSizeScene(AppVars.ImgPanel[index].Img.SceneId);
+                    sb.Append($" {AppVars.ImgPanel[index].Img.SceneId}:{size}");
+                    scb = Helper.GetBrush(AppVars.ImgPanel[index].Img.SceneId);
                 }
 
                 sb.AppendLine();
@@ -175,36 +162,13 @@ namespace ImageBank
                 if (AppVars.ImgPanel[index].Img.Year != 0) {
                     sb.Append($"[{AppVars.ImgPanel[index].Img.Year}]");
                 }
-
+               
                 sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
-                sb.Append($" [{Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastCheck))} ago]");
+
+                var fd = AppVars.ImgPanel[index].Size / ((float)AppVars.ImgPanel[index].Bitmap.Width * AppVars.ImgPanel[index].Bitmap.Height);
+                sb.Append($" [{fd:F4}]");
 
                 pLabels[index].Text = sb.ToString();
-                var scb = System.Windows.Media.Brushes.White;
-
-                if (AppVars.ImgPanel[index].Img.Year != 0) {
-                    scb = AppVars.ImgPanel[index].Size >= AppVars.ImgPanel[1 - index].Size ?
-                        System.Windows.Media.Brushes.Yellow : System.Windows.Media.Brushes.LightYellow;
-                }
-
-                if (AppVars.ImgPanel[index].Img.SceneId > 0) {
-                    if (index == 0) {
-                        scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
-                    }
-                    else {
-                        if (AppVars.ImgPanel[0].Img.SceneId == 0) {
-                            scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
-                        }
-                        else {
-                            if (AppVars.ImgPanel[0].Img.SceneId == AppVars.ImgPanel[1].Img.SceneId) {
-                                scb = ImgMdf.GetBrush(AppVars.ImgPanel[index].Img.SceneId, false);
-                            }
-                            else {
-                                scb = ImgMdf.GetBrush(AppVars.ImgPanel[0].Img.SceneId, true);
-                            }
-                        }
-                    }
-                }
 
                 if (index == 1) {
                     if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
@@ -264,8 +228,8 @@ namespace ImageBank
         private async void Rotate(RotateFlipType rft)
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Rotate(AppVars.ImgPanel[0].Img.Id, rft, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(AppVars.ImgPanel[0].Img.Id, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -285,28 +249,6 @@ namespace ImageBank
             Rotate(RotateFlipType.Rotate270FlipNone);
         }
 
-        private void WindowClosing()
-        {
-            DisableElements();
-            _backgroundWorker?.CancelAsync();
-            EnableElements();
-        }
-
-        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
-        {
-            BackgroundStatus.Text = (string)e.UserState;
-        }
-
-        private void DoCompute(object s, DoWorkEventArgs args)
-        {
-            while (!_backgroundWorker.CancellationPending) {
-                ImgMdf.Compute(_backgroundWorker);
-                Thread.Sleep(100);
-            }
-
-            args.Cancel = true;
-        }
-
         ~MainWindow()
         {
             Dispose();
@@ -320,34 +262,46 @@ namespace ImageBank
 
         private void ClassDispose()
         {
-            _backgroundWorker?.Dispose();
             _notifyIcon?.Dispose();
+        }
+
+        private void RefreshClick()
+        {
+            DisableElements();
+            DrawCanvas();
+            EnableElements();
         }
 
         private async void CombineClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.CombineScene(); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Combine(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private async void DetachClick(int index)
+        private async void MoveBackwardClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.DetachScene(index); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.MoveBackward(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private void DetachLeftClick()
+        private async void DetachLeftClick()
         {
-            DetachClick(0);
+            DisableElements();
+            await Task.Run(() => { ImgMdf.DetachLeft(); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
         }
 
-        private void DetachRightClick()
+        private async void DetachRightClick()
         {
-            DetachClick(1);
+            DisableElements();
+            await Task.Run(() => { ImgMdf.DetachRight(); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
         }
     }
 }

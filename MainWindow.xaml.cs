@@ -1,7 +1,7 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -19,19 +19,9 @@ namespace ImageBank
             WindowLoaded();
         }
 
-        private void WindowClosing(object sender, CancelEventArgs e)
-        {
-            WindowClosing();
-        }
-
         protected override void OnStateChanged(EventArgs e)
         {
             OnStateChanged();
-        }
-
-        private void WindowSizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            WindowSizeChanged();
         }
 
         private void PictureLeftBoxMouseClick(object sender, MouseEventArgs e)
@@ -91,21 +81,24 @@ namespace ImageBank
             Rotate270Click();
         }
 
-        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Z) {
-                ButtonLeftNextMouseClick();
-            }
-        }
-
         private void ExportClick(object sender, RoutedEventArgs e)
         {
             ExportClick();
         }
 
+        private void RefreshClick(object sender, RoutedEventArgs e)
+        {
+            RefreshClick();
+        }
+
         private void CombineClick(object sender, RoutedEventArgs e)
         {
             CombineClick();
+        }
+
+        private void MoveBackwardClick(object sender, RoutedEventArgs e)
+        {
+            MoveBackwardClick();
         }
 
         private void DetachLeftClick(object sender, RoutedEventArgs e)

@@ -1,1 +1,1 @@
-﻿UPDATE Images SET Histogram = 0x
+﻿UPDATE Images SET SceneId = 0

@@ -3,7 +3,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
+using System.IO;
 using System.Windows;
 
 namespace ImageBank
@@ -49,7 +49,28 @@ namespace ImageBank
                 return null;
             }
         }
-        
+
+        public static bool BitmapToImageData(Bitmap bitmap, out byte[] imagedata)
+        {
+            try {
+                var mf = new MagickFactory();
+                using (var image = new MagickImage(mf.Image.Create(bitmap))) {
+                    image.Format = MagickFormat.WebP;
+                    image.Quality = 100;
+                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
+                    using (var ms = new MemoryStream()) {
+                        image.Write(ms);
+                        imagedata = ms.ToArray();
+                        return true;
+                    }
+                }
+            }
+            catch (MagickException) {
+                imagedata = null;
+                return false;
+            }
+        }
+
         public static Bitmap ScaleAndCut(Bitmap bitmap, int dim, int border)
         {
             Bitmap bitmapdim;

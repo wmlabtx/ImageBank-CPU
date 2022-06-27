@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 
 namespace ImageBank
 {
-    public class Img : ICloneable
+    public class Img
     {
         public int Id { get; }
         public string Name { get; }
@@ -29,8 +31,6 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeYear, Year);
         }
 
-        public int Counter => GetHistorySize();
-
         public int BestId { get; private set; }
 
         public void SetBestId(int bestid)
@@ -41,72 +41,10 @@ namespace ImageBank
 
         public DateTime LastView { get; private set; }
 
-        public void SetLastView()
+        public void SetLastView(DateTime lastview)
         {
-            LastView = DateTime.Now;
+            LastView = lastview;
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
-        }
-
-        public DateTime LastCheck { get; private set; }
-
-        public void SetLastCheck()
-        {
-            LastCheck = DateTime.Now;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastCheck, LastCheck);
-        }
-
-        private int[] _history;
-
-        public int[] GetHistory()
-        {
-            return _history;
-        }
-
-        public int GetHistorySize()
-        {
-            return _history.Length;
-        }
-
-        public bool IsInHistory(int id)
-        {
-            var pos = Array.BinarySearch(_history, id);
-            return (pos >= 0);
-        }
-
-        public void AddToHistory(int id)
-        {
-            if (IsInHistory(id)) {
-                return;
-            }
-
-            var result = new int[_history.Length + 1];
-            _history.CopyTo(result, 0);
-            result[_history.Length] = id;
-            _history = result;
-            Array.Sort(_history);
-            var buffer = Helper.ArrayFrom32(_history);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistory, buffer);
-        }
-
-        public void RemoveFromHistory(int id)
-        {
-            var pos = Array.BinarySearch(_history, id);
-            if (pos < 0) {
-                return;
-            }
-
-            var result = new int[_history.Length - 1];
-            if (pos > 0) {
-                Array.Copy(_history, 0, result, 0, pos);
-            }
-
-            if (pos < _history.Length - 1) {
-                Array.Copy(_history, pos + 1, result, pos, _history.Length - pos - 1);
-            }
-
-            _history = result;
-            var buffer = Helper.ArrayFrom32(_history);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeHistory, buffer);
         }
 
         public int SceneId { get; private set; }
@@ -125,49 +63,27 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
         }
 
-        public object Clone()
-        {
-            var clone = new Img(
-                id: Id,
-                name: (string)Name.Clone(),
-                hash: (string)Hash.Clone(),
-                palette: (float[])GetPalette().Clone(),
-                distance: Distance,
-                sceneid: SceneId,
-                year: Year,
-                bestid: BestId,
-                lastview: LastView,
-                lastcheck: LastCheck,
-                history: (int[])GetHistory().Clone());
-
-            return clone;
-        }
-
         public Img(
             int id,
             string name,
             string hash,
             float[] palette,
-            int sceneid,
             float distance,
             int year,
             int bestid,
             DateTime lastview,
-            DateTime lastcheck,
-            int[] history
+            int sceneid
         )
         {
             Id = id;
             Name = name;
             Hash = hash;
             _palette = palette;
-            SceneId = sceneid;
             Year = year;
             BestId = bestid;
             Distance = distance;
             LastView = lastview;
-            LastCheck = lastcheck;
-            _history = history;
+            SceneId = sceneid;
         }
     }
 }
