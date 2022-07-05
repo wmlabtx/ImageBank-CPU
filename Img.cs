@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ImageBank
 {
@@ -47,20 +47,71 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
 
-        public int SceneId { get; private set; }
-
-        public void SetSceneId(int sceneid)
-        {
-            SceneId = sceneid;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeSceneId, SceneId);
-        }
-
         public float Distance { get; private set; }
 
         public void SetDistance(float distance)
         {
             Distance = distance;
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
+        }
+
+        private readonly int[] _ni;
+        public int[] GetNi()
+        {
+            return _ni;
+        }
+
+        private readonly byte[] _nr;
+        public byte[] GetNr()
+        {
+            return _nr;
+        }
+
+        public int GetNexts()
+        {
+            var count = _ni.Count(e => e != 0);
+            return count;
+        }
+
+        public int GetRating()
+        {
+            var count = _nr.Count(e => e != 0);
+            return count;
+        }
+
+        public void AddRank(int next, byte rank)
+        {
+            for (var i = 0; i < _ni.Length; i++) {
+                if (_ni[i] == 0) {
+                    _ni[i] = next;
+                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
+                    _nr[i] = rank;
+                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNr, _nr);
+                    break;
+                }
+            }
+        }
+
+        public void RemoveRank(int next)
+        {
+            for (var i = 0; i < _ni.Length; i++) {
+                if (_ni[i] == next) {
+                    _ni[i] = 0;
+                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
+                    break;
+                }
+            }
+        }
+
+        public bool IsRank(int next)
+        {
+            for (var i = 0; i < _ni.Length; i++) {
+                if (_ni[i] == next) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public Img(
@@ -72,7 +123,8 @@ namespace ImageBank
             int year,
             int bestid,
             DateTime lastview,
-            int sceneid
+            int[] ni,
+            byte[] nr
         )
         {
             Id = id;
@@ -83,7 +135,8 @@ namespace ImageBank
             BestId = bestid;
             Distance = distance;
             LastView = lastview;
-            SceneId = sceneid;
+            _ni = ni;
+            _nr = nr;
         }
     }
 }

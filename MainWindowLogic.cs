@@ -96,17 +96,23 @@ namespace ImageBank
             ImgPanelDelete(1);
         }
 
-        private async void ButtonLeftNextMouseClick()
-        {            
+        private async void IncreaseRating(int index)
+        {
             DisableElements();
-            await Task.Run(ImgMdf.Confirm).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Confirm(index); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private static void ButtonRightNextMouseClick()
+        private void ButtonLeftNextMouseClick()
         {
+            IncreaseRating(0);
+        }
+
+        private void ButtonRightNextMouseClick()
+        {
+            IncreaseRating(1);
         }
 
         private void DisableElements()
@@ -140,6 +146,8 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
+            var nic = new int[2];
+            var nrc = new int[2];
             for (var index = 0; index < 2; index++) {
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
@@ -147,10 +155,21 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
-                if (AppVars.ImgPanel[index].Img.SceneId != 0) {
-                    var size = ImgMdf.GetSizeScene(AppVars.ImgPanel[index].Img.SceneId);
-                    sb.Append($" {AppVars.ImgPanel[index].Img.SceneId}:{size}");
-                    scb = Helper.GetBrush(AppVars.ImgPanel[index].Img.SceneId);
+                nic[index] = AppVars.ImgPanel[index].Img.GetNexts();
+                nrc[index] = AppVars.ImgPanel[index].Img.GetRating();
+                if (nic[index] != 0) {
+                    sb.Append($" {nrc[index]}/{nic[index]}");
+                    if (nic[index] == 10) {
+                        if (nrc[index] <= 5) {
+                            scb = System.Windows.Media.Brushes.LightCoral;
+                        }
+                        else {
+                            scb = System.Windows.Media.Brushes.Gold;
+                        }
+                    }
+
+                    //var size = ImgMdf.GetRatingSize(AppVars.ImgPanel[index].Img.Rating);
+                    //scb = Helper.GetBrush(AppVars.ImgPanel[index].Img.Rating);
                 }
 
                 sb.AppendLine();
@@ -272,34 +291,20 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void CombineClick()
+        private void DescreaseRatingClick()
         {
+            /*
             DisableElements();
-            await Task.Run(() => { ImgMdf.Combine(); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.DescreaseRating(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
+            */
         }
 
         private async void MoveBackwardClick()
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.MoveBackward(AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void DetachLeftClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.DetachLeft(); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void DetachRightClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.DetachRight(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

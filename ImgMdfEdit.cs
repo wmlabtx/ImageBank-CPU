@@ -49,7 +49,8 @@ namespace ImageBank
                         year: img.Year,
                         bestid: img.BestId,
                         lastview: DateTime.Now,
-                        sceneid: img.SceneId);
+                        ni: img.GetNi(),
+                        nr: img.GetNr());
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);

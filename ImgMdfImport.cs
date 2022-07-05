@@ -97,7 +97,8 @@ namespace ImageBank
                 year: year,
                 bestid: 0,
                 lastview: new DateTime(2020, 1, 1),
-                sceneid: 0);
+                ni: new int[10],
+                nr: new byte[10]);
 
             Add(nimg);
 

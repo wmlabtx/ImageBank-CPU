@@ -24,7 +24,8 @@
         public const string AttributeYear = "Year";
         public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";
-        public const string AttributeSceneId = "SceneId";
+        public const string AttributeNi = "Ni";
+        public const string AttributeNr = "Nr";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
         public const string AttributeLabCenters = "LabCenters";

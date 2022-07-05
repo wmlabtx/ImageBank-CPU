@@ -91,24 +91,14 @@ namespace ImageBank
             RefreshClick();
         }
 
-        private void CombineClick(object sender, RoutedEventArgs e)
+        private void DescreaseRatingClick(object sender, RoutedEventArgs e)
         {
-            CombineClick();
+            DescreaseRatingClick();
         }
 
         private void MoveBackwardClick(object sender, RoutedEventArgs e)
         {
             MoveBackwardClick();
-        }
-
-        private void DetachLeftClick(object sender, RoutedEventArgs e)
-        {
-            DetachLeftClick();
-        }
-
-        private void DetachRightClick(object sender, RoutedEventArgs e)
-        {
-            DetachRightClick();
         }
     }
 }

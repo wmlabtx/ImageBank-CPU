@@ -166,7 +166,6 @@ namespace ImageBank
 
         public static System.Windows.Media.SolidColorBrush GetBrush(int id)
         {
-
             byte rbyte, gbyte, bbyte;
             var array = BitConverter.GetBytes(id);
             using (var md5 = MD5.Create()) {
@@ -176,37 +175,8 @@ namespace ImageBank
                 bbyte = (byte)(hashmd5[5] | 0x80);
             }
 
-
-                /*
-                double theta;
-                double radius;
-                double l;
-                var array = BitConverter.GetBytes(id);
-                using (var md5 = MD5.Create()) {
-                    var hashmd5 = md5.ComputeHash(array);
-                    ulong x = BitConverter.ToUInt64(hashmd5, 5);
-                    var f = x / (double)ulong.MaxValue;
-                    theta = f * 360.0;
-                    if (inv) {
-                        theta += 180.0;
-                        if (theta >= 360.0) {
-                            theta -= 360.0;
-                        }
-                    }
-
-                    radius = 50.0;
-                    l = 75.0;
-                }
-
-                var rad = Math.PI * theta / 180.0;
-                var lfloat = (float)l;
-                var afloat = (float)(radius * Math.Cos(rad));
-                var bfloat = (float)(radius * Math.Sin(rad));
-                BitmapHelper.ToRGB(lfloat, afloat, bfloat, out byte rbyte, out byte gbyte, out byte bbyte);
-                */
-
-                var scb = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(rbyte, gbyte, bbyte));
-                return scb;
-            }
+            var scb = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(rbyte, gbyte, bbyte));
+            return scb;
         }
+    }
 }

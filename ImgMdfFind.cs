@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace ImageBank
 {
@@ -16,15 +17,26 @@ namespace ImageBank
                 return;
             }
 
+            var ni = img1.GetNi();
+            for (var i = 0; i < ni.Length; i++) {
+                if (ni[i] != 0) {
+                    if (!_imgList.ContainsKey(ni[i])) {
+                        img1.RemoveRank(ni[i]);
+                    }
+                }
+            }
+
             Img img2 = null;
             var bestdistance = 2f;
             var bestmatch = 0;
             foreach (var img in _imgList) {
                 if (img.Key != img1.Id && img.Value.GetPalette().Length > 0) {
-                    int match;
+                    var match = 1;
                     float distance;
+                    if (img1.IsRank(img.Key)) {
+                        match = 0;
+                    }
 
-                    match = img1.SceneId != 0 && img1.SceneId == img.Value.SceneId ? 0 : 1;
                     if (img2 == null || match > bestmatch) {
                         distance = GetDistance(img1.GetPalette(), img.Value.GetPalette());
                         img2 = img.Value;
@@ -128,6 +140,31 @@ namespace ImageBank
                 }
             }
 
+            var hist = new SortedList<int, int>();
+            foreach (var img in _imgList) {
+                var nexts = img.Value.GetNexts();
+                if (hist.ContainsKey(nexts)) {
+                    hist[nexts]++;
+                }
+                else {
+                    hist.Add(nexts, 1);
+                }
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i <= 10; i++) {
+                if (sb.Length > 0) {
+                    sb.Append('-');
+                }
+
+                var v = 0;
+                if (hist.ContainsKey(i)) {
+                    v = hist[i];
+                }
+
+                sb.Append($"{v}");
+            }
+
             int totalcount;
             int luftcount;
             do {
@@ -145,12 +182,20 @@ namespace ImageBank
                     var newscope = validscope.Where(e => e.LastView.Year == 2020).ToArray();
                     _newcount = newscope.Length;
                     scope.AddRange(newscope);
-                    var oldscope = validscope.Where(e => e.LastView.Year > 2020).ToArray();
+                     var take = _newcount == 0 ? 10000 : _newcount;
+                    var oldscope = validscope.Where(e => e.LastView.Year > 2020 && e.GetNexts() == 0).OrderBy(e => e.LastView).Take(take).ToArray();
                     var md = oldscope.Min(e => e.LastView);
                     md = md.AddDays(7);
                     oldscope = oldscope.Where(e => e.LastView < md).ToArray();
-                    _oldcount = oldscope.Length;
                     scope.AddRange(oldscope);
+                    _oldcount = oldscope.Length;
+                    take = _oldcount == 0 ? 10000 : _oldcount;
+                    var ratedscope = validscope.Where(e => e.LastView.Year > 2020 && e.GetNexts() != 0).OrderBy(e => e.LastView).Take(take).ToArray();
+                    if (ratedscope.Length > 0) {
+                        ratedscope = ratedscope.OrderBy(e => e.LastView).Take(oldscope.Length).ToArray();
+                        scope.AddRange(ratedscope);
+                    }
+
                     if (imgX == null) {
                         var rindex = _random.Next(0, scope.Count - 1);
                         imgX = scope[rindex];                        
@@ -187,7 +232,7 @@ namespace ImageBank
             }
             while (true);
 
-            progress?.Report($"n:{_newcount}/o:{_oldcount}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
+            progress?.Report($"n:{_newcount}/o:{_oldcount}/{sb}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
         }
 
         public static void Find(IProgress<string> progress) => Find(0, progress);
