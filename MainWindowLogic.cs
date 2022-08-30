@@ -96,23 +96,13 @@ namespace ImageBank
             ImgPanelDelete(1);
         }
 
-        private async void IncreaseRating(int index)
+        private async void ButtonLeftNextMouseClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.Confirm(index); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Confirm(); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
-        }
-
-        private void ButtonLeftNextMouseClick()
-        {
-            IncreaseRating(0);
-        }
-
-        private void ButtonRightNextMouseClick()
-        {
-            IncreaseRating(1);
         }
 
         private void DisableElements()
@@ -146,30 +136,15 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
-            var nic = new int[2];
-            var nrc = new int[2];
             for (var index = 0; index < 2; index++) {
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
-                var scb = System.Windows.Media.Brushes.White;
-
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
-                nic[index] = AppVars.ImgPanel[index].Img.GetNexts();
-                nrc[index] = AppVars.ImgPanel[index].Img.GetRating();
-                if (nic[index] != 0) {
-                    sb.Append($" {nrc[index]}/{nic[index]}");
-                    if (nic[index] == 10) {
-                        if (nrc[index] <= 5) {
-                            scb = System.Windows.Media.Brushes.LightCoral;
-                        }
-                        else {
-                            scb = System.Windows.Media.Brushes.Gold;
-                        }
-                    }
 
-                    //var size = ImgMdf.GetRatingSize(AppVars.ImgPanel[index].Img.Rating);
-                    //scb = Helper.GetBrush(AppVars.ImgPanel[index].Img.Rating);
+                var historysize = AppVars.ImgPanel[index].Img.GetHistorySize();
+                if (historysize != 0) {
+                    sb.Append($" ({historysize})");
                 }
 
                 sb.AppendLine();
@@ -181,7 +156,7 @@ namespace ImageBank
                 if (AppVars.ImgPanel[index].Img.Year != 0) {
                     sb.Append($"[{AppVars.ImgPanel[index].Img.Year}]");
                 }
-               
+
                 sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
 
                 var fd = AppVars.ImgPanel[index].Size / ((float)AppVars.ImgPanel[index].Bitmap.Width * AppVars.ImgPanel[index].Bitmap.Height);
@@ -189,14 +164,10 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
 
-                if (index == 1) {
-                    if (AppVars.ImgPanel[0].Img.Name.Equals(AppVars.ImgPanel[1].Img.Name, StringComparison.OrdinalIgnoreCase)) {
-                        scb = System.Windows.Media.Brushes.LightGray;
-                        pLabels[0].Background = scb;
-                    }
+                pLabels[index].Background = System.Windows.Media.Brushes.White;
+                if (historysize > 0) {
+                    pLabels[index].Background = Helper.GetBrush(historysize);
                 }
-
-                pLabels[index].Background = scb;
             }
 
             RedrawCanvas();

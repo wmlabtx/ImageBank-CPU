@@ -38,7 +38,7 @@ namespace ImageBank
             }
         }
 
-        private ulong GetRandom64()
+        public ulong GetRandom64()
         {
             lock (_this) {
                 EnsureRandomBuffer(sizeof(ulong));

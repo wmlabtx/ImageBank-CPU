@@ -50,10 +50,6 @@ namespace ImageBank
 
         private void ButtonRightNextMouseClick(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                ButtonRightNextMouseClick();
-            }
         }
 
         private void Rotate90Click(object sender, EventArgs e)

@@ -7,22 +7,17 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private static int _newcount;
-        private static int _oldcount;
-
-        private static void FastFindNext(int idX, IProgress<string> progress) 
+        private static void FastFindNext(int idX, IProgress<string> progress, string prefix = "") 
         {
             if (!_imgList.TryGetValue(idX, out var img1)) {
                 progress?.Report($"({idX}) not found");
                 return;
             }
 
-            var ni = img1.GetNi();
+            var ni = img1.GetHistory();
             for (var i = 0; i < ni.Length; i++) {
-                if (ni[i] != 0) {
-                    if (!_imgList.ContainsKey(ni[i])) {
-                        img1.RemoveRank(ni[i]);
-                    }
+                if (!_imgList.ContainsKey(ni[i])) {
+                    img1.RemoveRank(ni[i]);
                 }
             }
 
@@ -33,7 +28,7 @@ namespace ImageBank
                 if (img.Key != img1.Id && img.Value.GetPalette().Length > 0) {
                     var match = 1;
                     float distance;
-                    if (img1.IsRank(img.Key)) {
+                    if (img1.InHistory(img.Key)) {
                         match = 0;
                     }
 
@@ -60,8 +55,15 @@ namespace ImageBank
                 img1.SetBestId(img2.Id);
             }
 
-            progress?.Report($"({img1.Id}) {img1.Distance:F2} -> {bestdistance:F2}");
+            progress?.Report($"{prefix}({img1.Id}) {img1.Distance:F2} -> {bestdistance:F2}");
             img1.SetDistance(bestdistance);
+
+            ni = img2.GetHistory();
+            for (var i = 0; i < ni.Length; i++) {
+                if (!_imgList.ContainsKey(ni[i])) {
+                    img2.RemoveRank(ni[i]);
+                }
+            }
         }
 
         private static void FindNext(int idX, IProgress<string> progress)
@@ -130,8 +132,50 @@ namespace ImageBank
             progress?.Report($"{imgX.Distance:F2}");
         }
 
+        public static void FixErrors(IProgress<string> progress)
+        {
+            var errors = new List<Img>();
+            foreach (var img in _imgList.Values) {
+                if (img.Id == img.BestId || !_imgList.ContainsKey(img.BestId) || img.InHistory(img.BestId)) {
+                    errors.Add(img);
+                }
+            }
+
+            var counter = 1;
+            foreach (var img in errors) {
+                FastFindNext(img.Id, progress, $"{counter}/{errors.Count} ");
+                counter++;
+            }
+        }
+
+        private static void UpdatePalette(Img img1, IProgress<string> progress)
+        {
+            progress?.Report($"({img1.Id}) getting palette...");
+            var name = img1.Name;
+            var filename = FileHelper.NameToFileName(name);
+            var imagedata = FileHelper.ReadData(filename);
+            if (imagedata == null) {
+                progress?.Report($"({img1.Id}) removed");
+                Delete(img1.Id);
+                return;
+            }
+
+            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                if (bitmap == null) {
+                    progress?.Report($"({img1.Id}) removed");
+                    Delete(img1.Id);
+                    return;
+                }
+
+                var newpalette = ComputePalette(bitmap);
+                img1.SetPalette(newpalette);
+            }
+        }
+
         public static void Find(int idX, IProgress<string> progress)
         {
+            FixErrors(progress);
+
             Img imgX = null;
             if (idX != 0) {
                 if (!_imgList.TryGetValue(idX, out imgX)) {
@@ -140,26 +184,29 @@ namespace ImageBank
                 }
             }
 
-            var hist = new SortedList<int, int>();
-            foreach (var img in _imgList) {
-                var nexts = img.Value.GetNexts();
-                if (hist.ContainsKey(nexts)) {
-                    hist[nexts]++;
+            var bins = new SortedList<int, int>();
+            foreach (var img in _imgList.Values) {
+                var bin = img.LastView.Year <= 2020 ?
+                    -1 :
+                    img.GetHistorySize();
+
+                if (bins.ContainsKey(bin)) {
+                    bins[bin]++;
                 }
                 else {
-                    hist.Add(nexts, 1);
+                    bins.Add(bin, 1);
                 }
             }
 
             var sb = new StringBuilder();
-            for (var i = 0; i <= 10; i++) {
+            for (var i = -1; i <= 10; i++) {
                 if (sb.Length > 0) {
                     sb.Append('-');
                 }
 
                 var v = 0;
-                if (hist.ContainsKey(i)) {
-                    v = hist[i];
+                if (bins.ContainsKey(i)) {
+                    v = bins[i];
                 }
 
                 sb.Append($"{v}");
@@ -177,28 +224,11 @@ namespace ImageBank
                 luftcount = totalcount - _importLimit;
 
                 if (idX == 0) {
-                    var validscope = _imgList.Select(e => e.Value).ToArray();
-                    var scope = new List<Img>();
-                    var newscope = validscope.Where(e => e.LastView.Year == 2020).ToArray();
-                    _newcount = newscope.Length;
-                    scope.AddRange(newscope);
-                     var take = _newcount == 0 ? 10000 : _newcount;
-                    var oldscope = validscope.Where(e => e.LastView.Year > 2020 && e.GetNexts() == 0).OrderBy(e => e.LastView).Take(take).ToArray();
-                    var md = oldscope.Min(e => e.LastView);
-                    md = md.AddDays(7);
-                    oldscope = oldscope.Where(e => e.LastView < md).ToArray();
-                    scope.AddRange(oldscope);
-                    _oldcount = oldscope.Length;
-                    take = _oldcount == 0 ? 10000 : _oldcount;
-                    var ratedscope = validscope.Where(e => e.LastView.Year > 2020 && e.GetNexts() != 0).OrderBy(e => e.LastView).Take(take).ToArray();
-                    if (ratedscope.Length > 0) {
-                        ratedscope = ratedscope.OrderBy(e => e.LastView).Take(oldscope.Length).ToArray();
-                        scope.AddRange(ratedscope);
-                    }
-
-                    if (imgX == null) {
-                        var rindex = _random.Next(0, scope.Count - 1);
-                        imgX = scope[rindex];                        
+                    var scope = _imgList.Values.OrderBy(e => e.LastView).ToArray();
+                    imgX = scope[_sv];
+                    _sv++;
+                    if (_sv >= 100) {
+                        _sv = 0;
                     }
                 }
 
@@ -217,8 +247,12 @@ namespace ImageBank
                 }
 
                 imgX = AppVars.ImgPanel[0].Img;
+                UpdatePalette(imgX, progress);
+                _lastviewed.Add(imgX.GetPalette());
+                while (_lastviewed.Count > SIMMAX) {
+                    _lastviewed.RemoveAt(0);
+                }
 
-                FindNext(imgX.Id, progress);
                 var idY = imgX.BestId;
                 AppVars.ImgPanel[1] = GetImgPanel(idY);
                 if (AppVars.ImgPanel[1] == null) {
@@ -232,7 +266,7 @@ namespace ImageBank
             }
             while (true);
 
-            progress?.Report($"n:{_newcount}/o:{_oldcount}/{sb}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
+            progress?.Report($"{sb}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
         }
 
         public static void Find(IProgress<string> progress) => Find(0, progress);

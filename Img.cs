@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace ImageBank
@@ -55,63 +54,54 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
         }
 
-        private readonly int[] _ni;
-        public int[] GetNi()
+        private int[] _ni;
+        public int[] GetHistory()
         {
             return _ni;
         }
 
-        private readonly byte[] _nr;
-        public byte[] GetNr()
+        public int GetHistorySize()
         {
-            return _nr;
+            return _ni.Length;
         }
 
-        public int GetNexts()
+        public void SetHistory(int[] array)
         {
-            var count = _ni.Count(e => e != 0);
-            return count;
+            _ni = array;
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
-        public int GetRating()
+        public void AddHistory(int next)
         {
-            var count = _nr.Count(e => e != 0);
-            return count;
-        }
-
-        public void AddRank(int next, byte rank)
-        {
-            for (var i = 0; i < _ni.Length; i++) {
-                if (_ni[i] == 0) {
-                    _ni[i] = next;
-                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
-                    _nr[i] = rank;
-                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNr, _nr);
-                    break;
-                }
+            if (InHistory(next)) {
+                return;
             }
+
+            var list = _ni.ToList();
+            list.Add(next);
+            while (list.Count > 10) {
+                list.RemoveAt(0);
+            }
+
+            _ni = list.ToArray();
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
         public void RemoveRank(int next)
         {
-            for (var i = 0; i < _ni.Length; i++) {
-                if (_ni[i] == next) {
-                    _ni[i] = 0;
-                    ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
-                    break;
-                }
+            if (!InHistory(next)) {
+                return;
             }
+
+            var list = _ni.ToList();
+            list.Remove(next);
+            _ni = list.ToArray();
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
-        public bool IsRank(int next)
+        public bool InHistory(int next)
         {
-            for (var i = 0; i < _ni.Length; i++) {
-                if (_ni[i] == next) {
-                    return true;
-                }
-            }
-
-            return false;
+            return _ni.Contains(next);
         }
 
         public Img(
@@ -123,8 +113,7 @@ namespace ImageBank
             int year,
             int bestid,
             DateTime lastview,
-            int[] ni,
-            byte[] nr
+            int[] ni
         )
         {
             Id = id;
@@ -136,7 +125,6 @@ namespace ImageBank
             Distance = distance;
             LastView = lastview;
             _ni = ni;
-            _nr = nr;
         }
     }
 }

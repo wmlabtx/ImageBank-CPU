@@ -61,8 +61,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeYear}, ");
                     sb.Append($"{AppConsts.AttributeBestId}, ");
                     sb.Append($"{AppConsts.AttributeLastView}, ");
-                    sb.Append($"{AppConsts.AttributeNi}, ");
-                    sb.Append($"{AppConsts.AttributeNr}");
+                    sb.Append($"{AppConsts.AttributeNi}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttributeId}, ");
                     sb.Append($"@{AppConsts.AttributeName}, ");
@@ -72,8 +71,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttributeYear}, ");
                     sb.Append($"@{AppConsts.AttributeBestId}, ");
                     sb.Append($"@{AppConsts.AttributeLastView}, ");
-                    sb.Append($"@{AppConsts.AttributeNi}, ");
-                    sb.Append($"@{AppConsts.AttributeNr}");
+                    sb.Append($"@{AppConsts.AttributeNi}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
@@ -84,8 +82,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestId}", img.BestId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeNi}", Helper.ArrayFrom32(img.GetNi()));
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeNr}", img.GetNr());
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeNi}", Helper.ArrayFrom32(img.GetHistory()));
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -106,8 +103,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeYear}, "); // 5
             sb.Append($"{AppConsts.AttributeBestId}, "); // 6
             sb.Append($"{AppConsts.AttributeLastView}, "); // 7
-            sb.Append($"{AppConsts.AttributeNi}, "); // 8
-            sb.Append($"{AppConsts.AttributeNr} "); // 9
+            sb.Append($"{AppConsts.AttributeNi} "); // 8
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -126,7 +122,6 @@ namespace ImageBank
                             var bestid = reader.GetInt32(6);
                             var lastview = reader.GetDateTime(7);
                             var ni = Helper.ArrayTo32((byte[])reader[8]);
-                            var nr = (byte[])reader[9];
                             var img = new Img(
                                 id: id,
                                 name: name,
@@ -136,8 +131,7 @@ namespace ImageBank
                                 year: year,
                                 bestid: bestid,
                                 lastview: lastview,
-                                ni: ni,
-                                nr: nr
+                                ni: ni
                                 );
 
                             AddToMemory(img);
@@ -175,6 +169,16 @@ namespace ImageBank
                 }
 
                 progress?.Report("Database loaded");
+
+                /*
+                foreach (var img in _imgList) {
+                    if (img.Value.LastView.Year == 2020) {
+                        var seconds = _random.Next(0, 60 * 60 * 24 * 364);
+                        var lastview = new DateTime(2020, 1, 1).AddSeconds(seconds);
+                        img.Value.SetLastView(lastview);
+                    }
+                }
+                */
             }
         }
 

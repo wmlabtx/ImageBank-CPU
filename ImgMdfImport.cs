@@ -76,18 +76,19 @@ namespace ImageBank
 
                 palette = ComputePalette(bitmap);
             }
-
+             
             // we have to create unique name and a location in Hp folder
             string newname;
             string newfilename;
             var iteration = -1;
-            do {
+            do { 
                 iteration++;
                 newname = FileHelper.HashToName(hash, iteration);
-                newfilename = FileHelper.NameToFileName(newname);
+                 newfilename = FileHelper.NameToFileName(newname);
             } while (File.Exists(newfilename));
 
             var id = AllocateId();
+            var lastview = new DateTime(2020, 1, 1).AddSeconds(_random.Next(0, 60 * 60 * 24 * 365));
             var nimg = new Img(
                 id: id,
                 name: newname,
@@ -96,9 +97,8 @@ namespace ImageBank
                 distance: 2f,
                 year: year,
                 bestid: 0,
-                lastview: new DateTime(2020, 1, 1),
-                ni: new int[10],
-                nr: new byte[10]);
+                lastview: lastview,
+                ni: Array.Empty<int>());
 
             Add(nimg);
 

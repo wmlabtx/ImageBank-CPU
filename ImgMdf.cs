@@ -5,7 +5,7 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private const int SIMMAX = 157;
+        private const int SIMMAX = 27;
 
         private static int _id;
         private static int _importLimit;
@@ -19,6 +19,8 @@ namespace ImageBank
         private static readonly CryptoRandom _random = new CryptoRandom();
 
         public static readonly SortedList<int, string> BinsList = new SortedList<int, string>();
+
+        private static int _sv = 0;
 
         static ImgMdf()
         {

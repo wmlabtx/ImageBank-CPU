@@ -170,9 +170,9 @@ namespace ImageBank
             var array = BitConverter.GetBytes(id);
             using (var md5 = MD5.Create()) {
                 var hashmd5 = md5.ComputeHash(array);
-                rbyte = (byte)(hashmd5[3] | 0x80);
-                gbyte = (byte)(hashmd5[4] | 0x80);
-                bbyte = (byte)(hashmd5[5] | 0x80);
+                rbyte = (byte)(hashmd5[4] | 0x80);
+                gbyte = (byte)(hashmd5[7] | 0x80);
+                bbyte = (byte)(hashmd5[10] | 0x80);
             }
 
             var scb = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(rbyte, gbyte, bbyte));
