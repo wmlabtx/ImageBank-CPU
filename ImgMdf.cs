@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 
 namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private const int SIMMAX = 27;
+        private const int SIMMAX = 127;
 
         private static int _id;
         private static int _importLimit;
@@ -15,18 +16,19 @@ namespace ImageBank
         private static readonly SortedList<int, Img> _imgList = new SortedList<int, Img>();
         private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
         private static readonly SortedList<string, Img> _hashList = new SortedList<string, Img>();
-        private static readonly List<float[]> _lastviewed = new List<float[]>();
-        private static readonly CryptoRandom _random = new CryptoRandom();
+        private static readonly List<DateTime> _lastviewed = new List<DateTime>();
+        private static readonly RandomMersenne _random;
 
         public static readonly SortedList<int, string> BinsList = new SortedList<int, string>();
-
-        private static int _sv = 0;
 
         static ImgMdf()
         {
             var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
             _sqlConnection = new SqlConnection(connectionString);
             _sqlConnection.Open();
+
+            var seed = Guid.NewGuid().GetHashCode();
+            _random = new RandomMersenne((uint)seed);
         }
 
         public static float[] GetPalette()

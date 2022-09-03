@@ -88,7 +88,7 @@ namespace ImageBank
             } while (File.Exists(newfilename));
 
             var id = AllocateId();
-            var lastview = new DateTime(2020, 1, 1).AddSeconds(_random.Next(0, 60 * 60 * 24 * 365));
+            var lastview = _imgList.Min(e => e.Value.LastView).AddSeconds(1);
             var nimg = new Img(
                 id: id,
                 name: newname,

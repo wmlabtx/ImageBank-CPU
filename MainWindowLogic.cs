@@ -136,6 +136,7 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
+            var fs = new float[2];
             for (var index = 0; index < 2; index++) {
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
@@ -159,12 +160,25 @@ namespace ImageBank
 
                 sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(AppVars.ImgPanel[index].Img.LastView))} ago ");
 
-                var fd = AppVars.ImgPanel[index].Size / ((float)AppVars.ImgPanel[index].Bitmap.Width * AppVars.ImgPanel[index].Bitmap.Height);
-                sb.Append($" [{fd:F4}]");
+                fs[index] = AppVars.ImgPanel[index].Size / ((float)AppVars.ImgPanel[index].Bitmap.Width * AppVars.ImgPanel[index].Bitmap.Height);
+                sb.Append($" [{fs[index]:F4}]");
 
                 pLabels[index].Text = sb.ToString();
 
-                pLabels[index].Background = System.Windows.Media.Brushes.White;
+                if (index == 1) {
+                    if (fs[0] < fs[1]) {
+                        pLabels[0].Background = System.Windows.Media.Brushes.LightSalmon;
+                        pLabels[1].Background = System.Windows.Media.Brushes.White;
+                    }
+                    else {
+                        pLabels[0].Background = System.Windows.Media.Brushes.White;
+                        pLabels[1].Background = System.Windows.Media.Brushes.LightSalmon;
+                    }
+                }
+                else {
+                    pLabels[index].Background = System.Windows.Media.Brushes.White;
+                }
+
                 if (historysize > 0) {
                     pLabels[index].Background = Helper.GetBrush(historysize);
                 }

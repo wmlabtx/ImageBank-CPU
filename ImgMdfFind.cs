@@ -223,13 +223,10 @@ namespace ImageBank
                 totalcount = _imgList.Count;
                 luftcount = totalcount - _importLimit;
 
-                if (idX == 0) {
-                    var scope = _imgList.Values.OrderBy(e => e.LastView).ToArray();
-                    imgX = scope[_sv];
-                    _sv++;
-                    if (_sv >= 100) {
-                        _sv = 0;
-                    }
+                if (idX == 0) {                    
+                    var mscope = _imgList.Values.OrderBy(e => e.LastView).Take(10000).ToArray();
+                    var randpos = _random.IRandom(0, mscope.Length - 1);
+                    imgX = mscope[randpos];
                 }
 
                 if (imgX == null) {
@@ -248,7 +245,7 @@ namespace ImageBank
 
                 imgX = AppVars.ImgPanel[0].Img;
                 UpdatePalette(imgX, progress);
-                _lastviewed.Add(imgX.GetPalette());
+                _lastviewed.Add(imgX.LastView);
                 while (_lastviewed.Count > SIMMAX) {
                     _lastviewed.RemoveAt(0);
                 }

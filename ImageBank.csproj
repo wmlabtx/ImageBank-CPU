@@ -109,7 +109,7 @@
     <Compile Include="ImgMdfExport.cs" />
     <Compile Include="ImgMdfPalette.cs" />
     <Compile Include="MD5HashHelper.cs" />
-    <Compile Include="CryptoRandom.cs" />
+    <Compile Include="RandomMersenne.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
