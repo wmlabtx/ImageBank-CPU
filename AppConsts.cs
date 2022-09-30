@@ -28,5 +28,6 @@
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
         public const string AttributeLabCenters = "LabCenters";
+        public const string AttributeLastHash = "LastHash";
     }
 }

@@ -177,7 +177,7 @@ namespace ImageBank
             FixErrors(progress);
 
             Img imgX = null;
-            if (idX != 0) {
+            if (idX > 0) {
                 if (!_imgList.TryGetValue(idX, out imgX)) {
                     imgX = null;
                     idX = 0;
@@ -223,10 +223,10 @@ namespace ImageBank
                 totalcount = _imgList.Count;
                 luftcount = totalcount - _importLimit;
 
-                if (idX == 0) {                    
-                    var mscope = _imgList.Values.OrderBy(e => e.LastView).Take(10000).ToArray();
-                    var randpos = _random.IRandom(0, mscope.Length - 1);
-                    imgX = mscope[randpos];
+                if (idX == 0) {
+                    var list = _imgList.Values.OrderBy(e => e.LastView).Take(POSEMAX).ToArray();
+                    imgX = list[_pose];
+                    _pose = _random.IRandom(0, POSEMAX - 1);
                 }
 
                 if (imgX == null) {
@@ -243,13 +243,7 @@ namespace ImageBank
                     continue;
                 }
 
-                imgX = AppVars.ImgPanel[0].Img;
-                UpdatePalette(imgX, progress);
-                _lastviewed.Add(imgX.LastView);
-                while (_lastviewed.Count > SIMMAX) {
-                    _lastviewed.RemoveAt(0);
-                }
-
+                FindNext(idX, progress);
                 var idY = imgX.BestId;
                 AppVars.ImgPanel[1] = GetImgPanel(idY);
                 if (AppVars.ImgPanel[1] == null) {
@@ -265,7 +259,5 @@ namespace ImageBank
 
             progress?.Report($"{sb}/{totalcount} ({luftcount}) {imgX.Distance:F2}");
         }
-
-        public static void Find(IProgress<string> progress) => Find(0, progress);
     }
 }
