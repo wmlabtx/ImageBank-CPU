@@ -7,7 +7,7 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private static void FastFindNext(int idX, IProgress<string> progress, string prefix = "") 
+        private static void FastFindNext(int idX, IProgress<string> progress, string prefix = "")
         {
             if (!_imgList.TryGetValue(idX, out var img1)) {
                 progress?.Report($"({idX}) not found");
@@ -23,32 +23,23 @@ namespace ImageBank
 
             Img img2 = null;
             var bestdistance = 2f;
-            var bestmatch = 0;
             foreach (var img in _imgList) {
-                if (img.Key != img1.Id && img.Value.GetPalette().Length > 0) {
-                    var match = 1;
-                    float distance;
-                    if (img1.InHistory(img.Key)) {
-                        match = 0;
-                    }
-
-                    if (img2 == null || match > bestmatch) {
-                        distance = GetDistance(img1.GetPalette(), img.Value.GetPalette());
-                        img2 = img.Value;
-                        bestmatch = match;
-                        bestdistance = distance;
-                    }
-                    else {
-                        if (match == bestmatch) {
-                            distance = GetDistance(img1.GetPalette(), img.Value.GetPalette());
-                            if (distance < bestdistance) {
-                                img2 = img.Value;
-                                bestmatch = match;
-                                bestdistance = distance;
-                            }
-                        }
-                    }
+                if (img.Key == img1.Id || img1.InHistory(img.Key)) {
+                    continue;
                 }
+
+                var distance =  img.Value.GetVector().Length == 4096 ? 
+                    VggHelper.GetDistance(img1.GetVector(), img.Value.GetVector()) :
+                    GetDistance(img1.GetPalette(), img.Value.GetPalette());
+
+                if (distance < bestdistance) {
+                    img2 = img.Value;
+                    bestdistance = distance;
+                }
+            }
+
+            if (img2 == null) {
+                img2 = _imgList[_imgList.Keys[0]];
             }
 
             if (img1.BestId != img2.Id) {                
@@ -72,8 +63,7 @@ namespace ImageBank
                 progress?.Report($"({idX}) not found");
                 return;
             }
-
-            progress?.Report($"({idX}) getting palette...");
+            
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
             var imagedata = FileHelper.ReadData(filename);
@@ -90,8 +80,15 @@ namespace ImageBank
                     return;
                 }
 
+                progress?.Report($"({idX}) getting palette...");
                 var newpalette = ComputePalette(bitmap);
                 img1.SetPalette(newpalette);
+
+                if (img1.GetVector().Length != 4096) {
+                    progress?.Report($"({idX}) getting vector...");
+                    var vector = VggHelper.CalculateVector(bitmap);
+                    img1.SetVector(vector);
+                }
             }
 
             FastFindNext(img1.Id, progress);

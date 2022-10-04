@@ -57,6 +57,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeName}, ");
                     sb.Append($"{AppConsts.AttributeHash}, ");
                     sb.Append($"{AppConsts.AttributePalette}, ");
+                    sb.Append($"{AppConsts.AttributeVector}, ");
                     sb.Append($"{AppConsts.AttributeDistance}, ");
                     sb.Append($"{AppConsts.AttributeYear}, ");
                     sb.Append($"{AppConsts.AttributeBestId}, ");
@@ -67,6 +68,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttributeName}, ");
                     sb.Append($"@{AppConsts.AttributeHash}, ");
                     sb.Append($"@{AppConsts.AttributePalette}, ");
+                    sb.Append($"@{AppConsts.AttributeVector}, ");
                     sb.Append($"@{AppConsts.AttributeDistance}, ");
                     sb.Append($"@{AppConsts.AttributeYear}, ");
                     sb.Append($"@{AppConsts.AttributeBestId}, ");
@@ -78,6 +80,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributePalette}", Helper.ArrayFromFloat(img.GetPalette()));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", Helper.ArrayFromFloat(img.GetVector()));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDistance}", img.Distance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestId}", img.BestId);
@@ -103,7 +106,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeYear}, "); // 5
             sb.Append($"{AppConsts.AttributeBestId}, "); // 6
             sb.Append($"{AppConsts.AttributeLastView}, "); // 7
-            sb.Append($"{AppConsts.AttributeNi} "); // 8
+            sb.Append($"{AppConsts.AttributeNi}, "); // 8
+            sb.Append($"{AppConsts.AttributeVector} "); // 9
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -122,11 +126,13 @@ namespace ImageBank
                             var bestid = reader.GetInt32(6);
                             var lastview = reader.GetDateTime(7);
                             var ni = Helper.ArrayTo32((byte[])reader[8]);
+                            var vector = Helper.ArrayToFloat((byte[])reader[9]);
                             var img = new Img(
                                 id: id,
                                 name: name,
                                 hash: hash,
                                 palette: palette,
+                                vector: vector,
                                 distance: distance,
                                 year: year,
                                 bestid: bestid,

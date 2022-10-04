@@ -22,6 +22,19 @@ namespace ImageBank
             ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributePalette, buffer);
         }
 
+        private float[] _vector;
+        public float[] GetVector()
+        {
+            return _vector;
+        }
+
+        public void SetVector(float[] vector)
+        {
+            _vector = vector;
+            var buffer = Helper.ArrayFromFloat(vector);
+            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeVector, buffer);
+        }
+
         public int Year { get; private set; }
 
         public void SetActualYear()
@@ -109,6 +122,7 @@ namespace ImageBank
             string name,
             string hash,
             float[] palette,
+            float[] vector,
             float distance,
             int year,
             int bestid,
@@ -120,6 +134,7 @@ namespace ImageBank
             Name = name;
             Hash = hash;
             _palette = palette;
+            _vector = vector;
             Year = year;
             BestId = bestid;
             Distance = distance;

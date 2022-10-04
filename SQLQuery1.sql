@@ -1,1 +1,1 @@
-﻿UPDATE Images SET Features = 0x
+﻿UPDATE Images SET Vector = 0x

@@ -7,6 +7,8 @@
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
         public const string FilePalette = @"D:\Users\Murad\Documents\Sdb\Db\palette.png";
+        
+        public const string FileVgg = @"D:\Users\Murad\Documents\Sdb\Db\VGG16ImageNet.dat";
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -25,9 +27,9 @@
         public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";
         public const string AttributeNi = "Ni";
+        public const string AttributeVector = "Vector";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
-        public const string AttributeLabCenters = "LabCenters";
-        public const string AttributeLastHash = "LastHash";
+        public const string AttributeLabCenters = "LabCenters";        
     }
 }

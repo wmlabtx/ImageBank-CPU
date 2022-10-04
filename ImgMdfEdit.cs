@@ -40,11 +40,15 @@ namespace ImageBank
                         return;
                     }
 
+
+                    var rpalette = ComputePalette(bitmap);
+                    var rvector = VggHelper.CalculateVector(bitmap);
                     var rimg = new Img(
                         id: img.Id,
                         name: img.Name,
                         hash: rhash,
-                        palette: img.GetPalette(),
+                        palette: rpalette,
+                        vector: rvector,
                         distance: img.Distance,
                         year: img.Year,
                         bestid: img.BestId,

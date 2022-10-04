@@ -31,6 +31,8 @@ namespace ImageBank
             _random = new RandomMersenne((uint)seed);
 
             _pose = 0;
+
+            VggHelper.LoadNetwork();
         }
 
         public static float[] GetPalette()

@@ -60,6 +60,7 @@ namespace ImageBank
             }
 
             float[] palette;
+            float[] vector;
             using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                 if (bitmap == null) {
                     var badname = Path.GetFileName(orgfilename);
@@ -75,6 +76,7 @@ namespace ImageBank
                 }
 
                 palette = ComputePalette(bitmap);
+                vector = VggHelper.CalculateVector(bitmap);
             }
              
             // we have to create unique name and a location in Hp folder
@@ -94,6 +96,7 @@ namespace ImageBank
                 name: newname,
                 hash: hash,
                 palette: palette,
+                vector: vector,
                 distance: 2f,
                 year: year,
                 bestid: 0,
