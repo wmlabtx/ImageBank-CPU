@@ -4,7 +4,7 @@
     {
         private static ImgPanel GetImgPanel(int id)
         {
-            if (!_imgList.TryGetValue(id, out Img img)) {
+            if (!AppImgs.TryGetValue(id, out Img img)) {
                 return null;
             }
 

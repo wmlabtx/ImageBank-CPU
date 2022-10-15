@@ -1,6 +1,8 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace ImageBank
 {
@@ -10,7 +12,80 @@ namespace ImageBank
         private static int _bad;
         private static int _found;
 
-        private static void Import(string orgfilename, IProgress<string> progress)
+        private static void ComputeInternal(BackgroundWorker backgroundworker)
+        {
+            var img1 = AppImgs.GetLastChecked();
+
+            var name = img1.Name;
+            var filename = FileHelper.NameToFileName(name);
+            var imagedata = FileHelper.ReadData(filename);
+            if (imagedata == null) {
+                backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                Delete(img1.Id);
+                return;
+            }
+
+            if (img1.GetVector().Length != 4096) {
+                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                    if (bitmap == null) {
+                        backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                        Delete(img1.Id);
+                        return;
+                    }
+
+                    var vector = VggHelper.CalculateVector(bitmap);
+                    img1.SetVector(vector);
+                }
+            }
+
+            var ni = img1.GetHistory();
+            for (var i = 0; i < ni.Length; i++) {
+                if (!AppImgs.ContainsId(ni[i])) {
+                    img1.RemoveRank(ni[i]);
+                }
+            }
+
+            int idY = 0;
+            var shadow = AppImgs.GetShadow();
+            var bestdistance = 2f;
+            foreach (var e in shadow) {
+                if (e.Item1 == img1.Id || img1.InHistory(e.Item1)) {
+                    continue;
+                }
+
+                var distance = VggHelper.GetDistance(img1.GetVector(), e.Item2);
+                if (distance < bestdistance) {
+                    bestdistance = distance;
+                    idY = e.Item1;
+                }
+            }
+
+            AppImgs.TryGetValue(idY, out Img img2);
+            if (img2 == null) {
+                img2 = AppImgs.GetRandomImg();
+            }
+
+            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck));
+            if (img1.BestId != img2.Id) {
+                img1.SetBestId(img2.Id);
+                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");                
+            }
+            else {
+                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} = {bestdistance:F2}");
+            }
+
+            img1.SetDistance(bestdistance);
+            img1.LastCheck = DateTime.Now;
+
+            ni = img2.GetHistory();
+            for (var i = 0; i < ni.Length; i++) {
+                if (!AppImgs.ContainsId(ni[i])) {
+                    img2.RemoveRank(ni[i]);
+                }
+            }
+        }
+
+        private static void ImportFile(string orgfilename)
         {
             if (!File.Exists(orgfilename)) {
                 return;
@@ -40,7 +115,7 @@ namespace ImageBank
 
             var hash = Md5HashHelper.Compute(imagedata);
             bool found;
-            found = _hashList.TryGetValue(hash, out var imgfound);
+            found = AppImgs.TryGetHash(hash, out var imgfound);
             if (found) {
                 // we found the same image in a database
                 var filenamefound = FileHelper.NameToFileName(imgfound.Name);
@@ -77,30 +152,33 @@ namespace ImageBank
 
                 palette = ComputePalette(bitmap);
                 vector = VggHelper.CalculateVector(bitmap);
+                Thread.Sleep(1000);
             }
-             
+
             // we have to create unique name and a location in Hp folder
             string newname;
             string newfilename;
             var iteration = -1;
-            do { 
+            do {
                 iteration++;
                 newname = FileHelper.HashToName(hash, iteration);
-                 newfilename = FileHelper.NameToFileName(newname);
+                newfilename = FileHelper.NameToFileName(newname);
             } while (File.Exists(newfilename));
 
-            var id = AllocateId();
-            var lastview = _imgList.Min(e => e.Value.LastView).AddSeconds(1);
+            var id = AppVars.AllocateId();
+            var lastview = AppImgs.GetMinLastView();
+            var lastcheck = AppImgs.GetMinLastCheck();
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
                 palette: palette,
                 vector: vector,
-                distance: 2f,
+                distance: 0f,
                 year: year,
                 bestid: 0,
                 lastview: lastview,
+                lastcheck: lastcheck,
                 ni: Array.Empty<int>());
 
             Add(nimg);
@@ -119,21 +197,12 @@ namespace ImageBank
             _added++;
         }
 
-        public static void Import(int max, IProgress<string> progress)
+        private static void ImportInternal(BackgroundWorker backgroundworker)
         {
-            var imgcount = _imgList.Count;
-            var diff = imgcount - _importLimit;
-            if (diff > 0) {
-                return;
-            }
-
-            DecreaseImportLimit();
-
             _added = 0;
             _found = 0;
             _bad = 0;
-
-            progress?.Report($"importing {AppConsts.PathHp}...");
+            backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp}...");
             var directoryInfo = new DirectoryInfo(AppConsts.PathHp);
             var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
             foreach (var e in fs) {
@@ -143,32 +212,43 @@ namespace ImageBank
                     var p2 = Path.GetFileNameWithoutExtension(orgfilename);
                     if (p2.Length == 8) {
                         var key = $"{p1}{p2}";
-                        if (_nameList.ContainsKey(key)) {
+                        if (AppImgs.ContainsName(key)) {
                             continue;
                         }
                     }
                 }
 
-                Import(orgfilename, progress);
-                progress?.Report($"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
+                ImportFile(orgfilename);
+                backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
             }
 
-            progress?.Report($"importing {AppConsts.PathRw}...");
+            backgroundworker.ReportProgress(0, $"importing {AppConsts.PathRw}...");
             directoryInfo = new DirectoryInfo(AppConsts.PathRw);
-            fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).OrderBy(e => e.Length).Take(max).ToArray();
+            fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).OrderBy(e => e.Length).Take(1000).ToArray();
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
-                progress?.Report($"importing {AppConsts.PathRw} (a:{_added})/f:{_found}/b:{_bad}...");
+                backgroundworker.ReportProgress(0, $"importing {AppConsts.PathRw} (a:{_added})/f:{_found}/b:{_bad}...");
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
-                    Import(orgfilename, progress);
-                    progress?.Report($"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
+                    ImportFile(orgfilename);
+                    backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
                 }
             }
 
-            progress?.Report($"clean-up {AppConsts.PathHp}...");
+            backgroundworker.ReportProgress(0, $"clean-up {AppConsts.PathHp}...");
             Helper.CleanupDirectories(AppConsts.PathHp, AppVars.Progress);
-            progress?.Report($"clean-up {AppConsts.PathRw}...");
+            backgroundworker.ReportProgress(0, $"clean-up {AppConsts.PathRw}...");
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
+
+            AppVars.ImportMode = false;
+        }
+
+        public static void Compute(BackgroundWorker backgroundworker)
+        {
+            if (AppVars.ImportMode) {
+                ImportInternal(backgroundworker);
+            }
+            
+            ComputeInternal(backgroundworker);
         }
     }
 }

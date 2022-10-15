@@ -69,7 +69,7 @@ namespace ImageBank
 
         private void ImportClick(object sender, RoutedEventArgs e)
         {
-            ImportClick(1000000);
+            ImportClick();
         }
 
         private void Rotate270Click(object sender, RoutedEventArgs e)

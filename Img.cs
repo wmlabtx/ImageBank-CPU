@@ -19,7 +19,7 @@ namespace ImageBank
         {
             _palette = palette;
             var buffer = Helper.ArrayFromFloat(palette);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributePalette, buffer);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributePalette, buffer);
         }
 
         private float[] _vector;
@@ -27,12 +27,12 @@ namespace ImageBank
         {
             return _vector;
         }
-
+       
         public void SetVector(float[] vector)
         {
             _vector = vector;
             var buffer = Helper.ArrayFromFloat(vector);
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeVector, buffer);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeVector, buffer);
         }
 
         public int Year { get; private set; }
@@ -40,7 +40,7 @@ namespace ImageBank
         public void SetActualYear()
         {
             Year = DateTime.Now.Year;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeYear, Year);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeYear, Year);
         }
 
         public int BestId { get; private set; }
@@ -48,7 +48,7 @@ namespace ImageBank
         public void SetBestId(int bestid)
         {
             BestId = bestid;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeBestId, BestId);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeBestId, BestId);
         }
 
         public DateTime LastView { get; private set; }
@@ -56,15 +56,17 @@ namespace ImageBank
         public void SetLastView(DateTime lastview)
         {
             LastView = lastview;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
+
+        public DateTime LastCheck { get; set; }
 
         public float Distance { get; private set; }
 
         public void SetDistance(float distance)
         {
             Distance = distance;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
         }
 
         private int[] _ni;
@@ -81,7 +83,7 @@ namespace ImageBank
         public void SetHistory(int[] array)
         {
             _ni = array;
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
         public void AddHistory(int next)
@@ -97,7 +99,7 @@ namespace ImageBank
             }
 
             _ni = list.ToArray();
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
         public void RemoveRank(int next)
@@ -109,7 +111,7 @@ namespace ImageBank
             var list = _ni.ToList();
             list.Remove(next);
             _ni = list.ToArray();
-            ImgMdf.SqlImagesUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
         }
 
         public bool InHistory(int next)
@@ -127,6 +129,7 @@ namespace ImageBank
             int year,
             int bestid,
             DateTime lastview,
+            DateTime lastcheck,
             int[] ni
         )
         {
@@ -139,6 +142,7 @@ namespace ImageBank
             BestId = bestid;
             Distance = distance;
             LastView = lastview;
+            LastCheck = lastcheck;
             _ni = ni;
         }
     }

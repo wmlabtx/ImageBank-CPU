@@ -8,7 +8,7 @@ namespace ImageBank
     {
         public static void Rotate(int id, RotateFlipType rft, IProgress<string> progress)
         {
-            if (_imgList.TryGetValue(id, out var img)) {
+            if (AppImgs.TryGetValue(id, out var img)) {
                 var filename = FileHelper.NameToFileName(img.Name);
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata != null) {
@@ -35,7 +35,7 @@ namespace ImageBank
                     }
 
                     var rhash = Md5HashHelper.Compute(rimagedata);
-                    if (_hashList.ContainsKey(rhash)) {
+                    if (AppImgs.ContainsHash(rhash)) {
                         progress.Report($"Dup found for {filename}");
                         return;
                     }
@@ -53,6 +53,7 @@ namespace ImageBank
                         year: img.Year,
                         bestid: img.BestId,
                         lastview: DateTime.Now,
+                        lastcheck: img.LastCheck,
                         ni: img.GetHistory());
 
                     Delete(id);

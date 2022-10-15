@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -16,6 +18,7 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
+        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -55,6 +58,13 @@ namespace ImageBank
             DrawCanvas();
             
             EnableElements();
+
+            AppVars.SuspendEvent = new ManualResetEvent(true);
+
+            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
+            _backgroundWorker.DoWork += DoCompute;
+            _backgroundWorker.ProgressChanged += DoComputeProgress;
+            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -65,24 +75,15 @@ namespace ImageBank
             }
         }
 
-        private void ImportClick(int max)
+        private static void ImportClick()
         {
-            Import(max);
+            AppVars.ImportMode = true;
         }
 
         private async void ExportClick()
         {
             await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[0].Img, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[1].Img, AppVars.Progress); }).ConfigureAwait(true);
-            EnableElements();
-        }
-
-        private async void Import(int max)
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.Import(max, AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
             EnableElements();
         }
 
@@ -267,6 +268,7 @@ namespace ImageBank
         private void ClassDispose()
         {
             _notifyIcon?.Dispose();
+            _backgroundWorker?.Dispose();
         }
 
         private void RefreshClick()
@@ -292,6 +294,22 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.MoveBackward(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
+        }
+
+        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
+        {
+            BackgroundStatus.Text = (string)e.UserState;
+        }
+
+        private void DoCompute(object s, DoWorkEventArgs args)
+        {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+            while (!_backgroundWorker.CancellationPending) {
+                ImgMdf.Compute(_backgroundWorker);
+                Thread.Sleep(100);
+            }
+
+            args.Cancel = true;
         }
     }
 }

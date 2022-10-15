@@ -20,7 +20,7 @@ namespace ImageBank
             const int DIM = 224;
             var vol = new Vol(DIM, DIM, 3, 0.0f);
             using (var b = BitmapHelper.ScaleAndCut(bitmap, DIM, DIM / 16)) {
-                b.Save("bitmap.png", ImageFormat.Png);
+                //b.Save("bitmap.png", ImageFormat.Png);
                 var bitmapdata = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
                 var stride = bitmapdata.Stride;
                 var data = new byte[Math.Abs(bitmapdata.Stride * bitmapdata.Height)];

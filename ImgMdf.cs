@@ -1,56 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 
 namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        private static int _id;
-        private static int _importLimit;
-
-        private static readonly object _sqllock = new object();
-        private static readonly SqlConnection _sqlConnection;
-        private static readonly SortedList<int, Img> _imgList = new SortedList<int, Img>();
-        private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
-        private static readonly SortedList<string, Img> _hashList = new SortedList<string, Img>();
-        private static readonly RandomMersenne _random;
-
-        private const int POSEMAX = 10000;
-        private static int _pose;
-
         public static readonly SortedList<int, string> BinsList = new SortedList<int, string>();
 
         static ImgMdf()
         {
-            var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
-            _sqlConnection = new SqlConnection(connectionString);
-            _sqlConnection.Open();
-
-            var seed = Guid.NewGuid().GetHashCode();
-            _random = new RandomMersenne((uint)seed);
-
-            _pose = 0;
-
             VggHelper.LoadNetwork();
         }
 
-        public static float[] GetPalette()
+        public static void LoadImages(IProgress<string> progress)
         {
-            return _palette;
-        }
-
-        private static int AllocateId()
-        {
-            _id++;
-            SqlVarsUpdateProperty(AppConsts.AttributeId, _id);
-            return _id;
-        }
-
-        private static void DecreaseImportLimit()
-        {
-            _importLimit -= 10;
-            SqlVarsUpdateProperty(AppConsts.AttributeImportLimit, _importLimit);
+            AppImgs.Clear();
+            AppDatabase.LoadImages(progress);
         }
     }
 }

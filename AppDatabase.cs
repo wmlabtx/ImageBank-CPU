@@ -1,12 +1,22 @@
-﻿using System.Text;
+﻿using System;
 using System.Data.SqlClient;
-using System;
+using System.Text;
 
 namespace ImageBank
 {
-    public static partial class ImgMdf
+    public static class AppDatabase
     {
-        public static void SqlImagesUpdateProperty(int id, string key, object val)
+        private static readonly object _sqllock = new object();
+        private static readonly SqlConnection _sqlConnection;
+
+        static AppDatabase()
+        {
+            var connectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={AppConsts.FileDatabase};Connection Timeout=300";
+            _sqlConnection = new SqlConnection(connectionString);
+            _sqlConnection.Open();
+        }
+
+        public static void ImageUpdateProperty(int id, string key, object val)
         {
             lock (_sqllock) {
                 try {
@@ -23,7 +33,7 @@ namespace ImageBank
             }
         }
 
-        public static void SqlVarsUpdateProperty(string key, object val)
+        public static void VarsUpdateProperty(string key, object val)
         {
             lock (_sqllock) {
                 var sqltext = $"UPDATE {AppConsts.TableVars} SET {key} = @{key}";
@@ -34,7 +44,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlDeleteImage(int id)
+        public static void DeleteImage(int id)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -46,7 +56,7 @@ namespace ImageBank
             }
         }
 
-        private static void SqlAddImage(Img img)
+        public static void AddImage(Img img)
         {
             lock (_sqllock) {
                 using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -93,9 +103,6 @@ namespace ImageBank
 
         public static void LoadImages(IProgress<string> progress)
         {
-            _imgList.Clear();
-            _nameList.Clear();
-            _hashList.Clear();
             var sb = new StringBuilder();
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttributeId}, "); // 0
@@ -137,37 +144,36 @@ namespace ImageBank
                                 year: year,
                                 bestid: bestid,
                                 lastview: lastview,
+                                lastcheck: lastview,
                                 ni: ni
                                 );
 
-                            AddToMemory(img);
+                            AppImgs.Add(img);
 
                             if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
                                 dtn = DateTime.Now;
-                                progress?.Report($"Loading images ({_imgList.Count})...");
+                                var count = AppImgs.Count();
+                                progress?.Report($"Loading images ({count})...");
                             }
                         }
                     }
                 }
 
                 progress?.Report("Loading vars...");
-                _id = 0;
-                _importLimit = _imgList.Count;
-                _palette = null;
+
                 sb.Length = 0;
                 sb.Append("SELECT ");
                 sb.Append($"{AppConsts.AttributeId}, "); // 0
-                sb.Append($"{AppConsts.AttributeImportLimit}, "); // 1
-                sb.Append($"{AppConsts.AttributeLabCenters} "); // 2
+                sb.Append($"{AppConsts.AttributeLabCenters} "); // 1
                 sb.Append($"FROM {AppConsts.TableVars}");
                 sqltext = sb.ToString();
                 lock (_sqllock) {
                     using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
                         using (var reader = sqlCommand.ExecuteReader()) {
                             while (reader.Read()) {
-                                _id = reader.GetInt32(0);
-                                _importLimit = reader.GetInt32(1);                                    
-                                _palette = Helper.ArrayToFloat((byte[])reader[2]);
+                                var id = reader.GetInt32(0);
+                                var palette = Helper.ArrayToFloat((byte[])reader[1]);
+                                AppVars.SetVars(id, palette);
                                 break;
                             }
                         }
@@ -186,12 +192,6 @@ namespace ImageBank
                 }
                 */
             }
-        }
-
-        public static void SavePalette()
-        {
-            var buffer = Helper.ArrayFromFloat(_palette);
-            SqlVarsUpdateProperty(AppConsts.AttributeLabCenters, buffer);
         }
     }
 }

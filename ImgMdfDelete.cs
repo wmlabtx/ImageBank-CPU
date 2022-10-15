@@ -4,15 +4,14 @@
     {
         public static void Delete(int id)
         {
-            if (_imgList.TryGetValue(id, out var img)) {
-                _nameList.Remove(img.Name);
-                _hashList.Remove(img.Hash);
-                _imgList.Remove(id);
+            if (AppImgs.TryGetValue(id, out var img)) {
+                AppImgs.Delete(img);
                 var filename = FileHelper.NameToFileName(img.Name);
                 FileHelper.DeleteToRecycleBin(filename);
             }
 
-            SqlDeleteImage(id);
+            AppDatabase.DeleteImage(id);
+            AppImgs.ResetLastCheck();
         }
     }
 } 
