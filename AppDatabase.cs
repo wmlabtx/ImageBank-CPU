@@ -66,7 +66,7 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeId}, ");
                     sb.Append($"{AppConsts.AttributeName}, ");
                     sb.Append($"{AppConsts.AttributeHash}, ");
-                    sb.Append($"{AppConsts.AttributePalette}, ");
+                    sb.Append($"{AppConsts.AttributeFamilyId}, ");
                     sb.Append($"{AppConsts.AttributeVector}, ");
                     sb.Append($"{AppConsts.AttributeDistance}, ");
                     sb.Append($"{AppConsts.AttributeYear}, ");
@@ -77,7 +77,7 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttributeId}, ");
                     sb.Append($"@{AppConsts.AttributeName}, ");
                     sb.Append($"@{AppConsts.AttributeHash}, ");
-                    sb.Append($"@{AppConsts.AttributePalette}, ");
+                    sb.Append($"@{AppConsts.AttributeFamilyId}, ");
                     sb.Append($"@{AppConsts.AttributeVector}, ");
                     sb.Append($"@{AppConsts.AttributeDistance}, ");
                     sb.Append($"@{AppConsts.AttributeYear}, ");
@@ -89,7 +89,7 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributePalette}", Helper.ArrayFromFloat(img.GetPalette()));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFamilyId}", img.FamilyId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", Helper.ArrayFromFloat(img.GetVector()));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDistance}", img.Distance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
@@ -108,7 +108,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeId}, "); // 0
             sb.Append($"{AppConsts.AttributeName}, "); // 1
             sb.Append($"{AppConsts.AttributeHash}, "); // 2
-            sb.Append($"{AppConsts.AttributePalette}, "); // 3
+            sb.Append($"{AppConsts.AttributeFamilyId}, "); // 3
             sb.Append($"{AppConsts.AttributeDistance}, "); // 4
             sb.Append($"{AppConsts.AttributeYear}, "); // 5
             sb.Append($"{AppConsts.AttributeBestId}, "); // 6
@@ -127,7 +127,7 @@ namespace ImageBank
                             var id = reader.GetInt32(0);
                             var name = reader.GetString(1);
                             var hash = reader.GetString(2);
-                            var palette = Helper.ArrayToFloat((byte[])reader[3]);
+                            var familyid = reader.GetInt32(3);
                             var distance = reader.GetFloat(4);
                             var year = reader.GetInt32(5);
                             var bestid = reader.GetInt32(6);
@@ -138,13 +138,12 @@ namespace ImageBank
                                 id: id,
                                 name: name,
                                 hash: hash,
-                                palette: palette,
+                                familyid: familyid,
                                 vector: vector,
                                 distance: distance,
                                 year: year,
                                 bestid: bestid,
                                 lastview: lastview,
-                                lastcheck: lastview,
                                 ni: ni
                                 );
 
@@ -181,6 +180,8 @@ namespace ImageBank
                 }
 
                 progress?.Report("Database loaded");
+
+                AppImgs.Resort();
 
                 /*
                 foreach (var img in _imgList) {

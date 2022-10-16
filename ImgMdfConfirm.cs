@@ -10,7 +10,7 @@ namespace ImageBank
             var imgY = AppVars.ImgPanel[1].Img;
             imgX.SetLastView(DateTime.Now);
             imgX.AddHistory(imgY.Id);
-            imgX.LastCheck = imgX.LastView;
+            AppImgs.SetFirst(imgX.Id);
         }
     }
 } 

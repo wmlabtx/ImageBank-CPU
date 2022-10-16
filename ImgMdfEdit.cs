@@ -41,19 +41,17 @@ namespace ImageBank
                     }
 
 
-                    var rpalette = ComputePalette(bitmap);
                     var rvector = VggHelper.CalculateVector(bitmap);
                     var rimg = new Img(
                         id: img.Id,
                         name: img.Name,
                         hash: rhash,
-                        palette: rpalette,
                         vector: rvector,
                         distance: img.Distance,
                         year: img.Year,
                         bestid: img.BestId,
                         lastview: DateTime.Now,
-                        lastcheck: img.LastCheck,
+                        familyid: img.FamilyId,
                         ni: img.GetHistory());
 
                     Delete(id);

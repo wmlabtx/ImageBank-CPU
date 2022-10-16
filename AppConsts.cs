@@ -20,14 +20,14 @@
         public const string TableImages = "Images";
         public const string AttributeId = "Id";
         public const string AttributeName = "Name";
-        public const string AttributeHash = "Hash";
-        public const string AttributePalette = "Palette";
+        public const string AttributeHash = "Hash";        
         public const string AttributeDistance = "Distance";
         public const string AttributeYear = "Year";
         public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";
         public const string AttributeNi = "Ni";
         public const string AttributeVector = "Vector";
+        public const string AttributeFamilyId = "FamilyId";
         public const string TableVars = "Vars";
         public const string AttributeImportLimit = "ImportLimit";
         public const string AttributeLabCenters = "LabCenters";        

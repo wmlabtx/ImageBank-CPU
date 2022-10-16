@@ -9,19 +9,6 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private float[] _palette;
-        public float[] GetPalette()
-        {
-            return _palette;
-        }
-
-        public void SetPalette(float[] palette)
-        {
-            _palette = palette;
-            var buffer = Helper.ArrayFromFloat(palette);
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributePalette, buffer);
-        }
-
         private float[] _vector;
         public float[] GetVector()
         {
@@ -58,8 +45,6 @@ namespace ImageBank
             LastView = lastview;
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
-
-        public DateTime LastCheck { get; set; }
 
         public float Distance { get; private set; }
 
@@ -119,31 +104,39 @@ namespace ImageBank
             return _ni.Contains(next);
         }
 
+        public int FamilyId { get; private set; }
+
+        public void SetFamilyId(int familyid)
+        {
+            if (FamilyId != familyid) {
+                FamilyId = familyid;
+                AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeFamilyId, familyid);
+            }
+        }
+
         public Img(
             int id,
             string name,
             string hash,
-            float[] palette,
             float[] vector,
             float distance,
             int year,
             int bestid,
             DateTime lastview,
-            DateTime lastcheck,
-            int[] ni
+            int[] ni,
+            int familyid
         )
         {
             Id = id;
             Name = name;
             Hash = hash;
-            _palette = palette;
             _vector = vector;
             Year = year;
             BestId = bestid;
             Distance = distance;
             LastView = lastview;
-            LastCheck = lastcheck;
             _ni = ni;
+            FamilyId = familyid;
         }
     }
 }

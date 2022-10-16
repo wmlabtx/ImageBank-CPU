@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
 
 namespace ImageBank
 {
@@ -14,7 +13,10 @@ namespace ImageBank
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
-            var img1 = AppImgs.GetLastChecked();
+            var img1 = AppImgs.GetFirstInvalid();
+            if (img1 == null) {
+                img1 = AppImgs.GetNextCheck();
+            }
 
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
@@ -40,8 +42,13 @@ namespace ImageBank
 
             var ni = img1.GetHistory();
             for (var i = 0; i < ni.Length; i++) {
-                if (!AppImgs.ContainsId(ni[i])) {
+                if (!AppImgs.TryGetValue(ni[i], out Img imgN)) {
                     img1.RemoveRank(ni[i]);
+                }
+                else {
+                    if (img1.FamilyId > 0 && imgN.FamilyId == img1.FamilyId) {
+                        img1.RemoveRank(ni[i]);
+                    }
                 }
             }
 
@@ -50,6 +57,10 @@ namespace ImageBank
             var bestdistance = 2f;
             foreach (var e in shadow) {
                 if (e.Item1 == img1.Id || img1.InHistory(e.Item1)) {
+                    continue;
+                }
+
+                if (img1.FamilyId > 0 && e.Item3 == img1.FamilyId) {
                     continue;
                 }
 
@@ -65,7 +76,7 @@ namespace ImageBank
                 img2 = AppImgs.GetRandomImg();
             }
 
-            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastCheck));
+            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
             if (img1.BestId != img2.Id) {
                 img1.SetBestId(img2.Id);
                 backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");                
@@ -75,14 +86,7 @@ namespace ImageBank
             }
 
             img1.SetDistance(bestdistance);
-            img1.LastCheck = DateTime.Now;
-
-            ni = img2.GetHistory();
-            for (var i = 0; i < ni.Length; i++) {
-                if (!AppImgs.ContainsId(ni[i])) {
-                    img2.RemoveRank(ni[i]);
-                }
-            }
+            AppImgs.SetLast(img1.Id);
         }
 
         private static void ImportFile(string orgfilename)
@@ -134,7 +138,6 @@ namespace ImageBank
                 Delete(imgfound.Id);
             }
 
-            float[] palette;
             float[] vector;
             using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                 if (bitmap == null) {
@@ -150,9 +153,8 @@ namespace ImageBank
                     return;
                 }
 
-                palette = ComputePalette(bitmap);
                 vector = VggHelper.CalculateVector(bitmap);
-                Thread.Sleep(1000);
+                //Thread.Sleep(1000);
             }
 
             // we have to create unique name and a location in Hp folder
@@ -167,18 +169,16 @@ namespace ImageBank
 
             var id = AppVars.AllocateId();
             var lastview = AppImgs.GetMinLastView();
-            var lastcheck = AppImgs.GetMinLastCheck();
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
-                palette: palette,
                 vector: vector,
                 distance: 0f,
                 year: year,
                 bestid: 0,
                 lastview: lastview,
-                lastcheck: lastcheck,
+                familyid: 0,
                 ni: Array.Empty<int>());
 
             Add(nimg);

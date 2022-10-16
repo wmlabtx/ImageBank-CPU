@@ -19,10 +19,10 @@
                 <MenuItem Header="Rotate 180" Click="Rotate180Click" />
                 <MenuItem Header="Rotate 270" Click="Rotate270Click" />
             </MenuItem>
-            <MenuItem Header="Rating">
-                <MenuItem Header="Descrease rating" Click="DescreaseRatingClick" />
+            <MenuItem Header="Family">
+                <MenuItem Header="CombineFamily" Click="CombineFamilyClick" />
                 <Separator />
-                <MenuItem Header="Move backward" Click="MoveBackwardClick" />
+                <MenuItem Header="SplitFamily" Click="SplitFamilyClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

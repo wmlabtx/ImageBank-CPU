@@ -178,5 +178,20 @@ namespace ImageBank
             var scb = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(rbyte, gbyte, bbyte));
             return scb;
         }
+
+        public static float GetDistance(float[] x, float[] y)
+        {
+            if (x.Length == 0 || y.Length == 0 || x.Length != y.Length) {
+                return 1f;
+            }
+
+            var sum = 0f;
+            for (var i = 0; i < x.Length; i++) {
+                sum += x[i] * y[i];
+            }
+
+            var sim = (float)Math.Sqrt(1f - sum);
+            return sim;
+        }
     }
 }

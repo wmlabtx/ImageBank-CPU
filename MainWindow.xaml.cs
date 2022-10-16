@@ -87,14 +87,14 @@ namespace ImageBank
             RefreshClick();
         }
 
-        private void DescreaseRatingClick(object sender, RoutedEventArgs e)
+        private void CombineFamilyClick(object sender, RoutedEventArgs e)
         {
-            DescreaseRatingClick();
+            CombineFamilyClick();
         }
 
-        private void MoveBackwardClick(object sender, RoutedEventArgs e)
+        private void SplitFamilyClick(object sender, RoutedEventArgs e)
         {
-            MoveBackwardClick();
+            SplitFamilyClick();
         }
     }
 }

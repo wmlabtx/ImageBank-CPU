@@ -113,7 +113,7 @@
     <Compile Include="AppImgs.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="ImgMdfExport.cs" />
-    <Compile Include="ImgMdfPalette.cs" />
+    <Compile Include="ImgMdfFamily.cs" />
     <Compile Include="MD5HashHelper.cs" />
     <Compile Include="RandomMersenne.cs" />
     <Compile Include="VggHelper.cs" />

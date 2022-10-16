@@ -142,11 +142,16 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}] {AppVars.ImgPanel[index].Img.Hash.Substring(0, 5)}");
+                sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
 
                 var historysize = AppVars.ImgPanel[index].Img.GetHistorySize();
                 if (historysize != 0) {
-                    sb.Append($" ({historysize})");
+                    sb.Append($" H{historysize}");
+                }
+
+                if (AppVars.ImgPanel[index].Img.FamilyId > 0) {
+                    var familysize = AppImgs.GetFamilySize(AppVars.ImgPanel[index].Img.FamilyId);
+                    sb.Append($" [{AppVars.ImgPanel[index].Img.FamilyId}:{familysize}]");
                 }
 
                 sb.AppendLine();
@@ -166,6 +171,7 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
 
+                /*
                 if (index == 1) {
                     if (fs[0] < fs[1]) {
                         pLabels[0].Background = System.Windows.Media.Brushes.LightSalmon;
@@ -179,9 +185,13 @@ namespace ImageBank
                 else {
                     pLabels[index].Background = System.Windows.Media.Brushes.White;
                 }
+                */
 
-                if (historysize > 0) {
-                    pLabels[index].Background = Helper.GetBrush(historysize);
+                if (AppVars.ImgPanel[index].Img.FamilyId > 0) {
+                    pLabels[index].Background = Helper.GetBrush(AppVars.ImgPanel[index].Img.FamilyId);
+                }
+                else {
+                    pLabels[index].Background = System.Windows.Media.Brushes.White;
                 }
             }
 
@@ -278,20 +288,18 @@ namespace ImageBank
             EnableElements();
         }
 
-        private void DescreaseRatingClick()
+        private async void CombineFamilyClick()
         {
-            /*
             DisableElements();
-            await Task.Run(() => { ImgMdf.DescreaseRating(); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.CombineFamily(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
-            */
         }
 
-        private async void MoveBackwardClick()
+        private async void SplitFamilyClick()
         {
             DisableElements();
-            await Task.Run(() => { ImgMdf.MoveBackward(AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.SplitFamily(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

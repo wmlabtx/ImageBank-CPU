@@ -11,7 +11,6 @@
             }
 
             AppDatabase.DeleteImage(id);
-            AppImgs.ResetLastCheck();
         }
     }
 } 

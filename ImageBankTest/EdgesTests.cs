@@ -16,6 +16,7 @@ namespace ImageBankTest
         [TestMethod]
         public void GetSim()
         {
+            /*
             ImgMdf.LoadImages(null);
             var images = new[] {
                 "gab_org", "gab_bw", "gab_scale", "gab_flip", "gab_r90", "gab_crop", "gab_toside",
@@ -38,6 +39,7 @@ namespace ImageBankTest
                 var palettedistance = ImgMdf.GetDistance(vectors[0].Item2, vectors[i].Item2);
                 Debug.WriteLine($"{images[i]} = {palettedistance:F2}");
             }
+            */
         }
     }
 }
