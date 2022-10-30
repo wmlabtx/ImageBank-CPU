@@ -25,8 +25,6 @@ namespace ImageBank
             lock (_varlock) {
                 _id = id;
             }
-
-            AppDatabase.VarsUpdateProperty(AppConsts.AttributeId, id);
         }
 
         public static int AllocateId()

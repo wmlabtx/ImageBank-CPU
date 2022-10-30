@@ -56,6 +56,19 @@ namespace ImageBank
             }
         }
 
+        public static void DeletePair(int id)
+        {
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    sqlCommand.CommandText = $"DELETE FROM {AppConsts.TablePairs} WHERE {AppConsts.AttributeIdX} = @{AppConsts.AttributeIdX} OR {AppConsts.AttributeIdY} = @{AppConsts.AttributeIdY}";
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeIdX}", id);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeIdY}", id);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
         public static void AddImage(Img img)
         {
             lock (_sqllock) {
@@ -66,36 +79,57 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeId}, ");
                     sb.Append($"{AppConsts.AttributeName}, ");
                     sb.Append($"{AppConsts.AttributeHash}, ");
-                    sb.Append($"{AppConsts.AttributeFamilyId}, ");
                     sb.Append($"{AppConsts.AttributeVector}, ");
                     sb.Append($"{AppConsts.AttributeDistance}, ");
                     sb.Append($"{AppConsts.AttributeYear}, ");
                     sb.Append($"{AppConsts.AttributeBestId}, ");
                     sb.Append($"{AppConsts.AttributeLastView}, ");
-                    sb.Append($"{AppConsts.AttributeNi}");
+                    sb.Append($"{AppConsts.AttributeLastCheck}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttributeId}, ");
                     sb.Append($"@{AppConsts.AttributeName}, ");
                     sb.Append($"@{AppConsts.AttributeHash}, ");
-                    sb.Append($"@{AppConsts.AttributeFamilyId}, ");
                     sb.Append($"@{AppConsts.AttributeVector}, ");
                     sb.Append($"@{AppConsts.AttributeDistance}, ");
                     sb.Append($"@{AppConsts.AttributeYear}, ");
                     sb.Append($"@{AppConsts.AttributeBestId}, ");
                     sb.Append($"@{AppConsts.AttributeLastView}, ");
-                    sb.Append($"@{AppConsts.AttributeNi}");
+                    sb.Append($"@{AppConsts.AttributeLastCheck}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFamilyId}", img.FamilyId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", Helper.ArrayFromFloat(img.GetVector()));
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDistance}", img.Distance);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestId}", img.BestId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
-                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeNi}", Helper.ArrayFrom32(img.GetHistory()));
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastCheck}", img.LastCheck);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public static void AddPair(int idx, int idy, float distance)
+        {
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    var sb = new StringBuilder();
+                    sb.Append($"INSERT INTO {AppConsts.TablePairs} (");
+                    sb.Append($"{AppConsts.AttributeIdX}, ");
+                    sb.Append($"{AppConsts.AttributeIdY}, ");
+                    sb.Append($"{AppConsts.AttributeDistance}");
+                    sb.Append(") VALUES (");
+                    sb.Append($"@{AppConsts.AttributeIdX}, ");
+                    sb.Append($"@{AppConsts.AttributeIdY}, ");
+                    sb.Append($"@{AppConsts.AttributeDistance}");
+                    sb.Append(')');
+                    sqlCommand.CommandText = sb.ToString();
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeIdX}", idx);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeIdY}", idy);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDistance}", distance);
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -108,13 +142,12 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeId}, "); // 0
             sb.Append($"{AppConsts.AttributeName}, "); // 1
             sb.Append($"{AppConsts.AttributeHash}, "); // 2
-            sb.Append($"{AppConsts.AttributeFamilyId}, "); // 3
-            sb.Append($"{AppConsts.AttributeDistance}, "); // 4
-            sb.Append($"{AppConsts.AttributeYear}, "); // 5
-            sb.Append($"{AppConsts.AttributeBestId}, "); // 6
-            sb.Append($"{AppConsts.AttributeLastView}, "); // 7
-            sb.Append($"{AppConsts.AttributeNi}, "); // 8
-            sb.Append($"{AppConsts.AttributeVector} "); // 9
+            sb.Append($"{AppConsts.AttributeDistance}, "); // 3
+            sb.Append($"{AppConsts.AttributeYear}, "); // 4
+            sb.Append($"{AppConsts.AttributeBestId}, "); // 5
+            sb.Append($"{AppConsts.AttributeLastView}, "); // 6
+            sb.Append($"{AppConsts.AttributeLastCheck}, "); // 7
+            sb.Append($"{AppConsts.AttributeVector} "); // 8
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -127,24 +160,22 @@ namespace ImageBank
                             var id = reader.GetInt32(0);
                             var name = reader.GetString(1);
                             var hash = reader.GetString(2);
-                            var familyid = reader.GetInt32(3);
-                            var distance = reader.GetFloat(4);
-                            var year = reader.GetInt32(5);
-                            var bestid = reader.GetInt32(6);
-                            var lastview = reader.GetDateTime(7);
-                            var ni = Helper.ArrayTo32((byte[])reader[8]);
-                            var vector = Helper.ArrayToFloat((byte[])reader[9]);
+                            var distance = reader.GetFloat(3);
+                            var year = reader.GetInt32(4);
+                            var bestid = reader.GetInt32(5);
+                            var lastview = reader.GetDateTime(6);
+                            var lastcheck = reader.GetDateTime(7);
+                            var vector = Helper.ArrayToFloat((byte[])reader[8]);
                             var img = new Img(
                                 id: id,
                                 name: name,
                                 hash: hash,
-                                familyid: familyid,
                                 vector: vector,
                                 distance: distance,
                                 year: year,
                                 bestid: bestid,
                                 lastview: lastview,
-                                ni: ni
+                                lastcheck: lastcheck
                                 );
 
                             AppImgs.Add(img);
@@ -162,8 +193,7 @@ namespace ImageBank
 
                 sb.Length = 0;
                 sb.Append("SELECT ");
-                sb.Append($"{AppConsts.AttributeId}, "); // 0
-                sb.Append($"{AppConsts.AttributeLabCenters} "); // 1
+                sb.Append($"{AppConsts.AttributeId} "); // 0
                 sb.Append($"FROM {AppConsts.TableVars}");
                 sqltext = sb.ToString();
                 lock (_sqllock) {
@@ -171,17 +201,38 @@ namespace ImageBank
                         using (var reader = sqlCommand.ExecuteReader()) {
                             while (reader.Read()) {
                                 var id = reader.GetInt32(0);
-                                var palette = Helper.ArrayToFloat((byte[])reader[1]);
-                                AppVars.SetVars(id, palette);
+                                AppVars.SetId(id);
                                 break;
                             }
                         }
                     }
                 }
 
-                progress?.Report("Database loaded");
+                progress?.Report("Loading pairs...");
 
-                AppImgs.Resort();
+                sb.Length = 0;
+                sb.Append("SELECT ");
+                sb.Append($"{AppConsts.AttributeIdX}, "); // 0
+                sb.Append($"{AppConsts.AttributeIdY}, "); // 1
+                sb.Append($"{AppConsts.AttributeDistance} "); // 2
+                sb.Append($"FROM {AppConsts.TablePairs}");
+                sqltext = sb.ToString();
+                lock (_sqllock) {
+                    using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                        using (var reader = sqlCommand.ExecuteReader()) {
+                            var dtn = DateTime.Now;
+                            while (reader.Read()) {
+                                var idx = reader.GetInt32(0);
+                                var idy = reader.GetInt32(1);
+                                var distance = reader.GetFloat(2);
+                                AppImgs.AddPair(idx, idy, distance, false);
+                            }
+                        }
+                    }
+                }
+
+
+                progress?.Report("Database loaded");
 
                 /*
                 foreach (var img in _imgList) {

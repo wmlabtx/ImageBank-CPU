@@ -40,8 +40,8 @@ namespace ImageBank
                         return;
                     }
 
-
                     var rvector = VggHelper.CalculateVector(bitmap);
+                    var rlastcheck = AppImgs.GetMinLastCheck();
                     var rimg = new Img(
                         id: img.Id,
                         name: img.Name,
@@ -51,8 +51,7 @@ namespace ImageBank
                         year: img.Year,
                         bestid: img.BestId,
                         lastview: DateTime.Now,
-                        familyid: img.FamilyId,
-                        ni: img.GetHistory());
+                        lastcheck: rlastcheck);
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);

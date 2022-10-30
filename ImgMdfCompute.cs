@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace ImageBank
 {
@@ -13,11 +14,7 @@ namespace ImageBank
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
-            var img1 = AppImgs.GetFirstInvalid();
-            if (img1 == null) {
-                img1 = AppImgs.GetNextCheck();
-            }
-
+            var img1 = AppImgs.GetNextCheck();
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
             var imagedata = FileHelper.ReadData(filename);
@@ -37,9 +34,11 @@ namespace ImageBank
 
                     var vector = VggHelper.CalculateVector(bitmap);
                     img1.SetVector(vector);
+                    Thread.Sleep(2000);
                 }
             }
 
+            /*
             var ni = img1.GetHistory();
             for (var i = 0; i < ni.Length; i++) {
                 if (!AppImgs.TryGetValue(ni[i], out Img imgN)) {
@@ -51,16 +50,13 @@ namespace ImageBank
                     }
                 }
             }
+            */
 
             int idY = 0;
             var shadow = AppImgs.GetShadow();
             var bestdistance = 2f;
             foreach (var e in shadow) {
-                if (e.Item1 == img1.Id || img1.InHistory(e.Item1)) {
-                    continue;
-                }
-
-                if (img1.FamilyId > 0 && e.Item3 == img1.FamilyId) {
+                if (e.Item1 == img1.Id || AppImgs.InHistory(img1.Id, e.Item1)) {
                     continue;
                 }
 
@@ -79,14 +75,14 @@ namespace ImageBank
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
             if (img1.BestId != img2.Id) {
                 img1.SetBestId(img2.Id);
-                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");                
+                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");
             }
             else {
                 backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} = {bestdistance:F2}");
             }
 
             img1.SetDistance(bestdistance);
-            AppImgs.SetLast(img1.Id);
+            img1.SetLastCheck(DateTime.Now);
         }
 
         private static void ImportFile(string orgfilename)
@@ -169,6 +165,7 @@ namespace ImageBank
 
             var id = AppVars.AllocateId();
             var lastview = AppImgs.GetMinLastView();
+            var lastcheck = AppImgs.GetMinLastCheck();
             var nimg = new Img(
                 id: id,
                 name: newname,
@@ -178,8 +175,7 @@ namespace ImageBank
                 year: year,
                 bestid: 0,
                 lastview: lastview,
-                familyid: 0,
-                ni: Array.Empty<int>());
+                lastcheck: lastcheck);
 
             Add(nimg);
 

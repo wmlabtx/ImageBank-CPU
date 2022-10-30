@@ -86,15 +86,5 @@ namespace ImageBank
         {
             RefreshClick();
         }
-
-        private void CombineFamilyClick(object sender, RoutedEventArgs e)
-        {
-            CombineFamilyClick();
-        }
-
-        private void SplitFamilyClick(object sender, RoutedEventArgs e)
-        {
-            SplitFamilyClick();
-        }
     }
 }

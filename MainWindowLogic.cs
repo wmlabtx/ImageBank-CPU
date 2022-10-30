@@ -144,14 +144,9 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
 
-                var historysize = AppVars.ImgPanel[index].Img.GetHistorySize();
+                var historysize = AppImgs.GetHistorySize(AppVars.ImgPanel[index].Img.Id);
                 if (historysize != 0) {
                     sb.Append($" H{historysize}");
-                }
-
-                if (AppVars.ImgPanel[index].Img.FamilyId > 0) {
-                    var familysize = AppImgs.GetFamilySize(AppVars.ImgPanel[index].Img.FamilyId);
-                    sb.Append($" [{AppVars.ImgPanel[index].Img.FamilyId}:{familysize}]");
                 }
 
                 sb.AppendLine();
@@ -171,7 +166,6 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
 
-                /*
                 if (index == 1) {
                     if (fs[0] < fs[1]) {
                         pLabels[0].Background = System.Windows.Media.Brushes.LightSalmon;
@@ -181,17 +175,6 @@ namespace ImageBank
                         pLabels[0].Background = System.Windows.Media.Brushes.White;
                         pLabels[1].Background = System.Windows.Media.Brushes.LightSalmon;
                     }
-                }
-                else {
-                    pLabels[index].Background = System.Windows.Media.Brushes.White;
-                }
-                */
-
-                if (AppVars.ImgPanel[index].Img.FamilyId > 0) {
-                    pLabels[index].Background = Helper.GetBrush(AppVars.ImgPanel[index].Img.FamilyId);
-                }
-                else {
-                    pLabels[index].Background = System.Windows.Media.Brushes.White;
                 }
             }
 
@@ -284,22 +267,6 @@ namespace ImageBank
         private void RefreshClick()
         {
             DisableElements();
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void CombineFamilyClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.CombineFamily(); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
-        private async void SplitFamilyClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.SplitFamily(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }

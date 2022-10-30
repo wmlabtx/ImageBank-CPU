@@ -9,8 +9,9 @@ namespace ImageBank
             var imgX = AppVars.ImgPanel[0].Img;
             var imgY = AppVars.ImgPanel[1].Img;
             imgX.SetLastView(DateTime.Now);
-            imgX.AddHistory(imgY.Id);
-            AppImgs.SetFirst(imgX.Id);
+            AppImgs.AddPair(imgX.Id, imgY.Id, AppVars.ImgPanel[0].Img.Distance, true);
+            var lastcheck = AppImgs.GetMinLastCheck();
+            imgX.SetLastCheck(lastcheck);
         }
     }
 } 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -46,72 +45,20 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
 
+        public DateTime LastCheck { get; private set; }
+
+        public void SetLastCheck(DateTime lastcheck)
+        {
+            LastCheck = lastcheck;
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastCheck, LastCheck);
+        }
+
         public float Distance { get; private set; }
 
         public void SetDistance(float distance)
         {
             Distance = distance;
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
-        }
-
-        private int[] _ni;
-        public int[] GetHistory()
-        {
-            return _ni;
-        }
-
-        public int GetHistorySize()
-        {
-            return _ni.Length;
-        }
-
-        public void SetHistory(int[] array)
-        {
-            _ni = array;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
-        }
-
-        public void AddHistory(int next)
-        {
-            if (InHistory(next)) {
-                return;
-            }
-
-            var list = _ni.ToList();
-            list.Add(next);
-            while (list.Count > 10) {
-                list.RemoveAt(0);
-            }
-
-            _ni = list.ToArray();
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
-        }
-
-        public void RemoveRank(int next)
-        {
-            if (!InHistory(next)) {
-                return;
-            }
-
-            var list = _ni.ToList();
-            list.Remove(next);
-            _ni = list.ToArray();
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeNi, Helper.ArrayFrom32(_ni));
-        }
-
-        public bool InHistory(int next)
-        {
-            return _ni.Contains(next);
-        }
-
-        public int FamilyId { get; private set; }
-
-        public void SetFamilyId(int familyid)
-        {
-            if (FamilyId != familyid) {
-                FamilyId = familyid;
-                AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeFamilyId, familyid);
-            }
         }
 
         public Img(
@@ -123,8 +70,7 @@ namespace ImageBank
             int year,
             int bestid,
             DateTime lastview,
-            int[] ni,
-            int familyid
+            DateTime lastcheck
         )
         {
             Id = id;
@@ -135,8 +81,7 @@ namespace ImageBank
             BestId = bestid;
             Distance = distance;
             LastView = lastview;
-            _ni = ni;
-            FamilyId = familyid;
+            LastCheck = lastcheck;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace ImageBank
         private static readonly SortedList<int, Img> _imgList = new SortedList<int, Img>();
         private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
         private static readonly SortedList<string, Img> _hashList = new SortedList<string, Img>();
-        private static readonly List<int> _stackList = new List<int>();
+        private static readonly SortedList<int, SortedList<int, float>> _pairsList = new SortedList<int, SortedList<int, float>>();
 
         public static void Clear()
         {
@@ -18,7 +18,7 @@ namespace ImageBank
                 _imgList.Clear();
                 _nameList.Clear();
                 _hashList.Clear();
-                _stackList.Clear();
+                _pairsList.Clear();
             }
         }
 
@@ -35,15 +35,6 @@ namespace ImageBank
                 _imgList.Add(img.Id, img);
                 _nameList.Add(img.Name, img);
                 _hashList.Add(img.Hash, img);
-                _stackList.Insert(0, img.Id);
-            }
-        }
-
-        public static void Resort()
-        {
-            lock (_imglock) {
-                _stackList.Clear();
-                _stackList.AddRange(_imgList.OrderBy(e => e.Value.LastView).Select(e => e.Key).ToList());
             }
         }
 
@@ -103,33 +94,43 @@ namespace ImageBank
         {
             lock (_imglock) {
                 if (_imgList.ContainsKey(img.Id)) {
-                    _stackList.Remove(img.Id);
+                    AppDatabase.DeletePair(img.Id);
+                    _pairsList.Remove(img.Id);
+                    foreach (var e in _pairsList) {
+                        e.Value.Remove(img.Id);
+                    }
+
                     _nameList.Remove(img.Name);
                     _hashList.Remove(img.Hash);
                     _imgList.Remove(img.Id);
                 }
+            }
+        }
 
-                foreach (var e in _imgList) {
-                    if (e.Value.BestId == img.Id) {
-                        SetFirst(e.Key);
+        public static void AddPair(int idx, int idy, float distance, bool savetodb)
+        {
+            lock (_imglock) {
+                if (!_pairsList.ContainsKey(idx)) {
+                    _pairsList.Add(idx, new SortedList<int, float>());
+                }
+
+                if (!_pairsList[idx].ContainsKey(idy)) {
+                    _pairsList[idx].Add(idy, distance);
+                    if (savetodb) {
+                        AppDatabase.AddPair(idx, idy, distance);
                     }
                 }
-            }
-        }
 
-        public static void SetLast(int id)
-        {
-            lock (_imglock) {
-                _stackList.Remove(id);
-                _stackList.Add(id);
-            }
-        }
+                if (!_pairsList.ContainsKey(idy)) {
+                    _pairsList.Add(idy, new SortedList<int, float>());
+                }
 
-        public static void SetFirst(int id)
-        {
-            lock (_imglock) {
-                _stackList.Remove(id);
-                _stackList.Insert(0, id);
+                if (!_pairsList[idy].ContainsKey(idx)) {
+                    _pairsList[idy].Add(idx, distance);
+                    if (savetodb) {
+                        AppDatabase.AddPair(idy, idx, distance);
+                    }
+                }
             }
         }
 
@@ -143,14 +144,31 @@ namespace ImageBank
             return lv;
         }
 
+        public static DateTime GetMinLastCheck()
+        {
+            DateTime lv;
+            lock (_imglock) {
+                lv = _imgList.Min(e => e.Value.LastCheck).AddSeconds(1);
+            }
+
+            return lv;
+        }
+
         public static Img GetNextCheck()
         {
-            Img result;
+            Img result = null;
             lock (_imglock) {
-                var idX = _stackList.ElementAt(0);
-                while (!_imgList.TryGetValue(idX, out result) && _stackList.Count > 1) {
-                    _stackList.RemoveAt(0);
-                    idX = _stackList.ElementAt(0);
+                var scope = _imgList.OrderBy(e => e.Value.Distance);
+                foreach (var img in scope) {
+                    if (img.Value.GetVector().Length != 4096 || !_imgList.ContainsKey(img.Value.BestId) || InHistory(img.Key, img.Value.BestId)) {
+                        result = img.Value;
+                        break;
+                    }
+                }
+
+                if (result == null) {
+                    var minlc = _imgList.Min(e => e.Value.LastCheck);
+                    result = _imgList.FirstOrDefault(e => e.Value.LastCheck == minlc).Value;
                 }
             }
 
@@ -160,35 +178,28 @@ namespace ImageBank
         public static Img GetNextView()
         {
             Img result = null;
+            var resulthistorysize = 0;
             lock (_imglock) {
                 foreach (var img in _imgList) {
-                    if (img.Value.GetVector().Length != 4096) {
+                    if (img.Value.GetVector().Length != 4096 || !_imgList.ContainsKey(img.Value.BestId) || InHistory(img.Key, img.Value.BestId)) {
                         continue;
                     }
 
-                    if (img.Value.InHistory(img.Value.BestId)) {
-                        continue;
-                    }
-
-                    if (!_imgList.TryGetValue(img.Value.BestId, out Img imgN)) {
-                        continue;
-                    }
-
-                    if (img.Value.FamilyId > 0 && img.Value.FamilyId == imgN.FamilyId) {
-                        continue;
-                    }
+                    var historysize = GetHistorySize(img.Key);
 
                     if (result == null) {
                         result = img.Value;
+                        resulthistorysize = historysize;
                         continue;
                     }
 
-                    if (img.Value.GetHistorySize() < result.GetHistorySize()) {
+                    if (historysize < resulthistorysize) {
                         result = img.Value;
+                        resulthistorysize = historysize;
                         continue;
                     }
 
-                    if (img.Value.GetHistorySize() == result.GetHistorySize() && img.Value.Distance < result.Distance) {
+                    if (historysize == resulthistorysize && img.Value.Distance < result.Distance) {
                         result = img.Value;
                         continue;
                     }
@@ -198,12 +209,12 @@ namespace ImageBank
             return result;
         }
 
-        public static List<Tuple<int, float[], int>> GetShadow()
+        public static List<Tuple<int, float[]>> GetShadow()
         {
-            var result = new List<Tuple<int, float[], int>>();
+            var result = new List<Tuple<int, float[]>>();
             lock (_imglock) {
                 foreach (var img in _imgList) {
-                    result.Add(new Tuple<int, float[], int>(img.Key, img.Value.GetVector(), img.Value.FamilyId));
+                    result.Add(new Tuple<int, float[]>(img.Key, img.Value.GetVector()));
                 }
             }
 
@@ -226,48 +237,27 @@ namespace ImageBank
         {
             int[] result;
             lock (_imglock) {
-                result = _imgList.Values.Where(e => _imgList.ContainsKey(e.BestId) && !e.InHistory(e.BestId) && e.GetVector().Length == 4096).OrderBy(e => e.LastView).Select(e => e.Id).ToArray();
+                result = _imgList.Values.Where(e => _imgList.ContainsKey(e.BestId) && !InHistory(e.Id, e.BestId) && e.GetVector().Length == 4096).OrderBy(e => e.LastView).Select(e => e.Id).ToArray();
             }
 
              return result;
         }
 
-        public static Img GetFirstInvalid()
+        public static int GetHistorySize(int id)
         {
-            Img result = null;
+            int historysize;
             lock (_imglock) {
-                var scope = _imgList.OrderBy(e => e.Value.Distance);
-                foreach (var img in scope) {
-                    if (!_imgList.TryGetValue(img.Value.BestId, out Img imgN) || img.Value.InHistory(img.Value.BestId)) {
-                        result = img.Value;
-                        break;
-                    }
-
-                    if (img.Value.FamilyId > 0 && imgN.FamilyId == img.Value.FamilyId) {
-                        result = img.Value;
-                        break;
-                    }
-                }
+                historysize = _pairsList.ContainsKey(id) ? _pairsList[id].Count : 0;
             }
 
-            return result;
+            return historysize;
         }
 
-        public static int AllocateFamilyId()
+        public static bool InHistory(int idx, int idy)
         {
-            int result;
+            bool result;
             lock (_imglock) {
-                result = _imgList.Max(e => e.Value.FamilyId) + 1;
-            }
-
-            return result;
-        }
-
-        public static int GetFamilySize(int familyid)
-        {
-            int result;
-            lock (_imglock) {
-                result = _imgList.Count(e => e.Value.FamilyId == familyid);
+                result = _pairsList.ContainsKey(idx) && _pairsList[idx].ContainsKey(idy);
             }
 
             return result;
