@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -14,17 +15,45 @@ namespace ImageBank
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
+            float[] vector;
+            var vectors = AppImgs.GetVectors();
+            if (vectors.Length == 0) {
+                var keys = AppImgs.GetKeys();
+                var dtn = DateTime.Now;
+                var count = 0;
+                foreach (var key in keys) {
+                    count++;
+                    vector = AppDatabase.ImageGetVector(key);
+                    if (vector == null || vector.Length != 4096) {
+                        continue;
+                    }
+
+                    AppImgs.AddVector(key, vector);
+                    if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
+                        dtn = DateTime.Now;
+                        var percents = count * 100f / keys.Length;
+                        backgroundworker.ReportProgress(0, $"Loading vectors ({percents:F1}%)...");
+                    }
+                }
+            }
+
             var img1 = AppImgs.GetNextCheck();
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
-            var imagedata = FileHelper.ReadData(filename);
-            if (imagedata == null) {
+            if (!File.Exists(filename)) {
                 backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
                 Delete(img1.Id);
                 return;
             }
 
-            if (img1.GetVector().Length != 4096) {
+            if (!AppImgs.TryGetVector(img1.Id, out vector)) { 
+                var imagedata = FileHelper.ReadData(filename);
+                if (imagedata == null) {
+                    backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                    Delete(img1.Id);
+                    return;
+                }
+
                 using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                     if (bitmap == null) {
                         backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
@@ -32,54 +61,39 @@ namespace ImageBank
                         return;
                     }
 
-                    var vector = VggHelper.CalculateVector(bitmap);
-                    img1.SetVector(vector);
-                    Thread.Sleep(2000);
+                    backgroundworker.ReportProgress(0, $"{img1.Id} calculating vector...");
+                    vector = VggHelper.CalculateVector(bitmap);
+                    AppDatabase.ImageSetVector(img1.Id, vector);
+                    Thread.Sleep(1000);
+                    AppImgs.AddVector(img1.Id, vector);
+                    vectors = AppImgs.GetVectors();
                 }
             }
-
-            /*
-            var ni = img1.GetHistory();
-            for (var i = 0; i < ni.Length; i++) {
-                if (!AppImgs.TryGetValue(ni[i], out Img imgN)) {
-                    img1.RemoveRank(ni[i]);
-                }
-                else {
-                    if (img1.FamilyId > 0 && imgN.FamilyId == img1.FamilyId) {
-                        img1.RemoveRank(ni[i]);
-                    }
-                }
-            }
-            */
-
-            int idY = 0;
-            var shadow = AppImgs.GetShadow();
+            
+            int idY = img1.Id;
             var bestdistance = 2f;
-            foreach (var e in shadow) {
-                if (e.Item1 == img1.Id || AppImgs.InHistory(img1.Id, e.Item1)) {
+            foreach (var e in vectors) {
+                if (e.Key == img1.Id) {
                     continue;
                 }
 
-                var distance = VggHelper.GetDistance(img1.GetVector(), e.Item2);
+                var distance = VggHelper.GetDistance(vector, e.Value);
                 if (distance < bestdistance) {
                     bestdistance = distance;
-                    idY = e.Item1;
+                    idY = e.Key;
                 }
             }
 
-            AppImgs.TryGetValue(idY, out Img img2);
-            if (img2 == null) {
-                img2 = AppImgs.GetRandomImg();
-            }
-
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
-            if (img1.BestId != img2.Id) {
-                img1.SetBestId(img2.Id);
+            if (img1.BestId != idY) {
+                img1.SetBestId(idY);
                 backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");
             }
+            /*
             else {
                 backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} = {bestdistance:F2}");
             }
+            */
 
             img1.SetDistance(bestdistance);
             img1.SetLastCheck(DateTime.Now);
@@ -150,7 +164,7 @@ namespace ImageBank
                 }
 
                 vector = VggHelper.CalculateVector(bitmap);
-                //Thread.Sleep(1000);
+                Thread.Sleep(1000);
             }
 
             // we have to create unique name and a location in Hp folder
@@ -170,14 +184,13 @@ namespace ImageBank
                 id: id,
                 name: newname,
                 hash: hash,
-                vector: vector,
                 distance: 0f,
                 year: year,
                 bestid: 0,
                 lastview: lastview,
                 lastcheck: lastcheck);
 
-            Add(nimg);
+            Add(nimg, vector);
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
             if (lastmodified > DateTime.Now) {

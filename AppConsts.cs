@@ -6,7 +6,6 @@
         public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
-        public const string FilePalette = @"D:\Users\Murad\Documents\Sdb\Db\palette.png";
         
         public const string FileVgg = @"D:\Users\Murad\Documents\Sdb\Db\VGG16ImageNet.dat";
 
@@ -28,9 +27,5 @@
         public const string AttributeLastCheck = "LastCheck";
         public const string AttributeVector = "Vector";
         public const string TableVars = "Vars";
-        public const string AttributeLabCenters = "LabCenters";
-        public const string TablePairs = "Pairs";
-        public const string AttributeIdX = "IdX";
-        public const string AttributeIdY = "IdY";
     }
 }

@@ -46,7 +46,6 @@ namespace ImageBank
                         id: img.Id,
                         name: img.Name,
                         hash: rhash,
-                        vector: rvector,
                         distance: img.Distance,
                         year: img.Year,
                         bestid: img.BestId,
@@ -55,7 +54,7 @@ namespace ImageBank
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);
-                    Add(rimg);
+                    Add(rimg, rvector);
 
                     bitmap.Dispose();
                 }

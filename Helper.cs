@@ -179,6 +179,7 @@ namespace ImageBank
             return scb;
         }
 
+        /*
         public static float GetDistance(float[] x, float[] y)
         {
             if (x.Length == 0 || y.Length == 0 || x.Length != y.Length) {
@@ -193,5 +194,6 @@ namespace ImageBank
             var sim = (float)Math.Sqrt(1f - sum);
             return sim;
         }
+        */
     }
 }

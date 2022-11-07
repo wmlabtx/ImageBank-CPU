@@ -6,9 +6,9 @@ namespace ImageBank
     {
         public static void Find(int idX, IProgress<string> progress)
         {
-            int scopecount = 0;
             Img imgX;
             int totalcount;
+            int vectornonzero;
             do {
                 totalcount = AppImgs.Count();
                 if (totalcount < 2) {
@@ -17,13 +17,6 @@ namespace ImageBank
                 }
 
                 if (idX == 0) {
-                    var scope = AppImgs.GetScope();
-                    scopecount = scope.Length;
-                    if (scope.Length < 10) {
-                        progress?.Report($"scope.Length = {scope.Length}");
-                        return;
-                    }
-
                     idX = AppImgs.GetNextView().Id;
                 }
 
@@ -53,7 +46,8 @@ namespace ImageBank
             }
             while (true);
 
-            progress?.Report($"{scopecount}/{totalcount}: {imgX.Distance:F2}");
+            vectornonzero = AppImgs.GetNonVectorZero();
+            progress?.Report($"{vectornonzero}/{totalcount}: {imgX.Distance:F2}");
         }
     }
 }

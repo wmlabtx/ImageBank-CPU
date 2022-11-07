@@ -8,19 +8,6 @@ namespace ImageBank
         public string Name { get; }
         public string Hash { get; }
 
-        private float[] _vector;
-        public float[] GetVector()
-        {
-            return _vector;
-        }
-       
-        public void SetVector(float[] vector)
-        {
-            _vector = vector;
-            var buffer = Helper.ArrayFromFloat(vector);
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeVector, buffer);
-        }
-
         public int Year { get; private set; }
 
         public void SetActualYear()
@@ -65,7 +52,6 @@ namespace ImageBank
             int id,
             string name,
             string hash,
-            float[] vector,
             float distance,
             int year,
             int bestid,
@@ -76,7 +62,6 @@ namespace ImageBank
             Id = id;
             Name = name;
             Hash = hash;
-            _vector = vector;
             Year = year;
             BestId = bestid;
             Distance = distance;

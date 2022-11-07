@@ -6,7 +6,9 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.LoadImages(System.IProgress{System.String})")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.AddImage(ImageBank.Img)")]
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.ImageUpdateProperty(System.Int32,System.String,System.Object)")]
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.VarsUpdateProperty(System.String,System.Object)")]
-[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.AddPair(System.Int32,System.Int32,System.Single)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.NodeUpdateProperty(System.Int32,System.String,System.Object)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.ImageGetVector(System.Int32)~System.Single[]")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.AddImage(ImageBank.Img,System.Single[])")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.AddNode(ImageBank.Node)")]

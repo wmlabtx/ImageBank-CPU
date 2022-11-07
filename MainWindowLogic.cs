@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -143,12 +141,6 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
-
-                var historysize = AppImgs.GetHistorySize(AppVars.ImgPanel[index].Img.Id);
-                if (historysize != 0) {
-                    sb.Append($" H{historysize}");
-                }
-
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Size)} ");
