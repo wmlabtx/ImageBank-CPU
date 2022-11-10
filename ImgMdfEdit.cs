@@ -50,7 +50,8 @@ namespace ImageBank
                         year: img.Year,
                         bestid: img.BestId,
                         lastview: DateTime.Now,
-                        lastcheck: rlastcheck);
+                        lastcheck: rlastcheck,
+                        clusterid: img.ClusterId);
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);

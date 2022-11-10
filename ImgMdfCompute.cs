@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -15,28 +14,6 @@ namespace ImageBank
 
         private static void ComputeInternal(BackgroundWorker backgroundworker)
         {
-            float[] vector;
-            var vectors = AppImgs.GetVectors();
-            if (vectors.Length == 0) {
-                var keys = AppImgs.GetKeys();
-                var dtn = DateTime.Now;
-                var count = 0;
-                foreach (var key in keys) {
-                    count++;
-                    vector = AppDatabase.ImageGetVector(key);
-                    if (vector == null || vector.Length != 4096) {
-                        continue;
-                    }
-
-                    AppImgs.AddVector(key, vector);
-                    if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
-                        dtn = DateTime.Now;
-                        var percents = count * 100f / keys.Length;
-                        backgroundworker.ReportProgress(0, $"Loading vectors ({percents:F1}%)...");
-                    }
-                }
-            }
-
             var img1 = AppImgs.GetNextCheck();
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
@@ -46,7 +23,8 @@ namespace ImageBank
                 return;
             }
 
-            if (!AppImgs.TryGetVector(img1.Id, out vector)) { 
+            var vector = AppDatabase.ImageGetVector(img1.Id);
+            if (vector == null || vector.Length != 4096) {
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata == null) {
                     backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
@@ -65,37 +43,35 @@ namespace ImageBank
                     vector = VggHelper.CalculateVector(bitmap);
                     AppDatabase.ImageSetVector(img1.Id, vector);
                     Thread.Sleep(1000);
-                    AppImgs.AddVector(img1.Id, vector);
-                    vectors = AppImgs.GetVectors();
-                }
-            }
-            
-            int idY = img1.Id;
-            var bestdistance = 2f;
-            foreach (var e in vectors) {
-                if (e.Key == img1.Id) {
-                    continue;
-                }
-
-                var distance = VggHelper.GetDistance(vector, e.Value);
-                if (distance < bestdistance) {
-                    bestdistance = distance;
-                    idY = e.Key;
                 }
             }
 
-            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
-            if (img1.BestId != idY) {
-                img1.SetBestId(idY);
-                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} \u2192 {bestdistance:F2}");
-            }
-            /*
-            else {
-                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: {img1.Distance:F2} = {bestdistance:F2}");
-            }
-            */
+            var oldclusterid = img1.ClusterId;
+            var oldbestid = img1.BestId;
+            float olddistance = img1.Distance;
+            AppClusters.Compute(img1, vector, out int clusterid, out int bestid, out float distance);
+            if (clusterid != oldclusterid) {
+                img1.SetClusterId(clusterid);
+                if (oldclusterid != 0) {
+                    AppClusters.Update(oldclusterid);
+                }
 
-            img1.SetDistance(bestdistance);
+                if (clusterid != 0) {
+                    AppClusters.Update(clusterid);
+                }
+            }
+
+            if (distance != olddistance) {
+                img1.SetDistance(distance);
+            }
+
+            if (bestid != oldbestid) {
+                img1.SetBestId(bestid);
+                var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
+                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: [{oldclusterid}] {olddistance:F2} \u2192 [{clusterid}] {distance:F2}");
+                AppClusters.DeleteAged();
+            }
+
             img1.SetLastCheck(DateTime.Now);
         }
 
@@ -188,7 +164,8 @@ namespace ImageBank
                 year: year,
                 bestid: 0,
                 lastview: lastview,
-                lastcheck: lastcheck);
+                lastcheck: lastcheck,
+                clusterid: 0);
 
             Add(nimg, vector);
 

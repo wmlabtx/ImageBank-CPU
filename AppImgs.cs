@@ -10,7 +10,6 @@ namespace ImageBank
         private static readonly SortedList<int, Img> _imgList = new SortedList<int, Img>();
         private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
         private static readonly SortedList<string, Img> _hashList = new SortedList<string, Img>();
-        private static readonly SortedList<int, float[]> _vectorList = new SortedList<int, float[]>();
 
         public static void Clear()
         {
@@ -18,7 +17,6 @@ namespace ImageBank
                 _imgList.Clear();
                 _nameList.Clear();
                 _hashList.Clear();
-                _vectorList.Clear();
             }
         }
 
@@ -100,10 +98,12 @@ namespace ImageBank
                 }
 
                 if (_imgList.ContainsKey(img.Id)) {
-                    _vectorList.Remove(img.Id);
                     _nameList.Remove(img.Name);
                     _hashList.Remove(img.Hash);
                     _imgList.Remove(img.Id);
+                    if (img.ClusterId > 0) {
+                        AppClusters.Update(img.ClusterId);
+                    }
                 }
             }
         }
@@ -162,36 +162,21 @@ namespace ImageBank
              return result;
         }
 
-        public static int GetNonVectorZero()
+        public static List<Tuple<int, float[]>> GetVectors(int clusterid)
         {
-            int result;
+            List<Tuple<int, float[]>> result = new List<Tuple<int, float[]>>();
             lock (_imglock) {
-                result = _vectorList.Count;
+                foreach (var e in _imgList) {
+                    if (e.Value.ClusterId == clusterid) {
+                        var vector = AppDatabase.ImageGetVector(e.Key);
+                        if (vector != null && vector.Length == 4096) {
+                            result.Add(Tuple.Create(e.Key, vector));
+                        }
+                    }
+                }
             }
 
             return result;
-        }
-
-        public static KeyValuePair<int, float[]>[] GetVectors()
-        {
-            KeyValuePair<int, float[]>[] result;
-            lock (_imglock) {
-                result = _vectorList.ToArray();
-            }
-
-            return result;
-        }
-
-        public static void AddVector(int id, float[] vector)
-        {
-            lock (_imglock) {
-                if (_vectorList.ContainsKey(id)) {
-                    _vectorList[id] = vector;
-                }
-                else {
-                    _vectorList.Add(id, vector);
-                }
-            }
         }
 
         public static int[] GetKeys()
@@ -199,18 +184,6 @@ namespace ImageBank
             int[] result;
             lock (_imglock) {
                 result = _imgList.Keys.ToArray();
-            }
-
-            return result;
-        }
-
-        public static bool TryGetVector(int id, out float[] vector)
-        {
-            bool result;
-            float[] _vector;
-            lock (_imglock) {
-                result = _vectorList.TryGetValue(id, out _vector);
-                vector = _vector;
             }
 
             return result;

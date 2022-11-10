@@ -8,7 +8,6 @@ namespace ImageBank
         {
             Img imgX;
             int totalcount;
-            int vectornonzero;
             do {
                 totalcount = AppImgs.Count();
                 if (totalcount < 2) {
@@ -46,8 +45,7 @@ namespace ImageBank
             }
             while (true);
 
-            vectornonzero = AppImgs.GetNonVectorZero();
-            progress?.Report($"{vectornonzero}/{totalcount}: {imgX.Distance:F2}");
+            progress?.Report($"{totalcount}: {imgX.Distance:F2}");
         }
     }
 }

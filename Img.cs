@@ -48,6 +48,14 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
         }
 
+        public int ClusterId { get; private set; }
+
+        public void SetClusterId(int clusterid)
+        {
+            ClusterId = clusterid;
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeClusterId, ClusterId);
+        }
+
         public Img(
             int id,
             string name,
@@ -56,7 +64,8 @@ namespace ImageBank
             int year,
             int bestid,
             DateTime lastview,
-            DateTime lastcheck
+            DateTime lastcheck,
+            int clusterid
         )
         {
             Id = id;
@@ -67,6 +76,7 @@ namespace ImageBank
             Distance = distance;
             LastView = lastview;
             LastCheck = lastcheck;
+            ClusterId = clusterid;
         }
     }
 }

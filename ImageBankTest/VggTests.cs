@@ -66,5 +66,49 @@ namespace ImageBankTest
                 Debug.WriteLine($"{images[i]} = {distance:F2}");
             }
         }
+
+        [TestMethod]
+        public void Train()
+        {
+            AppImgs.Clear();
+            Debug.WriteLine("Loading database");
+            AppDatabase.LoadImages(null);
+            var keys = AppImgs.GetKeys();
+            for (var i = 0; i < 256000; i++) {
+                var pos = AppVars.IRandom(0, keys.Length - 1);
+                var id = keys[pos];
+                AppImgs.TryGetValue(id, out Img img1);
+                var vector = AppDatabase.ImageGetVector(id);
+                if (vector == null || vector.Length != 4096) {
+                    continue;
+                }
+
+                var oldclusterid = img1.ClusterId;
+                var oldbestid = img1.BestId;
+                float olddistance = img1.Distance;
+                AppClusters.Compute(img1, vector, out int clusterid, out int bestid, out float distance);
+                if (clusterid != oldclusterid) {
+                    img1.SetClusterId(clusterid);
+                    if (oldclusterid != 0) {
+                        AppClusters.Update(oldclusterid);
+                    }
+
+                    if (clusterid != 0) {
+                        AppClusters.Update(clusterid);
+                    }
+                }
+
+                if (distance != olddistance) {
+                    img1.SetDistance(distance);
+                }
+
+                if (bestid != oldbestid) {
+                    img1.SetBestId(bestid);
+                    var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
+                    Debug.WriteLine($"{i}: [{age} ago] {img1.Id}: [{oldclusterid}] {olddistance:F2} \u2192 [{clusterid}] {distance:F2}");
+                    AppClusters.DeleteAged();
+                }
+            }
+        }
     }
 }

@@ -33,6 +33,23 @@ namespace ImageBank
             }
         }
 
+        public static void ClusterUpdateProperty(int id, string key, object val)
+        {
+            lock (_sqllock) {
+                try {
+                    using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                        sqlCommand.Connection = _sqlConnection;
+                        sqlCommand.CommandText = $"UPDATE {AppConsts.TableClusters} SET {key} = @{key} WHERE {AppConsts.AttributeId} = @{AppConsts.AttributeId}";
+                        sqlCommand.Parameters.AddWithValue($"@{key}", val);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", id);
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException) {
+                }
+            }
+        }
+
         public static void ImageSetVector(int id, float[] vector)
         {
             var buffer = Helper.ArrayFromFloat(vector);
@@ -88,6 +105,18 @@ namespace ImageBank
             }
         }
 
+        public static void DeleteCluster(int id)
+        {
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    sqlCommand.CommandText = $"DELETE FROM {AppConsts.TableClusters} WHERE {AppConsts.AttributeId} = @{AppConsts.AttributeId}";
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", id);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
         public static void AddImage(Img img, float[] vector)
         {
             lock (_sqllock) {
@@ -103,7 +132,8 @@ namespace ImageBank
                     sb.Append($"{AppConsts.AttributeYear}, ");
                     sb.Append($"{AppConsts.AttributeBestId}, ");
                     sb.Append($"{AppConsts.AttributeLastView}, ");
-                    sb.Append($"{AppConsts.AttributeLastCheck}");
+                    sb.Append($"{AppConsts.AttributeLastCheck}, ");
+                    sb.Append($"{AppConsts.AttributeClusterId}");
                     sb.Append(") VALUES (");
                     sb.Append($"@{AppConsts.AttributeId}, ");
                     sb.Append($"@{AppConsts.AttributeName}, ");
@@ -113,7 +143,8 @@ namespace ImageBank
                     sb.Append($"@{AppConsts.AttributeYear}, ");
                     sb.Append($"@{AppConsts.AttributeBestId}, ");
                     sb.Append($"@{AppConsts.AttributeLastView}, ");
-                    sb.Append($"@{AppConsts.AttributeLastCheck}");
+                    sb.Append($"@{AppConsts.AttributeLastCheck}, ");
+                    sb.Append($"@{AppConsts.AttributeClusterId}");
                     sb.Append(')');
                     sqlCommand.CommandText = sb.ToString();
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
@@ -125,6 +156,34 @@ namespace ImageBank
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestId}", img.BestId);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
                     sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastCheck}", img.LastCheck);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeClusterId}", img.ClusterId);
+                    sqlCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public static void AddCluster(Cluster cluster)
+        {
+            lock (_sqllock) {
+                using (var sqlCommand = _sqlConnection.CreateCommand()) {
+                    sqlCommand.Connection = _sqlConnection;
+                    var sb = new StringBuilder();
+                    sb.Append($"INSERT INTO {AppConsts.TableClusters} (");
+                    sb.Append($"{AppConsts.AttributeId}, ");
+                    sb.Append($"{AppConsts.AttributeCounter}, ");
+                    sb.Append($"{AppConsts.AttributeAge}, ");
+                    sb.Append($"{AppConsts.AttributeVector}");
+                    sb.Append(") VALUES (");
+                    sb.Append($"@{AppConsts.AttributeId}, ");
+                    sb.Append($"@{AppConsts.AttributeCounter}, ");
+                    sb.Append($"@{AppConsts.AttributeAge}, ");
+                    sb.Append($"@{AppConsts.AttributeVector}");
+                    sb.Append(')');
+                    sqlCommand.CommandText = sb.ToString();
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", cluster.Id);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeCounter}", cluster.Counter);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeAge}", cluster.Age);
+                    sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", Helper.ArrayFromFloat(cluster.GetVector()));
                     sqlCommand.ExecuteNonQuery();
                 }
             }
@@ -141,7 +200,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeYear}, "); // 4
             sb.Append($"{AppConsts.AttributeBestId}, "); // 5
             sb.Append($"{AppConsts.AttributeLastView}, "); // 6
-            sb.Append($"{AppConsts.AttributeLastCheck} "); // 7
+            sb.Append($"{AppConsts.AttributeLastCheck}, "); // 7
+            sb.Append($"{AppConsts.AttributeClusterId} "); // 8
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             lock (_sqllock) {
@@ -159,6 +219,7 @@ namespace ImageBank
                             var bestid = reader.GetInt32(5);
                             var lastview = reader.GetDateTime(6);
                             var lastcheck = reader.GetDateTime(7);
+                            var clusterid = reader.GetInt32(8);
                             var img = new Img(
                                 id: id,
                                 name: name,
@@ -167,7 +228,8 @@ namespace ImageBank
                                 year: year,
                                 bestid: bestid,
                                 lastview: lastview,
-                                lastcheck: lastcheck
+                                lastcheck: lastcheck,
+                                clusterid: clusterid
                                 );
 
                             AppImgs.Add(img);
@@ -195,6 +257,31 @@ namespace ImageBank
                                 var id = reader.GetInt32(0);
                                 AppVars.SetId(id);
                                 break;
+                            }
+                        }
+                    }
+                }
+
+                progress?.Report("Loading clusters...");
+
+                sb.Length = 0;
+                sb.Append("SELECT ");
+                sb.Append($"{AppConsts.AttributeId}, "); // 0
+                sb.Append($"{AppConsts.AttributeCounter}, "); // 1
+                sb.Append($"{AppConsts.AttributeAge}, "); // 2
+                sb.Append($"{AppConsts.AttributeVector} "); // 3
+                sb.Append($"FROM {AppConsts.TableClusters}");
+                sqltext = sb.ToString();
+                lock (_sqllock) {
+                    using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                        using (var reader = sqlCommand.ExecuteReader()) {
+                            while (reader.Read()) {
+                                var id = reader.GetInt32(0);
+                                var counter = reader.GetInt32(1);
+                                var age = reader.GetInt32(2);
+                                var vector = Helper.ArrayToFloat((byte[])reader[3]);
+                                var cluster = new Cluster(id, counter, age, vector);
+                                AppClusters.Add(cluster);
                             }
                         }
                     }

@@ -1,2 +1,1 @@
-﻿UPDATE Images SET Ni = 0x
-UPDATE Images SET FamilyId = 0
+﻿UPDATE Clusters SET Age = 0

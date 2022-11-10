@@ -1,1 +1,2 @@
-﻿SELECT MAX(Id) FROM Images
+﻿UPDATE Images SET ClusterId = 0
+DELETE FROM Clusters

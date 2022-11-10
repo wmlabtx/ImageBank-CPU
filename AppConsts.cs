@@ -26,6 +26,10 @@
         public const string AttributeLastView = "LastView";
         public const string AttributeLastCheck = "LastCheck";
         public const string AttributeVector = "Vector";
+        public const string AttributeClusterId = "ClusterId";
         public const string TableVars = "Vars";
+        public const string TableClusters = "Clusters";
+        public const string AttributeCounter = "Counter";
+        public const string AttributeAge = "Age";
     }
 }

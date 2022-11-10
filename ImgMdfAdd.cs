@@ -5,7 +5,6 @@
         private static void Add(Img img, float[] vector)
         {
             AppImgs.Add(img);
-            AppImgs.AddVector(img.Id, vector);
             AppDatabase.AddImage(img, vector);
         }
     }
