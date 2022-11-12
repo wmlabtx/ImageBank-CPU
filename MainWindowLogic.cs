@@ -1,8 +1,6 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Drawing;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -16,7 +14,6 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
-        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -56,13 +53,6 @@ namespace ImageBank
             DrawCanvas();
             
             EnableElements();
-
-            AppVars.SuspendEvent = new ManualResetEvent(true);
-
-            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
-            _backgroundWorker.DoWork += DoCompute;
-            _backgroundWorker.ProgressChanged += DoComputeProgress;
-            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -73,13 +63,16 @@ namespace ImageBank
             }
         }
 
-        private static void ImportClick()
+        private async void ImportClick()
         {
-            AppVars.ImportMode = true;
+            DisableElements();
+            await Task.Run(() => { ImgMdf.Import(AppVars.Progress); }).ConfigureAwait(true);
+            EnableElements();
         }
 
         private async void ExportClick()
         {
+            DisableElements();
             await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[0].Img, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Export(AppVars.ImgPanel[1].Img, AppVars.Progress); }).ConfigureAwait(true);
             EnableElements();
@@ -140,7 +133,15 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(AppVars.ImgPanel[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}]");
+                sb.Append($"{AppVars.ImgPanel[index].Img.Name} [{AppVars.ImgPanel[index].Img.Id}");
+                var clusterid = AppVars.ImgPanel[index].Img.ClusterId;
+                if (clusterid > 0) {
+                    sb.Append($":{clusterid}");
+                    var clustersize = AppClusters.GetSize(clusterid);
+                    sb.Append($":{clustersize}");
+                }
+
+                sb.Append(']');
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(AppVars.ImgPanel[index].Size)} ");
@@ -253,7 +254,6 @@ namespace ImageBank
         private void ClassDispose()
         {
             _notifyIcon?.Dispose();
-            _backgroundWorker?.Dispose();
         }
 
         private void RefreshClick()
@@ -261,22 +261,6 @@ namespace ImageBank
             DisableElements();
             DrawCanvas();
             EnableElements();
-        }
-
-        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
-        {
-            BackgroundStatus.Text = (string)e.UserState;
-        }
-
-        private void DoCompute(object s, DoWorkEventArgs args)
-        {
-            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-            while (!_backgroundWorker.CancellationPending) {
-                ImgMdf.Compute(_backgroundWorker);
-                Thread.Sleep(100);
-            }
-
-            args.Cancel = true;
         }
     }
 }

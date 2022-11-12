@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -12,13 +11,12 @@ namespace ImageBank
         private static int _bad;
         private static int _found;
 
-        private static void ComputeInternal(BackgroundWorker backgroundworker)
+        public static void ComputeBestId(Img img1, IProgress<string> progress)
         {
-            var img1 = AppImgs.GetNextCheck();
             var name = img1.Name;
             var filename = FileHelper.NameToFileName(name);
             if (!File.Exists(filename)) {
-                backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                progress?.Report($"({img1.Id}) removed");
                 Delete(img1.Id);
                 return;
             }
@@ -27,19 +25,19 @@ namespace ImageBank
             if (vector == null || vector.Length != 4096) {
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata == null) {
-                    backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                    progress?.Report($"({img1.Id}) removed");
                     Delete(img1.Id);
                     return;
                 }
 
                 using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                     if (bitmap == null) {
-                        backgroundworker.ReportProgress(0, $"({img1.Id}) removed");
+                        progress?.Report($"({img1.Id}) removed");
                         Delete(img1.Id);
                         return;
                     }
 
-                    backgroundworker.ReportProgress(0, $"{img1.Id} calculating vector...");
+                    progress?.Report($"{img1.Id} calculating vector...");
                     vector = VggHelper.CalculateVector(bitmap);
                     AppDatabase.ImageSetVector(img1.Id, vector);
                     Thread.Sleep(1000);
@@ -65,11 +63,15 @@ namespace ImageBank
                 img1.SetDistance(distance);
             }
 
+            var totalcount = AppImgs.Count();
+            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
             if (bestid != oldbestid) {
                 img1.SetBestId(bestid);
-                var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
-                backgroundworker.ReportProgress(0, $"[{age} ago] {img1.Id}: [{oldclusterid}] {olddistance:F2} \u2192 [{clusterid}] {distance:F2}");
+                progress?.Report($"{totalcount}: [{age} ago] {img1.Id}: [{oldclusterid}] {olddistance:F2} \u2192 [{clusterid}] {distance:F2}");
                 AppClusters.DeleteAged();
+            }
+            else {
+                progress?.Report($"{totalcount}: [{age} ago] {img1.Id}");
             }
 
             img1.SetLastCheck(DateTime.Now);
@@ -183,12 +185,12 @@ namespace ImageBank
             _added++;
         }
 
-        private static void ImportInternal(BackgroundWorker backgroundworker)
+        public static void Import(IProgress<string> progress)
         {
             _added = 0;
             _found = 0;
             _bad = 0;
-            backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp}...");
+            progress?.Report($"importing {AppConsts.PathHp}...");
             var directoryInfo = new DirectoryInfo(AppConsts.PathHp);
             var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
             foreach (var e in fs) {
@@ -205,36 +207,25 @@ namespace ImageBank
                 }
 
                 ImportFile(orgfilename);
-                backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
+                progress?.Report($"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
             }
 
-            backgroundworker.ReportProgress(0, $"importing {AppConsts.PathRw}...");
+            progress?.Report($"importing {AppConsts.PathRw}...");
             directoryInfo = new DirectoryInfo(AppConsts.PathRw);
             fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).OrderBy(e => e.Length).Take(1000).ToArray();
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
-                backgroundworker.ReportProgress(0, $"importing {AppConsts.PathRw} (a:{_added})/f:{_found}/b:{_bad}...");
+                progress?.Report($"importing {AppConsts.PathRw} (a:{_added})/f:{_found}/b:{_bad}...");
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
                     ImportFile(orgfilename);
-                    backgroundworker.ReportProgress(0, $"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
+                    progress?.Report($"importing {AppConsts.PathHp} (a:{_added})/f:{_found}/b:{_bad}...");
                 }
             }
 
-            backgroundworker.ReportProgress(0, $"clean-up {AppConsts.PathHp}...");
+            progress?.Report($"clean-up {AppConsts.PathHp}...");
             Helper.CleanupDirectories(AppConsts.PathHp, AppVars.Progress);
-            backgroundworker.ReportProgress(0, $"clean-up {AppConsts.PathRw}...");
+            progress?.Report($"clean-up {AppConsts.PathRw}...");
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
-
-            AppVars.ImportMode = false;
-        }
-
-        public static void Compute(BackgroundWorker backgroundworker)
-        {
-            if (AppVars.ImportMode) {
-                ImportInternal(backgroundworker);
-            }
-            
-            ComputeInternal(backgroundworker);
         }
     }
 }

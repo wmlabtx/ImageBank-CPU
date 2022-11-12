@@ -32,6 +32,8 @@ namespace ImageBank
                     continue;
                 }
 
+                ComputeBestId(imgX, progress);
+
                 var idY = imgX.BestId;
                 AppVars.ImgPanel[1] = GetImgPanel(idY);
                 if (AppVars.ImgPanel[1] == null) {
@@ -45,7 +47,7 @@ namespace ImageBank
             }
             while (true);
 
-            progress?.Report($"{totalcount}: {imgX.Distance:F2}");
+            //progress?.Report($"{totalcount}: {imgX.Distance:F2}");
         }
     }
 }

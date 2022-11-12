@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 
 namespace ImageBank
 {
@@ -7,31 +6,21 @@ namespace ImageBank
     {
         public static readonly ImgPanel[] ImgPanel = new ImgPanel[2];
         public static Progress<string> Progress { get; set; }
-        public static ManualResetEvent SuspendEvent { get; set; }
-        public static bool ImportMode { get; set; }
-
-        private static readonly object _varlock = new object();
 
         private static int _id;
         public static int GetId()
         {
-            lock (_varlock) {
-                return _id;
-            }
+            return _id;
         }
 
         public static void SetId(int id)
         {
-            lock (_varlock) {
-                _id = id;
-            }
+            _id = id;
         }
 
         public static int AllocateId()
         {
-            lock (_varlock) {
-                _id++;
-            }
+            _id++;
 
             AppDatabase.VarsUpdateProperty(AppConsts.AttributeId, _id);
             return _id;
@@ -44,33 +33,16 @@ namespace ImageBank
             return result;
         }
         
-        private static float[] _palette;
-        public static float[] GetPalette()
+        public static void SetVars(int id)
         {
-            return _palette;
-        }
-
-        public static void SetPalette(float[] palette)
-        {
-            _palette = palette;
-        }
-
-        public static void SetVars(int id, float[] palette)
-        {
-            lock (_varlock) {
-                _id = id;
-                _palette = palette;
-            }
+            _id = id;
         }
 
         static AppVars()
         {
-            lock (_varlock) {
-                _id = 0;
-                var seed = Guid.NewGuid().GetHashCode();
-                _random = new RandomMersenne((uint)seed);
-                _palette = new float[256 * 3];
-            }
+            _id = 0;
+            var seed = Guid.NewGuid().GetHashCode();
+            _random = new RandomMersenne((uint)seed);
         }
     }
 }
