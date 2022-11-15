@@ -19,35 +19,19 @@ namespace ImageBank
                     idX = AppImgs.GetNextView().Id;
                 }
 
-                if (!AppImgs.TryGetValue(idX, out imgX)) {
-                    idX = 0;
-                    continue;
-                }
-
-                AppVars.ImgPanel[0] = GetImgPanel(idX);
-                if (AppVars.ImgPanel[0] == null) {
+                if (!AppPanels.SetImgPanel(0, idX)) {
                     Delete(idX);
                     progress?.Report($"{idX} deleted");
                     idX = 0;
                     continue;
                 }
 
-                ComputeBestId(imgX, progress);
-
-                var idY = imgX.BestId;
-                AppVars.ImgPanel[1] = GetImgPanel(idY);
-                if (AppVars.ImgPanel[1] == null) {
-                    Delete(idY);
-                    progress?.Report($"{idY} deleted");
-                    idX = 0;
-                    continue;
-                }
-
+                imgX = AppPanels.GetImgPanel(0).Img;
+                var similars = GetSimilars(imgX, progress);
+                AppPanels.SetSimilars(similars, progress);
                 break;
             }
             while (true);
-
-            //progress?.Report($"{totalcount}: {imgX.Distance:F2}");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace ImageBank
 {
@@ -31,102 +32,68 @@ namespace ImageBank
 
         public static bool TryGetValue(int id, out Img img)
         {
-            bool result;
-            result = _imgList.TryGetValue(id, out Img _img);
+            bool result = _imgList.TryGetValue(id, out Img _img);
             img = _img;
             return result;
         }
 
         public static bool ContainsId(int id)
         {
-            bool result;
-            result = _imgList.ContainsKey(id);
+            bool result = _imgList.ContainsKey(id);
             return result;
         }
 
         public static bool ContainsHash(string hash)
         {
-            bool result;
-            result = _hashList.ContainsKey(hash);
+            bool result = _hashList.ContainsKey(hash);
             return result;
         }
 
         public static bool TryGetHash(string hash, out Img img)
         {
-            bool result;
-            result = _hashList.TryGetValue(hash, out Img _img);
+            bool result = _hashList.TryGetValue(hash, out Img _img);
             img = _img;
             return result;
         }
 
         public static bool ContainsName(string name)
         {
-            bool result;
-            result = _nameList.ContainsKey(name);
+            bool result = _nameList.ContainsKey(name);
             return result;
         }
 
         public static void Delete(Img img)
         {
-            foreach (var e in _imgList) {
-                if (e.Value.BestId == img.Id) {
-                    e.Value.SetLastCheck(GetMinLastCheck());
-                }
-            }
-
-            if (_imgList.ContainsKey(img.Id)) {
-                _nameList.Remove(img.Name);
-                _hashList.Remove(img.Hash);
-                _imgList.Remove(img.Id);
-                if (img.ClusterId > 0) {
-                    AppClusters.Update(img.ClusterId);
-                }
-            }
+            _nameList.Remove(img.Name);
+            _hashList.Remove(img.Hash);
+            _imgList.Remove(img.Id);
         }
 
         public static DateTime GetMinLastView()
         {
-            DateTime lv;
-            lv = _imgList.Min(e => e.Value.LastView).AddSeconds(1);
+            DateTime lv = _imgList.Min(e => e.Value.LastView).AddSeconds(1);
             return lv;
-        }
-
-        public static DateTime GetMinLastCheck()
-        {
-            DateTime lv;
-            lv = _imgList.Min(e => e.Value.LastCheck).AddSeconds(1);
-            return lv;
-        }
-
-        public static Img GetNextCheck()
-        {
-            Img result = null;
-            result = _imgList.Values.OrderBy(e => e.LastCheck).FirstOrDefault();
-            return result;
         }
 
         public static Img GetNextView()
         {
-            var minlv = _imgList.Values.Min(e => e.LastView);
-            var nextday = minlv.AddDays(1);
-            var oldday = _imgList.Values.Where(e => e.LastView < nextday).ToArray();
-            var imgX = oldday.OrderBy(e => e.Distance).FirstOrDefault();
-            return imgX;
-        }
-
-        public static List<Tuple<int, float[]>> GetVectors(int clusterid)
-        {
-            List<Tuple<int, float[]>> result = new List<Tuple<int, float[]>>();
-            foreach (var e in _imgList) {
-                if (e.Value.ClusterId == clusterid) {
-                    var vector = AppDatabase.ImageGetVector(e.Key);
-                    if (vector != null && vector.Length == 4096) {
-                        result.Add(Tuple.Create(e.Key, vector));
-                    }
-                }
+            int id;
+            Img imgX;
+            var rand = AppVars.IRandom(0, 2);
+            if (rand == 0) {
+                rand = AppVars.IRandom(0, _imgList.Keys.Count - 1);
+                id = _imgList.Keys[rand];
+            }
+            else {
+                var minlv = _imgList.Values.Min(e => e.LastView);
+                var nextday = minlv.AddDays(1);
+                var oldday = _imgList.Values.Where(e => e.LastView < nextday).Select(e => e.Id).ToArray();
+                rand = AppVars.IRandom(0, oldday.Length - 1);
+                id = oldday[rand];
             }
 
-            return result;
+            imgX = _imgList[id];
+            return imgX;
         }
 
         public static int[] GetKeys()
@@ -134,6 +101,97 @@ namespace ImageBank
             int[] result;
             result = _imgList.Keys.ToArray();
             return result;
+        }
+
+        public static List<Tuple<int, float>> GetSimilars(Img imgX)
+        {
+            var similars = new List<Tuple<int, float>>();
+            var scope = imgX.FamilyId == 0 ? 
+                _imgList.Values.Where(e => e.Id != imgX.Id) : 
+                _imgList.Values.Where(e => e.Id != imgX.Id && e.FamilyId == imgX.FamilyId);
+
+            if (!scope.Any()) {
+                imgX.SetFamilyId(0);
+                scope = _imgList.Values.Where(e => e.Id != imgX.Id);
+            }
+
+            foreach (var img in scope) {
+                if (img.Id == imgX.Id || img.GetQuantVector() == null || img.GetQuantVector().Length != 4096) {
+                    continue;
+                }
+
+                var distance = VggHelper.GetDistance(imgX.GetQuantVector(), img.GetQuantVector());
+                if (imgX.FamilyId == 0 || imgX.FamilyId != img.FamilyId) {
+                    distance += 1f;
+                }
+
+                similars.Add(Tuple.Create(img.Id, distance));
+            }
+
+            similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+            return similars;
+        }
+
+        public static int GetFamilySize(int familyid)
+        {
+            var count = _imgList.Values.Count(e => e.FamilyId == familyid);
+            return count;
+        }
+
+        public static void ResetFamily(Img img)
+        {
+            var prevfamilyid = img.FamilyId;
+            if (prevfamilyid != 0) {
+                img.SetFamilyId(0);
+                var size = GetFamilySize(prevfamilyid);
+                if (size == 1) {
+                    var orphan = _imgList.Values.First(e => e.FamilyId == prevfamilyid);
+                    orphan.SetFamilyId(0);
+                }
+            }
+        }
+
+        public static void Split(Img imgX, Img imgY)
+        {
+            ResetFamily(imgX);
+            ResetFamily(imgY);
+        }
+
+        public static void RenameFamily(int oldid, int newid)
+        {
+            var scope = _imgList.Values.Where(e => e.FamilyId == oldid);
+            foreach (var img in scope) {
+                img.SetFamilyId(newid);
+            }
+        }
+
+        public static void Combine(Img imgX, Img imgY)
+        {
+            if (imgX.FamilyId == 0 && imgY.FamilyId == 0) {
+                var familyid = AppVars.AllocateFamilyId();
+                imgX.SetFamilyId(familyid);
+                imgY.SetFamilyId(familyid);
+            }
+            else {
+                if (imgX.FamilyId != 0 && imgY.FamilyId == 0) {
+                    imgY.SetFamilyId(imgX.FamilyId);
+                }
+                else {
+                    if (imgX.FamilyId == 0 && imgY.FamilyId != 0) {
+                        imgX.SetFamilyId(imgY.FamilyId);
+                    }
+                    else {
+                        if (imgX.FamilyId < imgY.FamilyId) {
+                            RenameFamily(imgY.FamilyId, imgX.FamilyId);
+                        }
+                        else {
+                            if (imgX.FamilyId > imgY.FamilyId) {
+                                RenameFamily(imgX.FamilyId, imgY.FamilyId);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

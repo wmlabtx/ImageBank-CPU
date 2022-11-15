@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -11,70 +12,41 @@ namespace ImageBank
         private static int _bad;
         private static int _found;
 
-        public static void ComputeBestId(Img img1, IProgress<string> progress)
+        public static List<Tuple<int, float>> GetSimilars(Img imgX, IProgress<string> progress)
         {
-            var name = img1.Name;
+            var name = imgX.Name;
             var filename = FileHelper.NameToFileName(name);
             if (!File.Exists(filename)) {
-                progress?.Report($"({img1.Id}) removed");
-                Delete(img1.Id);
-                return;
+                progress?.Report($"({imgX.Id}) removed");
+                Delete(imgX.Id);
+                return null;
             }
 
-            var vector = AppDatabase.ImageGetVector(img1.Id);
-            if (vector == null || vector.Length != 4096) {
+            var quantvector = imgX.GetQuantVector();
+            if (quantvector == null || quantvector.Length != 4096) {
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata == null) {
-                    progress?.Report($"({img1.Id}) removed");
-                    Delete(img1.Id);
-                    return;
+                    progress?.Report($"({imgX.Id}) removed");
+                    Delete(imgX.Id);
+                    return null;
                 }
 
                 using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                     if (bitmap == null) {
-                        progress?.Report($"({img1.Id}) removed");
-                        Delete(img1.Id);
-                        return;
+                        progress?.Report($"({imgX.Id}) removed");
+                        Delete(imgX.Id);
+                        return null;
                     }
 
-                    progress?.Report($"{img1.Id} calculating vector...");
-                    vector = VggHelper.CalculateVector(bitmap);
-                    AppDatabase.ImageSetVector(img1.Id, vector);
-                    Thread.Sleep(1000);
+                    progress?.Report($"{imgX.Id} calculating vector...");
+                    var vector = VggHelper.CalculateVector(bitmap);
+                    quantvector = VggHelper.QuantVector(vector);
+                    imgX.SetQuantVector(quantvector);
                 }
             }
 
-            var oldclusterid = img1.ClusterId;
-            var oldbestid = img1.BestId;
-            float olddistance = img1.Distance;
-            AppClusters.Compute(img1, vector, out int clusterid, out int bestid, out float distance);
-            if (clusterid != oldclusterid) {
-                img1.SetClusterId(clusterid);
-                if (oldclusterid != 0) {
-                    AppClusters.Update(oldclusterid);
-                }
-
-                if (clusterid != 0) {
-                    AppClusters.Update(clusterid);
-                }
-            }
-
-            if (distance != olddistance) {
-                img1.SetDistance(distance);
-            }
-
-            var totalcount = AppImgs.Count();
-            var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
-            if (bestid != oldbestid) {
-                img1.SetBestId(bestid);
-                progress?.Report($"{totalcount}: [{age} ago] {img1.Id}: [{oldclusterid}] {olddistance:F2} \u2192 [{clusterid}] {distance:F2}");
-                AppClusters.DeleteAged();
-            }
-            else {
-                progress?.Report($"{totalcount}: [{age} ago] {img1.Id}");
-            }
-
-            img1.SetLastCheck(DateTime.Now);
+            var similars = AppImgs.GetSimilars(imgX);
+            return similars;
         }
 
         private static void ImportFile(string orgfilename)
@@ -127,6 +99,7 @@ namespace ImageBank
             }
 
             float[] vector;
+            byte[] quantvector;
             using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                 if (bitmap == null) {
                     var badname = Path.GetFileName(orgfilename);
@@ -142,7 +115,7 @@ namespace ImageBank
                 }
 
                 vector = VggHelper.CalculateVector(bitmap);
-                Thread.Sleep(1000);
+                quantvector = VggHelper.QuantVector(vector);
             }
 
             // we have to create unique name and a location in Hp folder
@@ -157,17 +130,14 @@ namespace ImageBank
 
             var id = AppVars.AllocateId();
             var lastview = AppImgs.GetMinLastView();
-            var lastcheck = AppImgs.GetMinLastCheck();
             var nimg = new Img(
                 id: id,
                 name: newname,
                 hash: hash,
-                distance: 0f,
                 year: year,
-                bestid: 0,
                 lastview: lastview,
-                lastcheck: lastcheck,
-                clusterid: 0);
+                familyid: 0,
+                quantvector: quantvector);
 
             Add(nimg, vector);
 
@@ -181,7 +151,7 @@ namespace ImageBank
                 File.SetLastWriteTime(newfilename, lastmodified);
                 FileHelper.DeleteToRecycleBin(orgfilename);
             }
-
+            
             _added++;
         }
 
@@ -226,6 +196,7 @@ namespace ImageBank
             Helper.CleanupDirectories(AppConsts.PathHp, AppVars.Progress);
             progress?.Report($"clean-up {AppConsts.PathRw}...");
             Helper.CleanupDirectories(AppConsts.PathRw, AppVars.Progress);
+            progress?.Report($"Import done (a:{_added})/f:{_found}/b:{_bad})");
         }
     }
 }

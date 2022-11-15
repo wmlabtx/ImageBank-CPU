@@ -5,8 +5,9 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Export(Img img, IProgress<string> progress)
+        public static void Export(int idpanel, IProgress<string> progress)
         {
+            var img = AppPanels.GetImgPanel(idpanel).Img;
             var filename = FileHelper.NameToFileName(img.Name);
             var imagedata = FileHelper.ReadData(filename);
             if (imagedata == null) {

@@ -86,5 +86,40 @@ namespace ImageBank
         {
             RefreshClick();
         }
+
+        private void LeftMoveClick(object sender, RoutedEventArgs e)
+        {
+            LeftMoveClick();
+        }
+
+        private void RightMoveClick(object sender, RoutedEventArgs e)
+        {
+            RightMoveClick();
+        }
+
+        private void FirstMoveClick(object sender, RoutedEventArgs e)
+        {
+            FirstMoveClick();
+        }
+
+        private void LastMoveClick(object sender, RoutedEventArgs e)
+        {
+            LastMoveClick();
+        }
+
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            OnKeyDown(e.Key);
+        }
+
+        private void CombineClick(object sender, RoutedEventArgs e)
+        {
+            CombineClick();
+        }
+
+        private void SplitClick(object sender, RoutedEventArgs e)
+        {
+            SplitClick();
+        }
     }
 }

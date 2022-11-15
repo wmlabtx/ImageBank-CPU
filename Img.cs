@@ -16,14 +16,6 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeYear, Year);
         }
 
-        public int BestId { get; private set; }
-
-        public void SetBestId(int bestid)
-        {
-            BestId = bestid;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeBestId, BestId);
-        }
-
         public DateTime LastView { get; private set; }
 
         public void SetLastView(DateTime lastview)
@@ -32,51 +24,44 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
 
-        public DateTime LastCheck { get; private set; }
+        public byte[] _quantvector;
 
-        public void SetLastCheck(DateTime lastcheck)
+        public byte[] GetQuantVector()
         {
-            LastCheck = lastcheck;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastCheck, LastCheck);
+            return _quantvector;
         }
 
-        public float Distance { get; private set; }
-
-        public void SetDistance(float distance)
+        public void SetQuantVector(byte[] quantvector)
         {
-            Distance = distance;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeDistance, Distance);
+            _quantvector = quantvector;
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeQuantVector, quantvector);
         }
 
-        public int ClusterId { get; private set; }
+        public int FamilyId { get; private set; }
 
-        public void SetClusterId(int clusterid)
+        public void SetFamilyId(int familyid)
         {
-            ClusterId = clusterid;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeClusterId, ClusterId);
+            FamilyId = familyid;
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeFamilyId, FamilyId);
         }
 
         public Img(
             int id,
             string name,
             string hash,
-            float distance,
             int year,
-            int bestid,
-            DateTime lastview,
-            DateTime lastcheck,
-            int clusterid
-        )
+            byte[] quantvector,
+            int familyid,
+            DateTime lastview
+            )
         {
             Id = id;
             Name = name;
             Hash = hash;
             Year = year;
-            BestId = bestid;
-            Distance = distance;
+            _quantvector = quantvector;
+            FamilyId = familyid;
             LastView = lastview;
-            LastCheck = lastcheck;
-            ClusterId = clusterid;
         }
     }
 }

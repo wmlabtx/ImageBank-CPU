@@ -105,10 +105,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="AppClusters.cs" />
+    <Compile Include="AppPanels.cs" />
     <Compile Include="BitmapHelper.cs" />
     <Compile Include="AppDatabase.cs" />
-    <Compile Include="Cluster.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -135,7 +134,6 @@
     <Compile Include="ImgMdfDelete.cs" />
     <Compile Include="ImgMdfEdit.cs" />
     <Compile Include="ImgMdfFind.cs" />
-    <Compile Include="ImgMdfGetImgPanel.cs" />
     <Compile Include="ImgMdfConfirm.cs" />
     <Compile Include="ImgPanel.cs" />
     <Compile Include="MainWindow.xaml.cs">

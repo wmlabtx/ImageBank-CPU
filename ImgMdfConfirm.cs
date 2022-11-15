@@ -6,7 +6,7 @@ namespace ImageBank
     {
         public static void Confirm()
         {
-            var imgX = AppVars.ImgPanel[0].Img;
+            var imgX = AppPanels.GetImgPanel(0).Img;
             imgX.SetLastView(DateTime.Now);
         }
     }

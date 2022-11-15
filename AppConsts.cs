@@ -20,16 +20,10 @@
         public const string AttributeId = "Id";
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
-        public const string AttributeDistance = "Distance";
         public const string AttributeYear = "Year";
-        public const string AttributeBestId = "BestId";
         public const string AttributeLastView = "LastView";
-        public const string AttributeLastCheck = "LastCheck";
-        public const string AttributeVector = "Vector";
-        public const string AttributeClusterId = "ClusterId";
+        public const string AttributeQuantVector = "QuantVector";
+        public const string AttributeFamilyId = "FamilyId";
         public const string TableVars = "Vars";
-        public const string TableClusters = "Clusters";
-        public const string AttributeCounter = "Counter";
-        public const string AttributeAge = "Age";
     }
 }

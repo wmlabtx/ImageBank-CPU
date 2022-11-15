@@ -41,17 +41,15 @@ namespace ImageBank
                     }
 
                     var rvector = VggHelper.CalculateVector(bitmap);
-                    var rlastcheck = AppImgs.GetMinLastCheck();
+                    var rquantvector = VggHelper.QuantVector(rvector);
                     var rimg = new Img(
                         id: img.Id,
                         name: img.Name,
                         hash: rhash,
-                        distance: img.Distance,
                         year: img.Year,
-                        bestid: img.BestId,
                         lastview: DateTime.Now,
-                        lastcheck: rlastcheck,
-                        clusterid: img.ClusterId);
+                        familyid: img.FamilyId,
+                        quantvector: rquantvector);
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);
