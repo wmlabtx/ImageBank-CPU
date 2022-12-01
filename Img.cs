@@ -24,17 +24,17 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
         }
 
-        public byte[] _quantvector;
+        public float[] _hist;
 
-        public byte[] GetQuantVector()
+        public float[] GetHist()
         {
-            return _quantvector;
+            return _hist;
         }
 
-        public void SetQuantVector(byte[] quantvector)
+        public void SetHist(float[] hist)
         {
-            _quantvector = quantvector;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeQuantVector, quantvector);
+            _hist = hist;
+            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeHist, Helper.ArrayFromFloat(_hist));
         }
 
         public int FamilyId { get; private set; }
@@ -50,7 +50,7 @@ namespace ImageBank
             string name,
             string hash,
             int year,
-            byte[] quantvector,
+            float[] hist,
             int familyid,
             DateTime lastview
             )
@@ -59,7 +59,7 @@ namespace ImageBank
             Name = name;
             Hash = hash;
             Year = year;
-            _quantvector = quantvector;
+            _hist = hist;
             FamilyId = familyid;
             LastView = lastview;
         }

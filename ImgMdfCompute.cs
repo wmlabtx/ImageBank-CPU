@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 
 namespace ImageBank
 {
@@ -22,8 +21,8 @@ namespace ImageBank
                 return null;
             }
 
-            var quantvector = imgX.GetQuantVector();
-            if (quantvector == null || quantvector.Length != 4096) {
+            var hist = imgX.GetHist();
+            if (hist == null || hist.Length == 0) {
                 var imagedata = FileHelper.ReadData(filename);
                 if (imagedata == null) {
                     progress?.Report($"({imgX.Id}) removed");
@@ -39,9 +38,8 @@ namespace ImageBank
                     }
 
                     progress?.Report($"{imgX.Id} calculating vector...");
-                    var vector = VggHelper.CalculateVector(bitmap);
-                    quantvector = VggHelper.QuantVector(vector);
-                    imgX.SetQuantVector(quantvector);
+                    hist = AppPalette.ComputeHist(bitmap);
+                    imgX.SetHist(hist);
                 }
             }
 
@@ -98,8 +96,7 @@ namespace ImageBank
                 Delete(imgfound.Id);
             }
 
-            float[] vector;
-            byte[] quantvector;
+            float[] hist;
             using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
                 if (bitmap == null) {
                     var badname = Path.GetFileName(orgfilename);
@@ -114,8 +111,7 @@ namespace ImageBank
                     return;
                 }
 
-                vector = VggHelper.CalculateVector(bitmap);
-                quantvector = VggHelper.QuantVector(vector);
+                hist = AppPalette.ComputeHist(bitmap);
             }
 
             // we have to create unique name and a location in Hp folder
@@ -137,9 +133,10 @@ namespace ImageBank
                 year: year,
                 lastview: lastview,
                 familyid: 0,
-                quantvector: quantvector);
+                hist: hist);
 
-            Add(nimg, vector);
+            Add(nimg);
+            AppDatabase.AddImage(nimg);
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
             if (lastmodified > DateTime.Now) {

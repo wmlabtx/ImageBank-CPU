@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace ImageBank
 {
@@ -55,6 +57,17 @@ namespace ImageBank
         {
             _id = id;
             _familyid = familyid;
+        }
+
+        private static readonly SortedList<int, string> _families = new SortedList<int, string>();
+        public static void AddFamily(int familyid, string description)
+        {
+            _families.Add(familyid, description);
+        }
+
+        public static string GetFamily(int familyid)
+        {
+            return _families[familyid];
         }
 
         static AppVars()

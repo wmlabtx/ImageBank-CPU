@@ -6,8 +6,7 @@
         public const string FileDatabase = @"D:\Users\Murad\Documents\Sdb\Db\images.mdf";
         public const string PathGb = @"D:\Users\Murad\Documents\Sdb\Gb";
         public const string PathHp = @"D:\Users\Murad\Documents\Sdb\Hp";
-        
-        public const string FileVgg = @"D:\Users\Murad\Documents\Sdb\Db\VGG16ImageNet.dat";
+        public const string FilePalette = @"D:\Users\Murad\Documents\Sdb\Db\palette.png";
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -22,8 +21,11 @@
         public const string AttributeHash = "Hash";
         public const string AttributeYear = "Year";
         public const string AttributeLastView = "LastView";
-        public const string AttributeQuantVector = "QuantVector";
         public const string AttributeFamilyId = "FamilyId";
+        public const string AttributeHist = "Hist";
         public const string TableVars = "Vars";
+        public const string AttributePalette = "Palette";
+        public const string TableFamilies = "Families";
+        public const string AttributeDescription = "Description";
     }
 }

@@ -106,21 +106,9 @@ namespace ImageBank
         public static List<Tuple<int, float>> GetSimilars(Img imgX)
         {
             var similars = new List<Tuple<int, float>>();
-            var scope = imgX.FamilyId == 0 ? 
-                _imgList.Values.Where(e => e.Id != imgX.Id) : 
-                _imgList.Values.Where(e => e.Id != imgX.Id && e.FamilyId == imgX.FamilyId);
-
-            if (!scope.Any()) {
-                imgX.SetFamilyId(0);
-                scope = _imgList.Values.Where(e => e.Id != imgX.Id);
-            }
-
+            var scope = _imgList.Values.Where(e => e.Id != imgX.Id);
             foreach (var img in scope) {
-                if (img.Id == imgX.Id || img.GetQuantVector() == null || img.GetQuantVector().Length != 4096) {
-                    continue;
-                }
-
-                var distance = VggHelper.GetDistance(imgX.GetQuantVector(), img.GetQuantVector());
+                var distance = AppPalette.GetDistance(imgX.GetHist(), img.GetHist());
                 if (imgX.FamilyId == 0 || imgX.FamilyId != img.FamilyId) {
                     distance += 1f;
                 }
@@ -191,6 +179,16 @@ namespace ImageBank
                         }
                     }
                 }
+            }
+        }
+
+        public static void SetFamily(Img imgX, int familyid)
+        {
+            if (imgX.FamilyId == 0) {
+                imgX.SetFamilyId(familyid);
+            }
+            else {
+                RenameFamily(imgX.FamilyId, familyid);
             }
         }
     }

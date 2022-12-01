@@ -6,7 +6,6 @@ namespace ImageBank
     {
         static ImgMdf()
         {
-            VggHelper.LoadNetwork();
         }
 
         public static void LoadImages(IProgress<string> progress)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace ImageBank
 {
@@ -51,7 +53,37 @@ namespace ImageBank
 
             await Task.Run(() => { ImgMdf.LoadImages(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(0, AppVars.Progress); }).ConfigureAwait(true);
+
+            var menuitems = GetFamilyMenuItems(MenuFamily);
+            foreach (var e in menuitems) {
+                if (int.TryParse((string)e.Tag, out int tag)) {
+                    var name = AppVars.GetFamily(tag);
+                    e.Header = $"{name} ({tag})";
+                }
+            }
+
             DrawCanvas();
+        }
+
+        public static List<MenuItem> GetFamilyMenuItems(MenuItem root)
+        {
+            List<MenuItem> myitems = new List<MenuItem>();
+            foreach (var e in root.Items) {
+                if (e is MenuItem item1) {
+                    GetMenuItems(item1, myitems);
+                }
+            }
+            return myitems;
+        }
+
+        private static void GetMenuItems(MenuItem item, List<MenuItem> items)
+        {
+            items.Add(item);
+            foreach (var e in item.Items) {
+                if (e is MenuItem item1) {
+                    GetMenuItems(item1, items);
+                }
+            }
         }
 
         private void OnStateChanged()
@@ -137,7 +169,8 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 sb.Append($"{panels[index].Img.Name} [{panels[index].Img.Id}");
                 if (panels[index].Img.FamilyId != 0) {
-                    sb.Append($":{panels[index].Img.FamilyId}");
+                    var familyname = AppVars.GetFamily(panels[index].Img.FamilyId);
+                    sb.Append($":{familyname}");
                     var familysize = AppImgs.GetFamilySize(panels[index].Img.FamilyId);
                     sb.Append($":{familysize}");
                 }
@@ -317,6 +350,14 @@ namespace ImageBank
             var imgX = AppPanels.GetImgPanel(0).Img;
             var imgY = AppPanels.GetImgPanel(1).Img;
             AppImgs.Split(imgX, imgY);
+            DrawCanvas();
+        }
+
+        private async void SetFamily(int familyid)
+        {
+            var imgX = AppPanels.GetImgPanel(0).Img;
+            AppImgs.SetFamily(imgX, familyid);
+            await Task.Run(() => { ImgMdf.Find(imgX.Id, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
         }
 

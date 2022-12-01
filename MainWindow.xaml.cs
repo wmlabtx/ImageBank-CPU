@@ -121,5 +121,11 @@ namespace ImageBank
         {
             SplitClick();
         }
+
+        private void SetFamilyClick(object sender, RoutedEventArgs e)
+        {
+            var tag = int.Parse((string)((MenuItem)sender).Tag);
+            SetFamily(tag);
+        }
     }
 }

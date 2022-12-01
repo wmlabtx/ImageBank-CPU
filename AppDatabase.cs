@@ -49,7 +49,7 @@ namespace ImageBank
             }
         }
 
-        public static void AddImage(Img img, float[] vector)
+        public static void AddImage(Img img)
         {
             using (var sqlCommand = _sqlConnection.CreateCommand()) {
                 sqlCommand.Connection = _sqlConnection;
@@ -61,7 +61,7 @@ namespace ImageBank
                 sb.Append($"{AppConsts.AttributeYear}, ");
                 sb.Append($"{AppConsts.AttributeLastView}, ");
                 sb.Append($"{AppConsts.AttributeFamilyId}, ");
-                sb.Append($"{AppConsts.AttributeQuantVector}");
+                sb.Append($"{AppConsts.AttributeHist}");
                 sb.Append(") VALUES (");
                 sb.Append($"@{AppConsts.AttributeId}, ");
                 sb.Append($"@{AppConsts.AttributeName}, ");
@@ -69,7 +69,7 @@ namespace ImageBank
                 sb.Append($"@{AppConsts.AttributeYear}, ");
                 sb.Append($"@{AppConsts.AttributeLastView}, ");
                 sb.Append($"@{AppConsts.AttributeFamilyId}, ");
-                sb.Append($"@{AppConsts.AttributeQuantVector}");
+                sb.Append($"@{AppConsts.AttributeHist}");
                 sb.Append(')');
                 sqlCommand.CommandText = sb.ToString();
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeId}", img.Id);
@@ -78,7 +78,7 @@ namespace ImageBank
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFamilyId}", img.FamilyId);
-                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeQuantVector}", img.GetQuantVector());
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHist}", Helper.ArrayFromFloat(img.GetHist()));
                 sqlCommand.ExecuteNonQuery();
             }
         }
@@ -93,7 +93,7 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeYear}, "); // 3
             sb.Append($"{AppConsts.AttributeLastView}, "); // 4
             sb.Append($"{AppConsts.AttributeFamilyId}, "); // 5
-            sb.Append($"{AppConsts.AttributeQuantVector} "); // 6
+            sb.Append($"{AppConsts.AttributeHist} "); // 6
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -108,7 +108,8 @@ namespace ImageBank
                         var year = reader.GetInt32(3);
                         var lastview = reader.GetDateTime(4);
                         var familyid = reader.GetInt32(5);
-                        var quantvector = (byte[])reader[6];
+                        var buffer = (byte[])reader[6];
+                        var hist = Helper.ArrayToFloat(buffer);
                         var img = new Img(
                             id: id,
                             name: name,
@@ -116,7 +117,7 @@ namespace ImageBank
                             year: year,
                             lastview: lastview,
                             familyid: familyid,
-                            quantvector: quantvector
+                            hist: hist
                             );
 
                         AppImgs.Add(img);
@@ -135,7 +136,8 @@ namespace ImageBank
             sb.Length = 0;
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttributeId}, "); // 0
-            sb.Append($"{AppConsts.AttributeFamilyId} "); // 1
+            sb.Append($"{AppConsts.AttributeFamilyId}, "); // 1
+            sb.Append($"{AppConsts.AttributePalette} "); // 2
             sb.Append($"FROM {AppConsts.TableVars}");
             sqltext = sb.ToString();
             using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
@@ -143,8 +145,28 @@ namespace ImageBank
                     while (reader.Read()) {
                         var id = reader.GetInt32(0);
                         var familyid = reader.GetInt32(1);
+                        var palette = (byte[])reader[2];
                         AppVars.SetVars(id, familyid);
+                        AppPalette.Set(palette);
                         break;
+                    }
+                }
+            }
+
+            progress?.Report("Loading families...");
+
+            sb.Length = 0;
+            sb.Append("SELECT ");
+            sb.Append($"{AppConsts.AttributeFamilyId}, "); // 0
+            sb.Append($"{AppConsts.AttributeDescription} "); // 1
+            sb.Append($"FROM {AppConsts.TableFamilies}");
+            sqltext = sb.ToString();
+            using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                using (var reader = sqlCommand.ExecuteReader()) {
+                    while (reader.Read()) {
+                        var familyid = reader.GetInt32(0);
+                        var description = reader.GetString(1);
+                        AppVars.AddFamily(familyid, description);
                     }
                 }
             }

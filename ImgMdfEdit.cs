@@ -40,8 +40,7 @@ namespace ImageBank
                         return;
                     }
 
-                    var rvector = VggHelper.CalculateVector(bitmap);
-                    var rquantvector = VggHelper.QuantVector(rvector);
+                    var rhist = AppPalette.ComputeHist(bitmap);
                     var rimg = new Img(
                         id: img.Id,
                         name: img.Name,
@@ -49,11 +48,11 @@ namespace ImageBank
                         year: img.Year,
                         lastview: DateTime.Now,
                         familyid: img.FamilyId,
-                        quantvector: rquantvector);
+                        hist: rhist);
 
                     Delete(id);
                     FileHelper.WriteData(filename, rimagedata);
-                    Add(rimg, rvector);
+                    Add(rimg);
 
                     bitmap.Dispose();
                 }

@@ -1,1 +1,1 @@
-﻿UPDATE Clusters SET Age = 0
+﻿UPDATE Images SET FamilyId = 0
