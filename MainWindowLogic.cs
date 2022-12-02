@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
-using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace ImageBank
 {
@@ -52,38 +50,9 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             await Task.Run(() => { ImgMdf.LoadImages(AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, AppVars.Progress); }).ConfigureAwait(true);
-
-            var menuitems = GetFamilyMenuItems(MenuFamily);
-            foreach (var e in menuitems) {
-                if (int.TryParse((string)e.Tag, out int tag)) {
-                    var name = AppVars.GetFamily(tag);
-                    e.Header = $"{name} ({tag})";
-                }
-            }
+            await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
-        }
-
-        public static List<MenuItem> GetFamilyMenuItems(MenuItem root)
-        {
-            List<MenuItem> myitems = new List<MenuItem>();
-            foreach (var e in root.Items) {
-                if (e is MenuItem item1) {
-                    GetMenuItems(item1, myitems);
-                }
-            }
-            return myitems;
-        }
-
-        private static void GetMenuItems(MenuItem item, List<MenuItem> items)
-        {
-            items.Add(item);
-            foreach (var e in item.Items) {
-                if (e is MenuItem item1) {
-                    GetMenuItems(item1, items);
-                }
-            }
         }
 
         private void OnStateChanged()
@@ -123,7 +92,7 @@ namespace ImageBank
         {
             DisableElements();
             await Task.Run(() => { ImgMdf.Confirm(); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -167,15 +136,8 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(panels[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{panels[index].Img.Name} [{panels[index].Img.Id}");
-                if (panels[index].Img.FamilyId != 0) {
-                    var familyname = AppVars.GetFamily(panels[index].Img.FamilyId);
-                    sb.Append($":{familyname}");
-                    var familysize = AppImgs.GetFamilySize(panels[index].Img.FamilyId);
-                    sb.Append($":{familysize}");
-                }
+                sb.Append($"{panels[index].Img.Name} [{panels[index].Img.Hash.Substring(0, 7)}...]");
 
-                sb.Append(']');
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -201,21 +163,6 @@ namespace ImageBank
                     else {
                         pLabels[0].Background = System.Windows.Media.Brushes.White;
                         pLabels[1].Background = System.Windows.Media.Brushes.LightSalmon;
-                    }
-
-                    if (panels[0].Img.FamilyId != 0) {
-                        if (panels[0].Img.FamilyId == panels[1].Img.FamilyId) {
-                            pLabels[0].Background = System.Windows.Media.Brushes.LightGreen;
-                            pLabels[1].Background = System.Windows.Media.Brushes.LightGreen;
-                        }
-                        else {
-                            pLabels[0].Background = System.Windows.Media.Brushes.Yellow;
-                        }
-                    }
-                    else {
-                        if (panels[1].Img.FamilyId != 0 && panels[1].Img.FamilyId != panels[0].Img.FamilyId) {
-                            pLabels[1].Background = System.Windows.Media.Brushes.YellowGreen;
-                        }
                     }
                 }
             }
@@ -260,9 +207,9 @@ namespace ImageBank
         private async void ImgPanelDelete(int idpanel)
         {
             DisableElements();
-            var id = AppPanels.GetImgPanel(idpanel).Img.Id;
-            await Task.Run(() => { ImgMdf.Delete(id); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(0, AppVars.Progress); }).ConfigureAwait(true);
+            var hash = AppPanels.GetImgPanel(idpanel).Img.Hash;
+            await Task.Run(() => { ImgMdf.Delete(hash); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -270,9 +217,9 @@ namespace ImageBank
         private async void Rotate(RotateFlipType rft)
         {
             DisableElements();
-            var id = AppPanels.GetImgPanel(0).Img.Id;
-            await Task.Run(() => { ImgMdf.Rotate(id, rft, AppVars.Progress); }).ConfigureAwait(true);
-            await Task.Run(() => { ImgMdf.Find(id, AppVars.Progress); }).ConfigureAwait(true);
+            var hash = AppPanels.GetImgPanel(0).Img.Hash;
+            await Task.Run(() => { ImgMdf.Rotate(hash, rft, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Find(hash, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -337,30 +284,6 @@ namespace ImageBank
             DrawCanvas();
         }
 
-        private void CombineClick()
-        {
-            var imgX = AppPanels.GetImgPanel(0).Img;
-            var imgY = AppPanels.GetImgPanel(1).Img;
-            AppImgs.Combine(imgX, imgY);
-            DrawCanvas();
-        }
-
-        private void SplitClick()
-        {
-            var imgX = AppPanels.GetImgPanel(0).Img;
-            var imgY = AppPanels.GetImgPanel(1).Img;
-            AppImgs.Split(imgX, imgY);
-            DrawCanvas();
-        }
-
-        private async void SetFamily(int familyid)
-        {
-            var imgX = AppPanels.GetImgPanel(0).Img;
-            AppImgs.SetFamily(imgX, familyid);
-            await Task.Run(() => { ImgMdf.Find(imgX.Id, AppVars.Progress); }).ConfigureAwait(true);
-            DrawCanvas();
-        }
-
         private void OnKeyDown(Key key)
         {
             switch (key) {
@@ -369,9 +292,6 @@ namespace ImageBank
                     break;
                 case Key.Q:
                     LeftMoveClick();
-                    break;
-                case Key.C:
-                    CombineClick();
                     break;
             }
         }

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace ImageBank
 {
-    public static class Md5HashHelper
+    public static class HashHelper
     {
         public static string Compute(byte[] array)
         {
@@ -11,11 +11,11 @@ namespace ImageBank
                 return null;
             }
 
-            using (var md5 = MD5.Create()) {
-                var hashmd5 = md5.ComputeHash(array);
+            using (var sha256 = SHA256.Create()) {
+                var hash = sha256.ComputeHash(array);
                 var sb = new StringBuilder();
-                for (var i = 0; i < 16; i++) {
-                    sb.Append(hashmd5[i].ToString("x2"));
+                for (var i = 0; i < hash.Length; i++) {
+                    sb.Append(hash[i].ToString("x2"));
                 }
 
                 return sb.ToString();

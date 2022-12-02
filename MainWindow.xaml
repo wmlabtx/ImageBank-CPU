@@ -26,35 +26,6 @@
                 <MenuItem Header="First" Click="FirstMoveClick" />
                 <MenuItem Header="Last" Click="LastMoveClick" />
             </MenuItem>
-            <MenuItem Name="MenuFamily" Header="Family">
-                <MenuItem Header="Combine (C)" Click="CombineClick" />
-                <MenuItem Header="Split" Click="SplitClick" />
-                <Separator />
-                <MenuItem Header="Art">
-                    <MenuItem Header="" Tag="4" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="6" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="7" Click="SetFamilyClick" />
-                </MenuItem>
-                <MenuItem Header="Classic">
-                    <MenuItem Header="" Tag="8" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="9" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="13" Click="SetFamilyClick" />
-                </MenuItem>
-                <MenuItem Header="Japan">
-                    <MenuItem Header="" Tag="10" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="11" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="12" Click="SetFamilyClick" />
-                </MenuItem>
-                <MenuItem Header="Kandid">
-                    <MenuItem Header="" Tag="1" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="2" Click="SetFamilyClick" />
-                    <MenuItem Header="" Tag="3" Click="SetFamilyClick" />
-                </MenuItem>
-                <MenuItem Header="TPI">
-                    <MenuItem Header="" Tag="5" Click="SetFamilyClick" />
-                </MenuItem>
-                
-            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

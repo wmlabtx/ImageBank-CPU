@@ -4,7 +4,7 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Find(int idX, IProgress<string> progress)
+        public static void Find(string hashX, IProgress<string> progress)
         {
             Img imgX;
             int totalcount;
@@ -15,14 +15,14 @@ namespace ImageBank
                     return;
                 }
 
-                if (idX == 0) {
-                    idX = AppImgs.GetNextView().Id;
+                if (hashX == null) {
+                    hashX = AppImgs.GetNextView().Hash;
                 }
 
-                if (!AppPanels.SetImgPanel(0, idX)) {
-                    Delete(idX);
-                    progress?.Report($"{idX} deleted");
-                    idX = 0;
+                if (!AppPanels.SetImgPanel(0, hashX)) {
+                    Delete(hashX);
+                    progress?.Report($"{hashX} deleted");
+                    hashX = null;
                     continue;
                 }
 

@@ -2,15 +2,15 @@
 {
     public static partial class ImgMdf
     {
-        public static void Delete(int id)
+        public static void Delete(string hash)
         {
-            if (AppImgs.TryGetValue(id, out var img)) {
+            if (AppImgs.TryGetValue(hash, out var img)) {
                 AppImgs.Delete(img);
-                var filename = FileHelper.NameToFileName(img.Name);
+                var filename = $"{AppConsts.PathRoot}\\{img.Name}";
                 FileHelper.DeleteToRecycleBin(filename);
             }
 
-            AppDatabase.DeleteImage(id);
+            AppDatabase.DeleteImage(hash);
         }
     }
 } 

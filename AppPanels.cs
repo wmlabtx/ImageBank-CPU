@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ImageBank
 {
@@ -12,14 +13,14 @@ namespace ImageBank
             return _imgpanels[idpanel];
         }
 
-        public static bool SetImgPanel(int idpanel, int id)
+        public static bool SetImgPanel(int idpanel, string hash)
         {
-            if (!AppImgs.TryGetValue(id, out Img img)) {
+            if (!AppImgs.TryGetValue(hash, out Img img)) {
                 return false;
             }
 
-            var filename = FileHelper.NameToFileName(img.Name);
-            var imagedata = FileHelper.ReadData(filename);
+            var filename = $"{AppConsts.PathRoot}\\{img.Name}";
+            var imagedata = File.ReadAllBytes(filename);
             if (imagedata == null) {
                 return false;
             }
@@ -39,9 +40,9 @@ namespace ImageBank
         }
 
         private static int _position;
-        private static List<Tuple<int, float>> _similars;
+        private static List<Tuple<string, float>> _similars;
 
-        public static void SetSimilars(List<Tuple<int, float>> similars, IProgress<string> progress)
+        public static void SetSimilars(List<Tuple<string, float>> similars, IProgress<string> progress)
         {
             _similars = similars;
             SetFirstPosition(progress);
@@ -97,7 +98,7 @@ namespace ImageBank
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastView));
             var similarsfound = _similars.Count;
             var distance = _similars[_position].Item2;
-            progress?.Report($"{totalcount}: {imgX.Id} [{age} ago] = ({_position}/{similarsfound}) {distance:F4}");
+            progress?.Report($"{totalcount}: {imgX.Hash.Substring(0, 5)} [{age} ago] = ({_position}/{similarsfound}) {distance:F4}");
         }
     }
 }

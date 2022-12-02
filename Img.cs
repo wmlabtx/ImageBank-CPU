@@ -4,16 +4,22 @@ namespace ImageBank
 {
     public class Img
     {
-        public int Id { get; }
-        public string Name { get; }
         public string Hash { get; }
+
+        public string Name { get; private set; }
+
+        public void SetName(string name)
+        {
+            Name = name;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeName, Name);
+        }
 
         public int Year { get; private set; }
 
         public void SetActualYear()
         {
             Year = DateTime.Now.Year;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeYear, Year);
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeYear, Year);
         }
 
         public DateTime LastView { get; private set; }
@@ -21,46 +27,34 @@ namespace ImageBank
         public void SetLastView(DateTime lastview)
         {
             LastView = lastview;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeLastView, LastView);
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeLastView, LastView);
         }
 
-        public float[] _hist;
+        public float[] _vector;
 
-        public float[] GetHist()
+        public float[] GetVector()
         {
-            return _hist;
+            return _vector;
         }
 
-        public void SetHist(float[] hist)
+        public void SetVector(float[] vector)
         {
-            _hist = hist;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeHist, Helper.ArrayFromFloat(_hist));
-        }
-
-        public int FamilyId { get; private set; }
-
-        public void SetFamilyId(int familyid)
-        {
-            FamilyId = familyid;
-            AppDatabase.ImageUpdateProperty(Id, AppConsts.AttributeFamilyId, FamilyId);
+           _vector = vector;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeVector, Helper.ArrayFromFloat(_vector));
         }
 
         public Img(
-            int id,
             string name,
             string hash,
             int year,
-            float[] hist,
-            int familyid,
+            float[] vector,
             DateTime lastview
             )
         {
-            Id = id;
             Name = name;
             Hash = hash;
             Year = year;
-            _hist = hist;
-            FamilyId = familyid;
+            _vector = vector;
             LastView = lastview;
         }
     }

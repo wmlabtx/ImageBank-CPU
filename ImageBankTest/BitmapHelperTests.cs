@@ -1,6 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System.Diagnostics;
 using System.IO;
 using ImageBank;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,26 +8,62 @@ namespace ImageBankTest
     [TestClass()]
     public class BitmapHelperTests
     {
-        /*
         [TestMethod()]
         public void ImageDataToBitmapSourceTest()
         {
             var imagedata = File.ReadAllBytes("testnotimage.jpg");
-            var bitmapNotimage = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNull(bitmapNotimage);
+            var miNotimage = BitmapHelper.ImageDataToMagickImage(imagedata);
+            Assert.IsNull(miNotimage);
 
             imagedata = File.ReadAllBytes("testjpg.jpg");
-            var bitmapJpg = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmapJpg);
-            Assert.AreEqual(bitmapJpg.PixelFormat, PixelFormat.Format24bppRgb);
-            bitmapJpg.Save("testjpg_.jpg");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.Jpeg);
+                Assert.AreEqual(mi.ChannelCount, 3);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
 
             imagedata = File.ReadAllBytes("testjpg8.jpg");
-            var bitmap8Jpg = BitmapHelper.ImageDataToBitmap(imagedata);
-            Assert.IsNotNull(bitmap8Jpg);
-            Assert.AreEqual(bitmap8Jpg.PixelFormat, PixelFormat.Format24bppRgb);
-            bitmap8Jpg.Save("testjpg8_.jpg");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.Jpeg);
+                Assert.AreEqual(mi.ChannelCount, 2);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
 
+            imagedata = File.ReadAllBytes("testpng.png");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.Png);
+                Assert.AreEqual(mi.ChannelCount, 3);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
+
+            imagedata = File.ReadAllBytes("testwebp.webp");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.WebP);
+                Assert.AreEqual(mi.ChannelCount, 3);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
+
+            imagedata = File.ReadAllBytes("testheic.heic");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.Heic);
+                Assert.AreEqual(mi.ChannelCount, 3);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
+
+            imagedata = File.ReadAllBytes("testgif.gif");
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                Assert.AreEqual(mi.Format, ImageMagick.MagickFormat.Gif);
+                Assert.AreEqual(mi.ChannelCount, 5);
+                Assert.AreEqual(mi.Depth, 8);
+                Debug.WriteLine(BitmapHelper.GetRecommendedExt(mi));
+            }
+
+            /*
             imagedata = File.ReadAllBytes("testpng.png");
             var bitmapPng = BitmapHelper.ImageDataToBitmap(imagedata);
             Assert.IsNotNull(bitmapPng);
@@ -49,8 +83,10 @@ namespace ImageBankTest
             var bitmapGif = BitmapHelper.ImageDataToBitmap(imagedata);
             Assert.IsNotNull(bitmapGif);
             bitmapGif.Save("testgif_.jpg");
+            */
         }
 
+        /*
         [TestMethod]
         public void BitmapToImageDataTest()
         {

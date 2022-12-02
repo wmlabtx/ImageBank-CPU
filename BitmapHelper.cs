@@ -50,14 +50,51 @@ namespace ImageBank
             }
         }
 
+        public static MagickImage ImageDataToMagickImage(byte[] imagedata)
+        {
+            try {
+                var image = new MagickImage(imagedata);
+                return image;
+            }
+            catch (MagickMissingDelegateErrorException) {
+                return null;
+            }
+            catch (MagickCorruptImageErrorException) {
+                return null;
+            }
+        }
+
+        public static string GetRecommendedExt(MagickImage image)
+        {
+            switch (image.Format) {
+                case MagickFormat.Jpeg:
+                    return ".jpg";
+                case MagickFormat.Png:
+                    return ".png";
+                case MagickFormat.Bmp:
+                    return ".bmp";
+                case MagickFormat.Gif:
+                    return ".gif";
+                case MagickFormat.WebP:
+                    return ".webp";
+                case MagickFormat.Heic:
+                    return ".heic";
+                default:
+                    throw new Exception($"Unkown extension for {image.Format}");
+            }
+        }
+
         public static bool BitmapToImageData(Bitmap bitmap, out byte[] imagedata)
         {
             try {
                 var mf = new MagickFactory();
                 using (var image = new MagickImage(mf.Image.Create(bitmap))) {
+                    image.Format = MagickFormat.Png;
+                    /*
                     image.Format = MagickFormat.WebP;
                     image.Quality = 100;
                     image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
+                    */
                     using (var ms = new MemoryStream()) {
                         image.Write(ms);
                         imagedata = ms.ToArray();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing.Imaging;
+using System.IO;
 
 namespace ImageBank
 {
@@ -8,8 +9,8 @@ namespace ImageBank
         public static void Export(int idpanel, IProgress<string> progress)
         {
             var img = AppPanels.GetImgPanel(idpanel).Img;
-            var filename = FileHelper.NameToFileName(img.Name);
-            var imagedata = FileHelper.ReadData(filename);
+            var filename = $"{AppConsts.PathRoot}\\{img.Name}";
+            var imagedata = File.ReadAllBytes(filename);
             if (imagedata == null) {
                 return;
             }

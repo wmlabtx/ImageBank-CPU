@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -110,22 +109,6 @@ namespace ImageBank
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             OnKeyDown(e.Key);
-        }
-
-        private void CombineClick(object sender, RoutedEventArgs e)
-        {
-            CombineClick();
-        }
-
-        private void SplitClick(object sender, RoutedEventArgs e)
-        {
-            SplitClick();
-        }
-
-        private void SetFamilyClick(object sender, RoutedEventArgs e)
-        {
-            var tag = int.Parse((string)((MenuItem)sender).Tag);
-            SetFamily(tag);
         }
     }
 }

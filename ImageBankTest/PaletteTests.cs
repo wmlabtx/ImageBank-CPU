@@ -15,6 +15,7 @@ namespace ImageBankTest
     [TestClass]
     public class PaletteTests
     {
+        /*
         [TestMethod()]
         public void TestColors()
         {
@@ -284,5 +285,6 @@ namespace ImageBankTest
                 counter++;
             }
         }
+        */
     }
 }

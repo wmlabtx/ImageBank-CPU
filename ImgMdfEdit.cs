@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 
 namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Rotate(int id, RotateFlipType rft, IProgress<string> progress)
+        public static void Rotate(string hash, RotateFlipType rft, IProgress<string> progress)
         {
-            if (AppImgs.TryGetValue(id, out var img)) {
-                var filename = FileHelper.NameToFileName(img.Name);
-                var imagedata = FileHelper.ReadData(filename);
+            if (AppImgs.TryGetValue(hash, out var img)) {
+                var filename = $"{AppConsts.PathRoot}\\{img.Name}";
+                var imagedata = File.ReadAllBytes(filename);
                 if (imagedata != null) {
                     var bitmap = BitmapHelper.ImageDataToBitmap(imagedata);
                     if (bitmap == null) {
@@ -34,23 +35,22 @@ namespace ImageBank
                         return;
                     }
 
-                    var rhash = Md5HashHelper.Compute(rimagedata);
-                    if (AppImgs.ContainsHash(rhash)) {
+                    var rhash = HashHelper.Compute(rimagedata);
+                    if (AppImgs.ContainsId(rhash)) {
                         progress.Report($"Dup found for {filename}");
                         return;
                     }
 
-                    var rhist = AppPalette.ComputeHist(bitmap);
+                    var rvector = VggHelper.CalculateVector(bitmap);
+                    var newname = Path.ChangeExtension(img.Name, AppConsts.PngExtension);
                     var rimg = new Img(
-                        id: img.Id,
-                        name: img.Name,
+                        name: newname,
                         hash: rhash,
                         year: img.Year,
                         lastview: DateTime.Now,
-                        familyid: img.FamilyId,
-                        hist: rhist);
+                        vector: rvector);
 
-                    Delete(id);
+                    Delete(hash);
                     FileHelper.WriteData(filename, rimagedata);
                     Add(rimg);
 

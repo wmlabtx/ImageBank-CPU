@@ -7,6 +7,7 @@ namespace ImageBankTest
     [TestClass()]
     public class Md5HashHelperTests
     {
+        /*
         [TestMethod("Compute")]
         public void ComputeTest()
         {
@@ -29,5 +30,6 @@ namespace ImageBankTest
             Assert.AreEqual(h2a, "46c85b65e1a8f4b44d071953c05411c1");
             Assert.IsFalse(h2a.Equals(h1a, StringComparison.OrdinalIgnoreCase));
         }
+        */
     }
 }
