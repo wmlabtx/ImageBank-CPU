@@ -5,6 +5,10 @@ using System.Diagnostics;
 using ImageBank;
 using System.IO;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Web;
 
 namespace ImageBankTest
 {
@@ -25,7 +29,7 @@ namespace ImageBankTest
             var inpBlob = CvDnn.BlobFromImage(
                 image: frame,
                 scaleFactor: 1.0 / 255,
-                size: new Size(224, 224),
+                size: new OpenCvSharp.Size(224, 224),
                 mean: new Scalar(0.485, 0.456, 0.406),
                 swapRB: false,
                 crop: true);
@@ -55,9 +59,9 @@ namespace ImageBankTest
             //var vector = new float[2048];
 
             output.GetArray(out float[] data);
-            VggHelper.LoadNet();
+            VggHelper.LoadNet(null);
             var imagedata = File.ReadAllBytes("train\\train12.jpg");
-            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata, RotateFlipType.RotateNoneFlipNone)) {
                 var v2 = VggHelper.CalculateVector(bitmap);
             }
         }
@@ -65,7 +69,8 @@ namespace ImageBankTest
         [TestMethod]
         public void GetDistance()
         {
-            VggHelper.LoadNet();
+            /*
+            VggHelper.LoadNet(null);
             var images = new[] {
                 "gab_org", "gab_bw", "gab_scale", "gab_flip", "gab_r90", "gab_crop", "gab_toside",
                 "gab_blur", "gab_exp", "gab_logo", "gab_noice", "gab_r3", "gab_r10",
@@ -87,6 +92,42 @@ namespace ImageBankTest
             for (var i = 0; i < vectors.Length; i++) {
                 var distance = VggHelper.GetDistance(vectors[0].Item2, vectors[i].Item2);
                 Debug.WriteLine($"{images[i]} = {distance:F2}");
+            }
+            */
+        }
+
+        [TestMethod]
+        public void GetStatistics()
+        {
+            var hist = new SortedList<int, int>();
+            Debug.WriteLine("Loading database");
+            AppDatabase.LoadImages(null);
+            var counter = 0;
+            var keys = AppImgs.GetKeys();
+            foreach (var key in keys) {
+                if (!AppImgs.TryGetValue(key, out Img imgX)) {
+                    continue;
+                }
+
+                var vector = imgX.GetVector();
+                foreach (var e in vector) {
+                    var q = (int)(e * 10);
+                    if (hist.ContainsKey(q)) {
+                        hist[q]++;
+                    }
+                    else {
+                        hist.Add(q, 1);
+                    }
+                }
+
+                Debug.WriteLine($"{counter}: {key.Substring(0, 5)}");
+                counter++;
+            }
+
+            foreach (var key in hist.Keys) {
+                var k = key / 10.0;
+                var v = hist[key];
+                Debug.WriteLine($"{k:F1} {v}");
             }
         }
     }

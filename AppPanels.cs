@@ -19,23 +19,33 @@ namespace ImageBank
                 return false;
             }
 
-            var filename = $"{AppConsts.PathRoot}\\{img.Name}";
-            var imagedata = File.ReadAllBytes(filename);
+            var filename = FileHelper.NameToFileName(img.Name);
+            var lastmodified = File.GetLastWriteTime(filename);
+            var imagedata = FileHelper.ReadEncryptedFile(filename);
             if (imagedata == null) {
                 return false;
             }
 
-            var bitmap = BitmapHelper.ImageDataToBitmap(imagedata);
-            if (bitmap == null) {
-                return false;
+            using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                if (magickImage == null) {
+                    return false;
+                }
+
+                var datetaken = BitmapHelper.GetDateTaken(magickImage, lastmodified);
+                var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, img.Orientation);
+                if (bitmap == null) {
+                    return false;
+                }
+
+                var imgpanel = new ImgPanel(
+                    img: img,
+                    size: imagedata.LongLength,
+                    bitmap: bitmap,
+                    datetaken: datetaken);
+
+                _imgpanels[idpanel] = imgpanel;
             }
 
-            var imgpanel = new ImgPanel(
-                img: img,
-                size: imagedata.LongLength,
-                bitmap: bitmap);
-
-            _imgpanels[idpanel] = imgpanel;
             return true;
         }
 
@@ -98,7 +108,7 @@ namespace ImageBank
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastView));
             var similarsfound = _similars.Count;
             var distance = _similars[_position].Item2;
-            progress?.Report($"{totalcount}: {imgX.Hash.Substring(0, 5)} [{age} ago] = ({_position}/{similarsfound}) {distance:F4}");
+            progress?.Report($"{totalcount}: {imgX.Name} [{age} ago] = ({_position}/{similarsfound}) {distance:F2}");
         }
     }
 }

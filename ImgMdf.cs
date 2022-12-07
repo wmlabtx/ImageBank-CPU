@@ -6,12 +6,12 @@ namespace ImageBank
     {
         static ImgMdf()
         {
-            VggHelper.LoadNet();
         }
 
         public static void LoadImages(IProgress<string> progress)
         {
             AppImgs.Clear();
+            VggHelper.LoadNet(progress);
             AppDatabase.LoadImages(progress);
         }
     }

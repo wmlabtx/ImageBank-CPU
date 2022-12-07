@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ImageBank
 {
@@ -33,7 +34,7 @@ namespace ImageBank
             return result;
         }
 
-        public static bool ContainsId(string hash)
+        public static bool ContainsHash(string hash)
         {
             bool result = _imgList.ContainsKey(hash);
             return result;
@@ -57,25 +58,42 @@ namespace ImageBank
             return lv;
         }
 
+        public static DateTime GetMinLastCheck()
+        {
+            DateTime lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastCheck).AddSeconds(1) : DateTime.Now;
+            return lv;
+        }
+
         public static Img GetNextView()
         {
-            string id;
-            Img imgX;
-            var rand = AppVars.IRandom(0, 2);
-            if (rand == 0) {
-                rand = AppVars.IRandom(0, _imgList.Keys.Count - 1);
-                id = _imgList.Keys[rand];
-            }
-            else {
-                var minlv = _imgList.Values.Min(e => e.LastView);
-                var nextday = minlv.AddDays(1);
-                var oldday = _imgList.Values.Where(e => e.LastView < nextday).Select(e => e.Hash).ToArray();
-                rand = AppVars.IRandom(0, oldday.Length - 1);
-                id = oldday[rand];
+            if (_imgList.Count < 2) {
+                return null;
             }
 
-            imgX = _imgList[id];
+            var scope = _imgList.Values.Where(e => !e.Hash.Equals(e.BestHash) && _imgList.ContainsKey(e.BestHash));
+            if (scope.Count() < 2) {
+                return null;
+            }
+
+            var mincounter = scope.Min(e => e.Counter);
+            var imgX = scope.Where(e => e.Counter == mincounter).OrderBy(e => e.Distance).FirstOrDefault();
             return imgX;
+        }
+
+        public static Img GetNextCheck()
+        {
+            if (_imgList.Count < 2) {
+                return null;
+            }
+
+            var scope = _imgList.Values.OrderBy(e => e.LastCheck);
+            foreach (var img in scope) {
+                if (img.Hash.Equals(img.BestHash) || !_imgList.ContainsKey(img.BestHash)) {
+                    return img;
+                }
+            }
+
+            return scope.First();
         }
 
         public static string[] GetKeys()
@@ -96,6 +114,20 @@ namespace ImageBank
 
             similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
             return similars;
+        }
+
+        public static void GetSimilar(Img imgX, out string besthash, out float distance)
+        {
+            besthash = string.Empty;
+            distance = 1f;
+            var scope = _imgList.Values.Where(e => !string.Equals(e.Hash, imgX.Hash));
+            foreach (var img in scope) {
+                var d = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
+                if (d < distance) {
+                    besthash = img.Hash;
+                    distance = d;
+                }
+            }
         }
     }
 }

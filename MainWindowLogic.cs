@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
@@ -53,6 +54,11 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
+        }
+
+        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
+        {
+            BackgroundStatus.Text = (string)e.UserState;
         }
 
         private void OnStateChanged()
@@ -131,12 +137,14 @@ namespace ImageBank
 
             var pBoxes = new[] { BoxLeft, BoxRight };
             var pLabels = new[] { LabelLeft, LabelRight };
-            var fs = new float[2];
             for (var index = 0; index < 2; index++) {
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(panels[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{panels[index].Img.Name} [{panels[index].Img.Hash.Substring(0, 7)}...]");
+                sb.Append($"{panels[index].Img.Name}");
+                if (panels[index].Img.Counter != 0) {
+                    sb.Append($" [{panels[index].Img.Counter}]");
+                }
 
                 sb.AppendLine();
 
@@ -144,19 +152,13 @@ namespace ImageBank
                 sb.Append($" ({panels[index].Bitmap.Width}x{panels[index].Bitmap.Height})");
                 sb.AppendLine();
 
-                if (panels[index].Img.Year != 0) {
-                    sb.Append($"[{panels[index].Img.Year}]");
-                }
-
                 sb.Append($" {Helper.TimeIntervalToString(DateTime.Now.Subtract(panels[index].Img.LastView))} ago ");
-
-                fs[index] = panels[index].Size / ((float)panels[index].Bitmap.Width * panels[index].Bitmap.Height);
-                sb.Append($" [{fs[index]:F4}]");
+                sb.Append($" [{Helper.GetShortDateTaken(panels[index].DateTaken)}]");
 
                 pLabels[index].Text = sb.ToString();
 
                 if (index == 1) {
-                    if (fs[0] < fs[1]) {
+                    if (panels[0].DateTaken > panels[1].DateTaken) {
                         pLabels[0].Background = System.Windows.Media.Brushes.LightSalmon;
                         pLabels[1].Background = System.Windows.Media.Brushes.White;
                     }
@@ -174,13 +176,11 @@ namespace ImageBank
         {
             var ws = new double[2];
             var hs = new double[2];
-            for (var index = 0; index < 2; index++)
-            {
+            for (var index = 0; index < 2; index++) {
                 var panel = AppPanels.GetImgPanel(index);
                 ws[index] = _picsMaxWidth / 2;
                 hs[index] = _picsMaxHeight;
-                if (panel != null && panel.Bitmap != null)
-                {
+                if (panel != null && panel.Bitmap != null) {
                     ws[index] = panel.Bitmap.Width;
                     hs[index] = panel.Bitmap.Height;
                 }
@@ -208,13 +208,13 @@ namespace ImageBank
         {
             DisableElements();
             var hash = AppPanels.GetImgPanel(idpanel).Img.Hash;
-            await Task.Run(() => { ImgMdf.Delete(hash); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Delete(hash, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
 
-        private async void Rotate(RotateFlipType rft)
+        private async void RotateClick(RotateFlipType rft)
         {
             DisableElements();
             var hash = AppPanels.GetImgPanel(0).Img.Hash;
@@ -222,21 +222,6 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.Find(hash, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
-        }
-
-        private void Rotate90Click()
-        {
-            Rotate(RotateFlipType.Rotate90FlipNone);
-        }
-
-        private void Rotate180Click()
-        {
-            Rotate(RotateFlipType.Rotate180FlipNone);
-        }
-
-        private void Rotate270Click()
-        {
-            Rotate(RotateFlipType.Rotate270FlipNone);
         }
 
         ~MainWindow()
@@ -257,31 +242,41 @@ namespace ImageBank
 
         private void RefreshClick()
         {
+            DisableElements();
             DrawCanvas();
+            EnableElements();
         }
 
         private void LeftMoveClick()
         {
+            DisableElements();
             AppPanels.MoveLeftPosition(AppVars.Progress);
             DrawCanvas();
+            EnableElements();
         }
 
         private void RightMoveClick()
         {
+            DisableElements();
             AppPanels.MoveRightPosition(AppVars.Progress);
             DrawCanvas();
+            EnableElements();
         }
 
         private void FirstMoveClick()
         {
+            DisableElements();
             AppPanels.SetFirstPosition(AppVars.Progress);
             DrawCanvas();
+            EnableElements();
         }
 
         private void LastMoveClick()
         {
+            DisableElements();
             AppPanels.SetLastPosition(AppVars.Progress);
             DrawCanvas();
+            EnableElements();
         }
 
         private void OnKeyDown(Key key)

@@ -11,14 +11,15 @@ namespace ImageBank
     {
         private static Net _net;
 
-        public static void LoadNet()
+        public static void LoadNet(IProgress<string> progress)
         {
+            progress?.Report($"Loading net{AppConsts.CharEllipsis}");
             _net = CvDnn.ReadNetFromOnnx(AppConsts.FileVgg);
         }
 
-        public static float[] CalculateVector(Bitmap bitmap)
+        public static byte[] CalculateVector(Bitmap bitmap)
         {
-            float[] vector;
+            byte[] vector;
             using (var input = new Mat(new int[] { 1, 3, 224, 224 }, MatType.CV_32F))
             using (var b = BitmapHelper.ScaleAndCut(bitmap, 224, 224 / 16)) {
                 b.Save("bitmap.png", ImageFormat.Png);
@@ -50,13 +51,17 @@ namespace ImageBank
 
                 _net.SetInput(input);
                 var output = _net.Forward("onnx_node!resnetv27_flatten0_reshape0");
-                output.GetArray(out vector);
+                output.GetArray(out float[] buffer);
+                vector = new byte[buffer.Length];
+                for (var i = 0; i < buffer.Length; i++) {
+                    vector[i] = (byte)Math.Min(255, (int)(buffer[i] * 255.0 / 10.0));
+                }
             }
 
             return vector;
         }
 
-        public static float GetDistance(float[] x, float[] y)
+        public static float GetDistance(byte[] x, byte[] y)
         {
             if (x.Length == 0 || y.Length == 0 || x.Length != y.Length) {
                 return 1f;
@@ -66,9 +71,9 @@ namespace ImageBank
             double magx = 0.0;
             double magy = 0.0;
             for (int n = 0; n < x.Length; n++) {
-                dot += x[n] * y[n];
-                magx += x[n] * x[n];
-                magy += y[n] * y[n];
+                dot += (double)x[n] * y[n] / (255.0 * 255.0);
+                magx += (double)x[n] * x[n] / (255.0 * 255.0);
+                magy += (double)y[n] * y[n] / (255.0 * 255.0);
             }
 
             return 1f - (float)(dot / (Math.Sqrt(magx) * Math.Sqrt(magy)));

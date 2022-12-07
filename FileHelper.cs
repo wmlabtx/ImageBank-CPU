@@ -6,6 +6,11 @@ namespace ImageBank
 {
     public static class FileHelper
     {
+        public static string NameToFileName(string name)
+        {
+            return $"{AppConsts.PathHp}\\{name}{AppConsts.MzxExtension}";
+        }
+
         public static byte[] ReadEncryptedFile(string filename)
         {
             if (!File.Exists(filename)) {
@@ -18,14 +23,16 @@ namespace ImageBank
             return imgdata;
         }
 
-        public static void WriteData(string filename, byte[] imgdata)
+        public static void WriteEncryptedFile(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllBytes(filename, imgdata);
+            var password = Path.GetFileNameWithoutExtension(filename);
+            var earray = EncryptionHelper.Encrypt(imgdata, password);
+            File.WriteAllBytes(filename, earray);
         }
 
         public static void DeleteToRecycleBin(string filename)

@@ -48,22 +48,34 @@ namespace ImageBank
                 sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                 sb.Append($"{AppConsts.AttributeName}, ");
                 sb.Append($"{AppConsts.AttributeHash}, ");
-                sb.Append($"{AppConsts.AttributeYear}, ");
+                sb.Append($"{AppConsts.AttributeCounter}, ");
                 sb.Append($"{AppConsts.AttributeLastView}, ");
+                sb.Append($"{AppConsts.AttributeBestHash}, ");
+                sb.Append($"{AppConsts.AttributeDistance}, ");
+                sb.Append($"{AppConsts.AttributeLastCheck}, ");
+                sb.Append($"{AppConsts.AttributeOrientation}, ");
                 sb.Append($"{AppConsts.AttributeVector}");
                 sb.Append(") VALUES (");
                 sb.Append($"@{AppConsts.AttributeName}, ");
                 sb.Append($"@{AppConsts.AttributeHash}, ");
-                sb.Append($"@{AppConsts.AttributeYear}, ");
+                sb.Append($"@{AppConsts.AttributeCounter}, ");
                 sb.Append($"@{AppConsts.AttributeLastView}, ");
+                sb.Append($"@{AppConsts.AttributeBestHash}, ");
+                sb.Append($"@{AppConsts.AttributeDistance}, ");
+                sb.Append($"@{AppConsts.AttributeLastCheck}, ");
+                sb.Append($"@{AppConsts.AttributeOrientation}, ");
                 sb.Append($"@{AppConsts.AttributeVector}");
                 sb.Append(')');
                 sqlCommand.CommandText = sb.ToString();
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
-                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeYear}", img.Year);
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeCounter}", img.Counter);
                 sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
-                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", Helper.ArrayFromFloat(img.GetVector()));
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestHash}", img.BestHash);
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDistance}", img.Distance);
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastCheck}", img.LastCheck);
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeOrientation}", Helper.RotateFlipTypeToByte(img.Orientation));
+                sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", img.GetVector());
                 sqlCommand.ExecuteNonQuery();
             }
         }
@@ -74,9 +86,13 @@ namespace ImageBank
             sb.Append("SELECT ");
             sb.Append($"{AppConsts.AttributeName}, "); // 0
             sb.Append($"{AppConsts.AttributeHash}, "); // 1
-            sb.Append($"{AppConsts.AttributeYear}, "); // 2
+            sb.Append($"{AppConsts.AttributeCounter}, "); // 2
             sb.Append($"{AppConsts.AttributeLastView}, "); // 3
-            sb.Append($"{AppConsts.AttributeVector} "); // 4
+            sb.Append($"{AppConsts.AttributeBestHash}, "); // 4
+            sb.Append($"{AppConsts.AttributeDistance}, "); // 5
+            sb.Append($"{AppConsts.AttributeLastCheck}, "); // 6
+            sb.Append($"{AppConsts.AttributeOrientation}, "); // 7
+            sb.Append($"{AppConsts.AttributeVector} "); // 8
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -87,15 +103,22 @@ namespace ImageBank
                     while (reader.Read()) {
                         var name = reader.GetString(0);
                         var hash = reader.GetString(1);
-                        var year = reader.GetInt32(2);
+                        var counter = reader.GetInt32(2);
                         var lastview = reader.GetDateTime(3);
-                        var buffer = (byte[])reader[4];
-                        var vector = Helper.ArrayToFloat(buffer);
+                        var besthash = reader.GetString(4);
+                        var distance = reader.GetFloat(5);
+                        var lastcheck = reader.GetDateTime(6);
+                        var orientation = Helper.ByteToRotateFlipType(reader.GetByte(7));
+                        var vector = (byte[])reader[8];
                         var img = new Img(
                             name: name,
                             hash: hash,
-                            year: year,
+                            counter: counter,
                             lastview: lastview,
+                            besthash: besthash,
+                            distance: distance,
+                            lastcheck: lastcheck,
+                            orientation: orientation,
                             vector: vector
                             );
 
@@ -104,7 +127,7 @@ namespace ImageBank
                         if (DateTime.Now.Subtract(dtn).TotalMilliseconds > AppConsts.TimeLapse) {
                             dtn = DateTime.Now;
                             var count = AppImgs.Count();
-                            progress?.Report($"Loading images ({count})...");
+                            progress?.Report($"Loading images ({count}){AppConsts.CharEllipsis}");
                         }
                     }
                 }

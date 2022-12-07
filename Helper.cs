@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -61,7 +62,7 @@ namespace ImageBank
                     continue;
                 }
 
-                progress.Report($"{directory} deleting...");
+                progress.Report($"{directory} deleting{AppConsts.CharEllipsis}");
                 try {
                     Directory.Delete(directory, false);
                 }
@@ -179,21 +180,37 @@ namespace ImageBank
             return scb;
         }
 
-        /*
-        public static float GetDistance(float[] x, float[] y)
+        public static string GetShortDateTaken(DateTime datetaken)
         {
-            if (x.Length == 0 || y.Length == 0 || x.Length != y.Length) {
-                return 1f;
-            }
-
-            var sum = 0f;
-            for (var i = 0; i < x.Length; i++) {
-                sum += x[i] * y[i];
-            }
-
-            var sim = (float)Math.Sqrt(1f - sum);
-            return sim;
+            return $"{datetaken.Year}:{datetaken.Month:D2}:{datetaken.Day:D2}";
         }
-        */
+
+        public static byte RotateFlipTypeToByte(RotateFlipType rft)
+        {
+            switch (rft) {
+                case RotateFlipType.RotateNoneFlipNone: 
+                    return 0;
+                case RotateFlipType.Rotate90FlipNone: 
+                    return 1;
+                case RotateFlipType.Rotate270FlipNone:
+                    return 2;
+                default:
+                    return 0;
+            }
+        }
+
+        public static RotateFlipType ByteToRotateFlipType(byte b)
+        {
+            switch (b) {
+                case 0:
+                    return RotateFlipType.RotateNoneFlipNone;
+                case 1:
+                    return RotateFlipType.Rotate90FlipNone;
+                case 2:
+                    return RotateFlipType.Rotate270FlipNone;
+                default:
+                    return RotateFlipType.RotateNoneFlipNone;
+            }
+        }
     }
 }

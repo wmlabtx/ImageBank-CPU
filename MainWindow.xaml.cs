@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ImageBank
@@ -25,24 +27,21 @@ namespace ImageBank
 
         private void PictureLeftBoxMouseClick(object sender, MouseEventArgs e)
         {
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
+            if (e.RightButton == MouseButtonState.Pressed) {
                 PictureLeftBoxMouseClick();
             }
         }
 
         private void PictureRightBoxMouseClick(object sender, MouseEventArgs e)
         {
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
+            if (e.RightButton == MouseButtonState.Pressed) {
                 PictureRightBoxMouseClick();
             }
         }
 
         private void ButtonLeftNextMouseClick(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
+            if (e.LeftButton == MouseButtonState.Pressed) {
                 ButtonLeftNextMouseClick();
             }
         }
@@ -51,15 +50,14 @@ namespace ImageBank
         {
         }
 
-        private void Rotate90Click(object sender, EventArgs e)
+        private void RotateClick(object sender, EventArgs e)
         {
-            Rotate90Click();
+            var stag = (string)((MenuItem)sender).Tag;
+            var tag = byte.Parse(stag);
+            var rft = Helper.ByteToRotateFlipType(tag);
+            RotateClick(rft);
         }
 
-        private void Rotate180Click(object sender, EventArgs e)
-        {
-            Rotate180Click();
-        }
 
         private void ExitClick(object sender, EventArgs e)
         {
@@ -69,11 +67,6 @@ namespace ImageBank
         private void ImportClick(object sender, RoutedEventArgs e)
         {
             ImportClick();
-        }
-
-        private void Rotate270Click(object sender, RoutedEventArgs e)
-        {
-            Rotate270Click();
         }
 
         private void ExportClick(object sender, RoutedEventArgs e)

@@ -1,12 +1,15 @@
-﻿namespace ImageBank
+﻿using System;
+
+namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Delete(string hash)
+        public static void Delete(string hash, IProgress<string> progress)
         {
             if (AppImgs.TryGetValue(hash, out var img)) {
+                progress.Report($"Delete {img.Name}");
                 AppImgs.Delete(img);
-                var filename = $"{AppConsts.PathRoot}\\{img.Name}";
+                var filename = FileHelper.NameToFileName(img.Name);
                 FileHelper.DeleteToRecycleBin(filename);
             }
 

@@ -3,6 +3,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 
@@ -25,31 +26,6 @@ namespace ImageBank
             }
         }
 
-        public static Bitmap ImageDataToBitmap(byte[] imagedata)
-        {
-            try {
-                using (var image = new MagickImage(imagedata)) {
-                    var bitmap = image.ToBitmap();
-                    if (bitmap.PixelFormat == PixelFormat.Format24bppRgb) {
-                        return bitmap;
-                    }
-
-                    var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
-                    using (var g = Graphics.FromImage(bitmap24BppRgb)) {
-                        g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
-                    }
-
-                    return bitmap24BppRgb;
-                }
-            }
-            catch (MagickMissingDelegateErrorException) {
-                return null;
-            }
-            catch (MagickCorruptImageErrorException) {
-                return null;
-            }
-        }
-
         public static MagickImage ImageDataToMagickImage(byte[] imagedata)
         {
             try {
@@ -62,6 +38,23 @@ namespace ImageBank
             catch (MagickCorruptImageErrorException) {
                 return null;
             }
+        }
+
+        public static Bitmap MagickImageToBitmap(MagickImage magickImage, RotateFlipType rft)
+        {
+            var bitmap = magickImage.ToBitmap();
+            if (bitmap.PixelFormat == PixelFormat.Format24bppRgb) {
+                bitmap.RotateFlip(rft);
+                return bitmap;
+            }
+
+            var bitmap24BppRgb = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(bitmap24BppRgb)) {
+                g.DrawImage(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
+            }
+
+            bitmap24BppRgb.RotateFlip(rft);
+            return bitmap24BppRgb;
         }
 
         public static string GetRecommendedExt(MagickImage image)
@@ -84,17 +77,12 @@ namespace ImageBank
             }
         }
 
-        public static bool BitmapToImageData(Bitmap bitmap, out byte[] imagedata)
+        public static bool BitmapToImageData(Bitmap bitmap, MagickFormat magickFormat, out byte[] imagedata)
         {
             try {
                 var mf = new MagickFactory();
                 using (var image = new MagickImage(mf.Image.Create(bitmap))) {
-                    image.Format = MagickFormat.Png;
-                    /*
-                    image.Format = MagickFormat.WebP;
-                    image.Quality = 100;
-                    image.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
-                    */
+                    image.Format = magickFormat;
                     using (var ms = new MemoryStream()) {
                         image.Write(ms);
                         imagedata = ms.ToArray();
@@ -106,6 +94,31 @@ namespace ImageBank
                 imagedata = null;
                 return false;
             }
+        }
+
+        public static DateTime GetDateTaken(MagickImage magickImage, DateTime defaultValue)
+        {
+            var exif = magickImage.GetExifProfile();
+            if (exif == null) {
+                return defaultValue;
+            }
+
+            var possibleExifTags = new ExifTag<string>[] { ExifTag.DateTimeOriginal, ExifTag.DateTimeDigitized, ExifTag.DateTime };
+            foreach (var tag in possibleExifTags) {
+                var field = exif.GetValue(tag);
+                if (field == null) {
+                    continue;
+                }
+
+                var value = field.ToString();
+                if (!DateTime.TryParseExact(value, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt)) {
+                    continue;
+                }
+
+                return dt;
+            }
+
+            return defaultValue;
         }
 
         public static Bitmap ScaleAndCut(Bitmap bitmap, int dim, int border)
@@ -121,7 +134,6 @@ namespace ImageBank
             else {
                 width = bigdim;
                 height = (int)Math.Round(bitmap.Height * bigdim / (float)bitmap.Width);
-
             }
 
             using (Bitmap bitmapbigdim = new Bitmap(width, height, PixelFormat.Format24bppRgb)) {
@@ -141,7 +153,6 @@ namespace ImageBank
                     y = border + (height - width) / 2;
                 }
 
-                //bitmapbigdim.Save("bdim.png", ImageFormat.Png);
                 bitmapdim = bitmapbigdim.Clone(new Rectangle(x, y, dim, dim), PixelFormat.Format24bppRgb);
             }
 

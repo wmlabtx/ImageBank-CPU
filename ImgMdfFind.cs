@@ -6,6 +6,10 @@ namespace ImageBank
     {
         public static void Find(string hashX, IProgress<string> progress)
         {
+            for (var i = 0; i < 10; i++) {
+                ComputeInternal(progress);
+            }
+
             Img imgX;
             int totalcount;
             do {
@@ -16,11 +20,16 @@ namespace ImageBank
                 }
 
                 if (hashX == null) {
-                    hashX = AppImgs.GetNextView().Hash;
+                    imgX = AppImgs.GetNextView();
+                    if (imgX == null) {
+                        return;
+                    }
+
+                    hashX = imgX.Hash;
                 }
 
                 if (!AppPanels.SetImgPanel(0, hashX)) {
-                    Delete(hashX);
+                    Delete(hashX, progress);
                     progress?.Report($"{hashX} deleted");
                     hashX = null;
                     continue;

@@ -8,6 +8,7 @@ namespace ImageBank
         {
             var imgX = AppPanels.GetImgPanel(0).Img;
             imgX.SetLastView(DateTime.Now);
+            imgX.SetCounter(imgX.Counter + 1);
         }
     }
 } 
