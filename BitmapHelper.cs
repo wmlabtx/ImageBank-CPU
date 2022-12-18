@@ -1,10 +1,12 @@
 ﻿using ImageMagick;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace ImageBank
@@ -19,7 +21,9 @@ namespace ImageBank
 
             var handle = bitmap.GetHbitmap();
             try {
-                return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                var image = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                image.Freeze();
+                return image;
             }
             finally {
                 NativeMethods.DeleteObject(handle);
@@ -28,16 +32,18 @@ namespace ImageBank
 
         public static MagickImage ImageDataToMagickImage(byte[] imagedata)
         {
+            MagickImage magickImage = null;
             try {
-                var image = new MagickImage(imagedata);
-                return image;
+                magickImage = new MagickImage(imagedata);
             }
             catch (MagickMissingDelegateErrorException) {
-                return null;
+                magickImage = null;
             }
             catch (MagickCorruptImageErrorException) {
-                return null;
+                magickImage = null;
             }
+
+            return magickImage;
         }
 
         public static Bitmap MagickImageToBitmap(MagickImage magickImage, RotateFlipType rft)
@@ -157,6 +163,30 @@ namespace ImageBank
             }
 
             return bitmapdim;
+        }
+
+        public static Bitmap BitmapXor(Bitmap xb, Bitmap yb)
+        {
+            BitmapData xd = xb.LockBits(new Rectangle(0, 0, xb.Width, xb.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            byte[] xa = new byte[xd.Stride * xd.Height];
+            Marshal.Copy(xd.Scan0, xa, 0, xa.Length);
+            xb.UnlockBits(xd);
+
+            BitmapData yd = yb.LockBits(new Rectangle(0, 0, yb.Width, yb.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            byte[] ya = new byte[yd.Stride * yd.Height];
+            Marshal.Copy(yd.Scan0, ya, 0, ya.Length);
+            yb.UnlockBits(yd);
+
+            for (var i = 0; i < xa.Length; i++) {
+                xa[i] = (byte)(xa[i] ^ ya[i]);
+            }
+
+            Bitmap zb = new Bitmap(xb);
+            BitmapData zd = zb.LockBits(new Rectangle(0, 0, zb.Width, zb.Height), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+            Marshal.Copy(xa, 0, zd.Scan0, xa.Length);
+            zb.UnlockBits(zd);
+
+            return zb;
         }
     }
 }

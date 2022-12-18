@@ -2,11 +2,13 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ImageBank
 {
@@ -17,6 +19,7 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
+        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -54,11 +57,13 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
-        }
 
-        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
-        {
-            BackgroundStatus.Text = (string)e.UserState;
+            AppVars.SuspendEvent = new ManualResetEvent(true);
+
+            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
+            _backgroundWorker.DoWork += DoCompute;
+            _backgroundWorker.ProgressChanged += DoComputeProgress;
+            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -141,7 +146,7 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(panels[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{panels[index].Img.Name}");
+                sb.Append($"{panels[index].Img.Name}.{panels[index].Format}");
                 if (panels[index].Img.Counter != 0) {
                     sb.Append($" [{panels[index].Img.Counter}]");
                 }
@@ -156,17 +161,12 @@ namespace ImageBank
                 sb.Append($" [{Helper.GetShortDateTaken(panels[index].DateTaken)}]");
 
                 pLabels[index].Text = sb.ToString();
-
-                if (index == 1) {
-                    if (panels[0].DateTaken > panels[1].DateTaken) {
-                        pLabels[0].Background = System.Windows.Media.Brushes.LightSalmon;
-                        pLabels[1].Background = System.Windows.Media.Brushes.White;
-                    }
-                    else {
-                        pLabels[0].Background = System.Windows.Media.Brushes.White;
-                        pLabels[1].Background = System.Windows.Media.Brushes.LightSalmon;
-                    }
+                SolidColorBrush scb = System.Windows.Media.Brushes.White;
+                if (panels[index].DateTaken > panels[1 - index].DateTaken) {
+                    scb = System.Windows.Media.Brushes.Pink;
                 }
+
+                pLabels[index].Background = scb;
             }
 
             RedrawCanvas();
@@ -238,6 +238,7 @@ namespace ImageBank
         private void ClassDispose()
         {
             _notifyIcon?.Dispose();
+            _backgroundWorker?.Dispose();
         }
 
         private void RefreshClick()
@@ -289,6 +290,22 @@ namespace ImageBank
                     LeftMoveClick();
                     break;
             }
+        }
+
+        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
+        {
+            BackgroundStatus.Text = (string)e.UserState;
+        }
+
+        private void DoCompute(object s, DoWorkEventArgs args)
+        {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+            while (!_backgroundWorker.CancellationPending) {
+                ImgMdf.BackgroundWorker(_backgroundWorker);
+                Thread.Sleep(100);
+            }
+
+            args.Cancel = true;
         }
     }
 }

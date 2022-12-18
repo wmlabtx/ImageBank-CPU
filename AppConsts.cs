@@ -21,6 +21,7 @@
         public const char CharEllipsis = '\u2026';
         public const char CharRightArrow = '\u2192';
 
+        public const int LockTimeout = 10000;
         public const double WindowMargin = 5.0;
         public const double TimeLapse = 500.0;
 

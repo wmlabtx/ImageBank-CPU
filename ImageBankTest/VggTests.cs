@@ -15,6 +15,7 @@ namespace ImageBankTest
     [TestClass]
     public class VggTests
     {
+        /*
         [TestMethod()]
         public void GetVector()
         {
@@ -61,10 +62,13 @@ namespace ImageBankTest
             output.GetArray(out float[] data);
             VggHelper.LoadNet(null);
             var imagedata = File.ReadAllBytes("train\\train12.jpg");
-            using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata, RotateFlipType.RotateNoneFlipNone)) {
-                var v2 = VggHelper.CalculateVector(bitmap);
+            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                using (var bitmap = BitmapHelper.MagickImageToBitmap(mi, RotateFlipType.RotateNoneFlipNone)) {
+                    var v2 = VggHelper.CalculateVector(bitmap);
+                }
             }
         }
+        */
 
         [TestMethod]
         public void GetDistance()

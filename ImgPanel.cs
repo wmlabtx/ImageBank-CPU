@@ -8,12 +8,15 @@ namespace ImageBank
         public Img Img { get; }
         public long Size { get; }
         public Bitmap Bitmap { get; }
+        public string Format { get; }
         public DateTime DateTaken { get; }
 
-        public ImgPanel(Img img, long size, Bitmap bitmap, DateTime datetaken) {
+        public ImgPanel(Img img, long size, Bitmap bitmap, string format, DateTime datetaken)
+        {
             Img = img;
             Size = size;
             Bitmap = bitmap;
+            Format = format;
             DateTaken = datetaken;
         }
     }

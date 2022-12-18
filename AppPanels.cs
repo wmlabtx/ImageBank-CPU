@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ImageMagick;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -28,22 +29,39 @@ namespace ImageBank
 
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage == null) {
+                    var badname = Path.GetFileName(filename);
+                    var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                    if (File.Exists(badfilename)) {
+                        FileHelper.DeleteToRecycleBin(badfilename);
+                    }
+
+                    File.WriteAllBytes(badfilename, imagedata);
                     return false;
                 }
 
+                var format = magickImage.Format.ToString().ToLower();
                 var datetaken = BitmapHelper.GetDateTaken(magickImage, lastmodified);
                 var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, img.Orientation);
-                if (bitmap == null) {
-                    return false;
+                if (bitmap != null) {
+                    /*
+                    if (idpanel== 1) { 
+                        if (_imgpanels[0].Bitmap.Width == bitmap.Width && _imgpanels[0].Bitmap.Height == bitmap.Height) {
+                            var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, bitmap);
+                            bitmap.Dispose();
+                            bitmap = bitmapxor;
+                        }
+                    }
+                    */
+
+                    var imgpanel = new ImgPanel(
+                        img: img,
+                        size: imagedata.LongLength,
+                        bitmap: bitmap,
+                        format: format,
+                        datetaken: datetaken);
+
+                    _imgpanels[idpanel] = imgpanel;
                 }
-
-                var imgpanel = new ImgPanel(
-                    img: img,
-                    size: imagedata.LongLength,
-                    bitmap: bitmap,
-                    datetaken: datetaken);
-
-                _imgpanels[idpanel] = imgpanel;
             }
 
             return true;

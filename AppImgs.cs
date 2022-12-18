@@ -9,6 +9,7 @@ namespace ImageBank
     {
         private static readonly SortedList<string, Img> _imgList = new SortedList<string, Img>();
         private static readonly SortedList<string, Img> _nameList = new SortedList<string, Img>();
+        private static readonly object _imglock = new object();
 
         public static void Clear()
         {
@@ -18,98 +19,268 @@ namespace ImageBank
 
         public static int Count()
         {
-            return _imgList.Count;
+            int count;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    count = _imgList.Count;
+                }
+                finally { 
+                    Monitor.Exit(_imglock); 
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
+            return count;
         }
 
         public static void Add(Img img)
         {
-            _imgList.Add(img.Hash, img);
-            _nameList.Add(img.Name, img);
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    _imgList.Add(img.Hash, img);
+                    _nameList.Add(img.Name, img);
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
         }
 
         public static bool TryGetValue(string hash, out Img img)
         {
-            bool result = _imgList.TryGetValue(hash, out Img _img);
-            img = _img;
+            bool result;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    result = _imgList.TryGetValue(hash, out Img _img);
+                    img = _img;
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return result;
         }
 
         public static bool ContainsHash(string hash)
         {
-            bool result = _imgList.ContainsKey(hash);
+            bool result;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    result = _imgList.ContainsKey(hash);
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return result;
         }
 
         public static bool ContainsName(string name)
         {
-            bool result = _nameList.ContainsKey(name);
+            bool result;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    result = _nameList.ContainsKey(name);
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return result;
         }
 
         public static void Delete(Img img)
         {
-            _nameList.Remove(img.Name);
-            _imgList.Remove(img.Hash);
+            var minlastcheck = GetMinLastCheck();
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    foreach (var e in _imgList.Values) {
+                        if (e.BestHash.Equals(img.Hash)) {
+                            e.SetLastCheck(minlastcheck);
+                        }
+                    }
+
+                    _nameList.Remove(img.Name);
+                    _imgList.Remove(img.Hash);
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
         }
 
         public static DateTime GetMinLastView()
         {
-            DateTime lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastView).AddSeconds(1) : DateTime.Now;
+            DateTime lv;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastView).AddSeconds(1) : DateTime.Now;
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return lv;
         }
 
         public static DateTime GetMinLastCheck()
         {
-            DateTime lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastCheck).AddSeconds(1) : DateTime.Now;
+            DateTime lv;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastCheck).AddSeconds(1) : DateTime.Now;
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return lv;
         }
 
         public static Img GetNextView()
         {
-            if (_imgList.Count < 2) {
-                return null;
+            Img imgX;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    if (_imgList.Count < 2) {
+                        imgX = null;
+                    }
+                    else {
+                        var scope = _imgList.Values.Where(e => !e.Hash.Equals(e.BestHash) && _imgList.ContainsKey(e.BestHash));
+                        if (scope.Count() < 2) {
+                            imgX = null;
+                        }
+                        else {
+                            var mincounter = scope.Min(e => e.Counter);
+                            imgX = scope.Where(e => e.Counter == mincounter).OrderBy(e => e.Distance).FirstOrDefault();
+                        }
+                    }
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
             }
 
-            var scope = _imgList.Values.Where(e => !e.Hash.Equals(e.BestHash) && _imgList.ContainsKey(e.BestHash));
-            if (scope.Count() < 2) {
-                return null;
-            }
-
-            var mincounter = scope.Min(e => e.Counter);
-            var imgX = scope.Where(e => e.Counter == mincounter).OrderBy(e => e.Distance).FirstOrDefault();
             return imgX;
         }
 
         public static Img GetNextCheck()
         {
-            if (_imgList.Count < 2) {
-                return null;
-            }
+            Img imgX;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    if (_imgList.Count < 2) {
+                        imgX = null;
+                    }
+                    else {
+                        imgX = _imgList.Values.OrderBy(e => e.LastCheck).First();
+                        /*
+                        var scope = _imgList.Values.OrderBy(e => e.LastView);
+                        imgX = null;
+                        foreach (var img in scope) {
+                            if (img.Hash.Equals(img.BestHash) || !_imgList.ContainsKey(img.BestHash)) {
+                                imgX = img;
+                                break;
+                            }
+                        }
 
-            var scope = _imgList.Values.OrderBy(e => e.LastCheck);
-            foreach (var img in scope) {
-                if (img.Hash.Equals(img.BestHash) || !_imgList.ContainsKey(img.BestHash)) {
-                    return img;
+                        if (imgX == null) {
+                            imgX = scope.OrderBy(e => e.LastCheck).First();
+                        }
+                        */
+                    }
+                }
+                finally {
+                    Monitor.Exit(_imglock);
                 }
             }
+            else {
+                throw new Exception();
+            }
 
-            return scope.First();
+            return imgX;
         }
 
         public static string[] GetKeys()
         {
             string[] result;
-            result = _imgList.Keys.ToArray();
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    result = _imgList.Keys.ToArray();
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
             return result;
+        }
+
+        private static List<Tuple<string, byte[]>> GetShadow()
+        {
+            var shadow = new List<Tuple<string, byte[]>>();
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    foreach (var img in _imgList.Values) {
+                        shadow.Add(Tuple.Create(img.Hash, img.GetVector()));
+                    }
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
+            return shadow;
         }
 
         public static List<Tuple<string, float>> GetSimilars(Img imgX)
         {
+            var shadow = GetShadow();
             var similars = new List<Tuple<string, float>>();
-            var scope = _imgList.Values.Where(e => !string.Equals(e.Hash, imgX.Hash));
-            foreach (var img in scope) {
-                var distance = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
-                similars.Add(Tuple.Create(img.Hash, distance));
+            foreach (var e in shadow) {
+                if (imgX.Hash.Equals(e.Item1)) {
+                    continue;
+                }
+
+                var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item2);
+                similars.Add(Tuple.Create(e.Item1, distance));
             }
 
             similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
@@ -118,13 +289,17 @@ namespace ImageBank
 
         public static void GetSimilar(Img imgX, out string besthash, out float distance)
         {
+            var shadow = GetShadow();
             besthash = string.Empty;
             distance = 1f;
-            var scope = _imgList.Values.Where(e => !string.Equals(e.Hash, imgX.Hash));
-            foreach (var img in scope) {
-                var d = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
+            foreach (var e in shadow) {
+                 if (imgX.Hash.Equals(e.Item1)) {
+                    continue;
+                }
+
+                var d = VggHelper.GetDistance(imgX.GetVector(), e.Item2);
                 if (d < distance) {
-                    besthash = img.Hash;
+                    besthash = e.Item1;
                     distance = d;
                 }
             }

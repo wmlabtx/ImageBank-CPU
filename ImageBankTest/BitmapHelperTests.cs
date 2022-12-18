@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Xml.Linq;
 using ImageBank;
 using ImageMagick;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenCvSharp;
 
 namespace ImageBankTest
 {
@@ -12,17 +15,20 @@ namespace ImageBankTest
     {
         private static void TestMagickImageParameters(string filename, MagickFormat format, int channelcount, int depth)
         {
+            /*
             var imagedata = File.ReadAllBytes(filename);
             using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 Assert.AreEqual(mi.Format, format);
                 Assert.AreEqual(mi.ChannelCount, channelcount);
                 Assert.AreEqual(mi.Depth, depth);
             }
+            */
         }
 
         [TestMethod()]
         public void ImageDataToBitmapSourceTest()
         {
+            /*
             var imagedata = File.ReadAllBytes("testnotimage.jpg");
             var miNotimage = BitmapHelper.ImageDataToMagickImage(imagedata);
             Assert.IsNull(miNotimage);
@@ -33,7 +39,50 @@ namespace ImageBankTest
             TestMagickImageParameters("magick\\testwebp.webp", MagickFormat.WebP, 3, 8);
             TestMagickImageParameters("magick\\testheic.heic", MagickFormat.Heic, 3, 8);
             TestMagickImageParameters("magick\\testgif.gif", MagickFormat.Gif, 5, 8);
+            */
         }
+
+        /*
+        private static bool VerifyMagickImage(string filename)
+        {
+            
+            bool result;
+            var imagedata = File.ReadAllBytes(filename);
+            using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                if (magickImage == null) {
+                    result = false;
+                }
+                else {
+                    if (magickImage.Format == MagickFormat.Jpeg) {
+                        if (
+                            imagedata.Length > 16 && 
+                            imagedata[0] == 0xFF && imagedata[1] == 0xD8 &&
+                            imagedata[imagedata.Length - 2] == 0xFF && imagedata[imagedata.Length - 1] == 0xD9) {
+                            result = true;
+                        }
+                        else {
+                            result = false;
+                        }
+                    }
+                    else {
+                        result = true;
+                    }
+                }
+            }
+
+            return result;
+
+        }
+
+        [TestMethod()]
+        public void VerificationTest()
+        {
+            Assert.IsTrue(VerifyMagickImage("magick\\testjpg.jpg"));
+            Assert.IsFalse(VerifyMagickImage("magick\\corrupted1.jpg"));
+            Assert.IsFalse(VerifyMagickImage("magick\\corrupted2.jpg"));
+            Assert.IsFalse(VerifyMagickImage("magick\\corrupted3.jpg"));
+        }
+        */
 
         /*
         [TestMethod]
@@ -55,6 +104,7 @@ namespace ImageBankTest
         }
         */
 
+        /*
         private static DateTime GetDateTaken(string filename)
         {
             var imagedata = File.ReadAllBytes(filename);
@@ -77,5 +127,6 @@ namespace ImageBankTest
             dt = GetDateTaken("magick\\exifnone.jpg");
             Assert.AreEqual(dt.Year, 2021);
         }
+        */
     }
 }

@@ -1,6 +1,7 @@
 ﻿using ImageMagick;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -27,13 +28,10 @@ namespace ImageBank
             return similars;
         }
 
-        private static void ImportFile(string orgfilename, IProgress<string> progress)
+        private static void ImportFile(string path, string orgfilename, IProgress<string> progress)
         {
-            if (!File.Exists(orgfilename)) {
-                return;
-            }
-
-            var fpath = Path.GetDirectoryName(orgfilename).Substring(AppConsts.PathHp.Length + 1);
+            var fdir = Path.GetDirectoryName(orgfilename);
+            var fpath = fdir.Length == path.Length ? string.Empty : fdir.Substring(path.Length + 1);
             var fname = Path.GetFileNameWithoutExtension(orgfilename);
             var name = $"{fpath}\\{fname}";
             if (AppImgs.ContainsName(name)) {
@@ -90,6 +88,7 @@ namespace ImageBank
             }
 
             byte[] vector;
+
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage == null) {
                     var badname = Path.GetFileName(orgfilename);
@@ -160,7 +159,7 @@ namespace ImageBank
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
-                    ImportFile(orgfilename, progress);
+                    ImportFile(path, orgfilename, progress);
                 }
             }
 
@@ -175,35 +174,49 @@ namespace ImageBank
             _bad = 0;
             ImportFiles(AppConsts.PathHp, progress);
             ImportFiles(AppConsts.PathRw, progress);
-            /*
-            for (var i = 0; i < _added + 10; i++) {
-                ComputeInternal(progress);
-            }
-            */
-
             progress.Report($"Import done (a:{_added})/f:{_found}/b:{_bad})");
         }
 
-        public static void ComputeInternal(IProgress<string> progress)
+        private static void Compute(BackgroundWorker backgroundworker)
         {
-            var img1 = AppImgs.GetNextCheck();
-            if (img1 == null) {
+            var imgX = AppImgs.GetNextCheck();
+            if (imgX == null) {
                 return;
             }
 
-            AppImgs.GetSimilar(img1, out string besthash, out float distance);
-            if (!besthash.Equals(img1.BestHash)) {
-                var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(img1.LastView));
-                progress.Report($"[{age} ago] {img1.Name}: {img1.Distance:F2} {AppConsts.CharRightArrow} {distance:F2}");
-                img1.SetBestHash(besthash);
-                img1.SetCounter(0);
+            AppImgs.GetSimilar(imgX, out string besthash, out float distance);
+            if (!besthash.Equals(imgX.BestHash)) {
+                var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck));
+                backgroundworker.ReportProgress(0, $"[{age} ago] {imgX.Name}: {imgX.Distance:F2} {AppConsts.CharRightArrow} {distance:F2}");
+                imgX.SetBestHash(besthash);
+                imgX.SetCounter(0);
             }
 
-            if (Math.Abs(distance - img1.Distance) > 0.01f) {
-                img1.SetDistance(distance);
+            if (Math.Abs(distance - imgX.Distance) > 0.01f) {
+                imgX.SetDistance(distance);
             }
 
-            img1.SetLastCheck(DateTime.Now);
+            imgX.SetLastCheck(DateTime.Now);
+
+            if (AppImgs.TryGetValue(besthash, out Img imgY)) {
+                if (imgY.Distance > distance) {
+                    var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgY.LastView));
+                    backgroundworker.ReportProgress(0, $"[{age} ago] {imgY.Name}: {imgY.Distance:F2} {AppConsts.CharRightArrow} {distance:F2}");
+                    imgY.SetBestHash(besthash);
+                    imgY.SetCounter(0);
+                }
+            }
+
+            /*
+            var random = AppVars.IRandom(0, 999);
+            backgroundworker.ReportProgress(0, $"{random:D3}");
+            Thread.Sleep(1000);
+            */
+        }
+
+        public static void BackgroundWorker(BackgroundWorker backgroundworker)
+        {
+            Compute(backgroundworker);
         }
     }
 }

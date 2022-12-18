@@ -14,11 +14,17 @@ namespace ImageBank
                 return;
             }
 
-            using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata)) {
-                var ext = mi.Format.ToString().ToLower();
-                var exportfilename = $"{AppConsts.PathRw}\\{img.Name}{ext}";
-                File.WriteAllBytes(exportfilename, imagedata);
-                progress?.Report($"Exported {exportfilename}");
+            using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                if (magickImage != null) {
+                    var ext = magickImage.Format.ToString().ToLower();
+                    var name = Path.GetFileNameWithoutExtension(img.Name);
+                    var exportfilename = $"{AppConsts.PathRw}\\{name}.{ext}";
+                    File.WriteAllBytes(exportfilename, imagedata);
+                    progress?.Report($"Exported {exportfilename}");
+                }
+                else {
+                    progress?.Report($"Bad {img.Name}");
+                }
             }
         }
     }

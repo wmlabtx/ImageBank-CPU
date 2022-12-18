@@ -1,4 +1,7 @@
-﻿using System;
+﻿using OpenCvSharp.Quality;
+using System;
+using System.Collections.Generic;
+using System.Windows.Documents;
 
 namespace ImageBank
 {
@@ -6,10 +9,6 @@ namespace ImageBank
     {
         public static void Find(string hashX, IProgress<string> progress)
         {
-            for (var i = 0; i < 10; i++) {
-                ComputeInternal(progress);
-            }
-
             Img imgX;
             int totalcount;
             do {
@@ -36,8 +35,21 @@ namespace ImageBank
                 }
 
                 imgX = AppPanels.GetImgPanel(0).Img;
-                var similars = GetSimilars(imgX, progress);
-                AppPanels.SetSimilars(similars, progress);
+
+                if (!AppPanels.SetImgPanel(1, imgX.BestHash)) {
+                    Delete(imgX.BestHash, progress);
+                    progress?.Report($"{imgX.BestHash} deleted");
+                    hashX = null;
+                    continue;
+                }
+
+                var similar = new List<Tuple<string, float>> {
+                    Tuple.Create(imgX.BestHash, imgX.Distance)
+                };
+
+                AppPanels.SetSimilars(similar, progress);
+                //var similars = GetSimilars(imgX, progress);
+                //AppPanels.SetSimilars(similars, progress);
                 break;
             }
             while (true);
