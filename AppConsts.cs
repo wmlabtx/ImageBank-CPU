@@ -2,7 +2,7 @@
 {
     public static class AppConsts
     {
-        public const string PathRoot = @"D:\Users\Murad\Documents\Sdb";
+        public const string PathRoot = @"M:";
         public const string FolderDb = @"Db";
         public const string FileVgg = PathRoot + @"\" + FolderDb +@"\" + @"resnet152-v2-7.onnx";
         public const string FileDatabase = PathRoot + @"\" + FolderDb + @"\" + "images.mdf";

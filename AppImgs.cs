@@ -1,7 +1,9 @@
-﻿using System;
+﻿using OpenCvSharp.Flann;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Windows.Controls;
 
 namespace ImageBank
 {
@@ -179,8 +181,8 @@ namespace ImageBank
                             imgX = null;
                         }
                         else {
-                            var mincounter = scope.Min(e => e.Counter);
-                            imgX = scope.Where(e => e.Counter == mincounter).OrderBy(e => e.Distance).FirstOrDefault();
+                            //var mincounter = scope.Min(e => e.Counter);
+                            imgX = scope.OrderBy(e => e.LastView).FirstOrDefault();
                         }
                     }
                 }
@@ -250,13 +252,14 @@ namespace ImageBank
             return result;
         }
 
-        private static List<Tuple<string, byte[]>> GetShadow()
+        private static List<Tuple<string, string, byte[]>> GetShadow()
         {
-            var shadow = new List<Tuple<string, byte[]>>();
+            var shadow = new List<Tuple<string, string, byte[]>>();
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
                     foreach (var img in _imgList.Values) {
-                        shadow.Add(Tuple.Create(img.Hash, img.GetVector()));
+                        var folder = FileHelper.NameToFolder(img.Name);
+                        shadow.Add(Tuple.Create(img.Hash, folder, img.GetVector()));
                     }
                 }
                 finally {
@@ -279,7 +282,7 @@ namespace ImageBank
                     continue;
                 }
 
-                var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item2);
+                var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
                 similars.Add(Tuple.Create(e.Item1, distance));
             }
 
@@ -292,15 +295,36 @@ namespace ImageBank
             var shadow = GetShadow();
             besthash = string.Empty;
             distance = 1f;
+            var folderX = FileHelper.NameToFolder(imgX.Name);
             foreach (var e in shadow) {
-                 if (imgX.Hash.Equals(e.Item1)) {
+                if (imgX.Hash.Equals(e.Item1)) {
                     continue;
                 }
 
-                var d = VggHelper.GetDistance(imgX.GetVector(), e.Item2);
+                if (!char.IsDigit(folderX[0])) {
+                    if (!folderX.Equals(e.Item2)) {
+                        continue;
+                    }
+                }
+
+                var d = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
                 if (d < distance) {
                     besthash = e.Item1;
                     distance = d;
+                }
+            }
+
+            if (string.IsNullOrEmpty(besthash)) {
+                foreach (var e in shadow) {
+                    if (imgX.Hash.Equals(e.Item1)) {
+                        continue;
+                    }
+
+                    var d = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
+                    if (d < distance) {
+                        besthash = e.Item1;
+                        distance = d;
+                    }
                 }
             }
         }

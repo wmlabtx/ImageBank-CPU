@@ -8,9 +8,16 @@ namespace ImageBank
     {
         public static string NameToFileName(string name)
         {
-            return $"{AppConsts.PathHp}\\{name}{AppConsts.MzxExtension}";
+            return $"{AppConsts.PathHp}\\{name}";
         }
 
+        public static string NameToFolder(string name)
+        {
+            var folder = Path.GetDirectoryName(name);
+            return folder;
+        }
+
+        /*
         public static byte[] ReadEncryptedFile(string filename)
         {
             if (!File.Exists(filename)) {
@@ -22,7 +29,29 @@ namespace ImageBank
             var imgdata = EncryptionHelper.Decrypt(earray, password);
             return imgdata;
         }
+        */
 
+        public static byte[] ReadFile(string filename)
+        {
+            if (!File.Exists(filename)) {
+                return null;
+            }
+
+            var imgdata = File.ReadAllBytes(filename);
+            return imgdata;
+        }
+
+        public static void WriteFile(string filename, byte[] imgdata)
+        {
+            var directory = Path.GetDirectoryName(filename);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllBytes(filename, imgdata);
+        }
+
+        /*
         public static void WriteEncryptedFile(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
@@ -34,6 +63,7 @@ namespace ImageBank
             var earray = EncryptionHelper.Encrypt(imgdata, password);
             File.WriteAllBytes(filename, earray);
         }
+        */
 
         public static void DeleteToRecycleBin(string filename)
         {

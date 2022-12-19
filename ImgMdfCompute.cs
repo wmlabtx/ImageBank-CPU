@@ -1,5 +1,4 @@
-﻿using ImageMagick;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -13,6 +12,7 @@ namespace ImageBank
         private static int _added;
         private static int _bad;
         private static int _found;
+        private static int _moved;
 
         public static List<Tuple<string, float>> GetSimilars(Img imgX, IProgress<string> progress)
         {
@@ -32,13 +32,13 @@ namespace ImageBank
         {
             var fdir = Path.GetDirectoryName(orgfilename);
             var fpath = fdir.Length == path.Length ? string.Empty : fdir.Substring(path.Length + 1);
-            var fname = Path.GetFileNameWithoutExtension(orgfilename);
+            var fname = Path.GetFileName(orgfilename);
             var name = $"{fpath}\\{fname}";
             if (AppImgs.ContainsName(name)) {
                 return;
             }
 
-            progress.Report($"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
+            progress.Report($"importing {name} (a:{_added})/f:{_found}/m:{_moved}/b:{_bad}){AppConsts.CharEllipsis}");
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
             if (lastmodified > DateTime.Now) {
@@ -56,7 +56,7 @@ namespace ImageBank
                     EncryptionHelper.Decrypt(imagedata, password);
 
                 if (decrypteddata != null) {
-                    imagedata = decrypteddata;
+                     imagedata = decrypteddata;
                 }
             }
             else {
@@ -68,7 +68,7 @@ namespace ImageBank
             if (found) {
                 var filenamefound = FileHelper.NameToFileName(imgfound.Name);
                 if (File.Exists(filenamefound)) {
-                    var foundimagedata = FileHelper.ReadEncryptedFile(filenamefound);
+                    var foundimagedata = FileHelper.ReadFile(filenamefound);
                     if (foundimagedata != null) {
                         var foundhash = HashHelper.Compute(foundimagedata);
                         if (imgfound.Hash.Equals(foundhash)) {
@@ -77,10 +77,29 @@ namespace ImageBank
                                 File.SetLastWriteTime(filenamefound, lastmodified);
                             }
 
-                            FileHelper.DeleteToRecycleBin(orgfilename);
-                            _found++;
-                            return;
+                            if (path.Equals(AppConsts.PathRw)) {
+                                FileHelper.DeleteToRecycleBin(orgfilename);
+                                _found++;
+                                return;
+                            }
+
+                            Delete(imgfound.Hash, progress);
                         }
+                    }
+                }
+                else {
+                    if (path.Equals(AppConsts.PathRw)) {
+                        FileHelper.WriteFile(filenamefound, imagedata);
+                        File.SetLastWriteTime(filenamefound, lastmodified);
+                        FileHelper.DeleteToRecycleBin(orgfilename);
+                        _moved++;
+                        return;
+                    }
+                    else {
+                        var movedname = orgfilename.Substring(AppConsts.PathHp.Length + 1);
+                        imgfound.SetName(movedname);
+                        _moved++;
+                        return;
                     }
                 }
 
@@ -88,7 +107,7 @@ namespace ImageBank
             }
 
             byte[] vector;
-
+            string extention;
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage == null) {
                     var badname = Path.GetFileName(orgfilename);
@@ -105,17 +124,24 @@ namespace ImageBank
 
                 using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
                     vector = VggHelper.CalculateVector(bitmap);
+                    extention = magickImage.Format.ToString().ToLowerInvariant();
                 }
             }
 
             string newname;
             string newfilename;
-            var iteration = 7;
-            do {
-                iteration++;
-                newname = $"{hash.Substring(0, 1)}\\{hash.Substring(1, 1)}\\{hash.Substring(2, iteration - 2)}";
-                 newfilename = $"{AppConsts.PathHp}\\{newname}{AppConsts.MzxExtension}";
-            } while (File.Exists(newfilename));
+            if (path.Equals(AppConsts.PathRw)) {
+                var iteration = 7;
+                do {
+                    iteration++;
+                    newname = $"{hash.Substring(0, 1)}\\{hash.Substring(1, 1)}\\{hash.Substring(2, iteration - 2)}.{extention}";
+                    newfilename = $"{AppConsts.PathHp}\\{newname}";
+                } while (File.Exists(newfilename));
+            }
+            else {
+                newfilename = orgfilename;
+                newname = orgfilename.Substring(AppConsts.PathHp.Length + 1);
+            }
 
             var lastview = AppImgs.GetMinLastView();
             var lastcheck = AppImgs.GetMinLastCheck();
@@ -130,10 +156,13 @@ namespace ImageBank
                 lastcheck: lastcheck,
                 vector: vector);
 
-            FileHelper.WriteEncryptedFile(newfilename, imagedata);
+            if (path.Equals(AppConsts.PathRw)) {
+                FileHelper.WriteFile(newfilename, imagedata);
+            }
+
             File.SetLastWriteTime(newfilename, lastmodified);
 
-            var vimagedata = FileHelper.ReadEncryptedFile(newfilename);
+            var vimagedata = FileHelper.ReadFile(newfilename);
             if (vimagedata == null) {
                 FileHelper.DeleteToRecycleBin(newfilename);
                 return;
@@ -145,7 +174,10 @@ namespace ImageBank
                 return;
             }
 
-            FileHelper.DeleteToRecycleBin(orgfilename);
+            if (path.Equals(AppConsts.PathRw)) {
+                FileHelper.DeleteToRecycleBin(orgfilename);
+            }
+
             Add(nimg);
             AppDatabase.AddImage(nimg);
             _added++;
@@ -174,7 +206,7 @@ namespace ImageBank
             _bad = 0;
             ImportFiles(AppConsts.PathHp, progress);
             ImportFiles(AppConsts.PathRw, progress);
-            progress.Report($"Import done (a:{_added})/f:{_found}/b:{_bad})");
+            progress.Report($"Import done (a:{_added}/f:{_found}/m:{_moved}/b:{_bad})");
         }
 
         private static void Compute(BackgroundWorker backgroundworker)
@@ -206,12 +238,6 @@ namespace ImageBank
                     imgY.SetCounter(0);
                 }
             }
-
-            /*
-            var random = AppVars.IRandom(0, 999);
-            backgroundworker.ReportProgress(0, $"{random:D3}");
-            Thread.Sleep(1000);
-            */
         }
 
         public static void BackgroundWorker(BackgroundWorker backgroundworker)

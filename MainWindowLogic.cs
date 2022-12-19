@@ -146,7 +146,7 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(panels[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{panels[index].Img.Name}.{panels[index].Format}");
+                sb.Append($"{panels[index].Img.Name} ({panels[index].Format.ToLowerInvariant()})");
                 if (panels[index].Img.Counter != 0) {
                     sb.Append($" [{panels[index].Img.Counter}]");
                 }
@@ -162,6 +162,13 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
+                var folder = FileHelper.NameToFolder(panels[index].Img.Name);
+                if (!Char.IsDigit(folder[0])) {
+                    if (folder.Equals(FileHelper.NameToFolder(panels[1 - index].Img.Name))) {
+                        scb = System.Windows.Media.Brushes.LightGreen;
+                    }
+                }
+
                 if (panels[index].DateTaken > panels[1 - index].DateTaken) {
                     scb = System.Windows.Media.Brushes.Pink;
                 }

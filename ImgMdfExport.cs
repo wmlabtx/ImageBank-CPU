@@ -9,7 +9,7 @@ namespace ImageBank
         {
             var img = AppPanels.GetImgPanel(idpanel).Img;
             var filename = FileHelper.NameToFileName(img.Name);
-            var imagedata = FileHelper.ReadEncryptedFile(filename);
+            var imagedata = FileHelper.ReadFile(filename);
             if (imagedata == null) {
                 return;
             }

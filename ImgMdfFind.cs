@@ -1,7 +1,5 @@
-﻿using OpenCvSharp.Quality;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Windows.Documents;
 
 namespace ImageBank
 {

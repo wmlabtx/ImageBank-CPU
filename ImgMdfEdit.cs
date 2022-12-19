@@ -1,7 +1,5 @@
-﻿using ImageMagick;
-using System;
+﻿using System;
 using System.Drawing;
-using System.IO;
 
 namespace ImageBank
 {
@@ -15,7 +13,7 @@ namespace ImageBank
             }
 
             var filename = FileHelper.NameToFileName(img.Name);
-            var imagedata = FileHelper.ReadEncryptedFile(filename);
+            var imagedata = FileHelper.ReadFile(filename);
             if (imagedata == null) {
                 progress.Report($"Cannot read {img.Name}");
                 return;

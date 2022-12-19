@@ -22,7 +22,7 @@ namespace ImageBank
 
             var filename = FileHelper.NameToFileName(img.Name);
             var lastmodified = File.GetLastWriteTime(filename);
-            var imagedata = FileHelper.ReadEncryptedFile(filename);
+            var imagedata = FileHelper.ReadFile(filename);
             if (imagedata == null) {
                 return false;
             }

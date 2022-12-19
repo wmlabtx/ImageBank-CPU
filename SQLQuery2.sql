@@ -1,1 +1,1 @@
-﻿UPDATE Images SET FamilyId = 0
+﻿TRUNCATE TABLE Images
