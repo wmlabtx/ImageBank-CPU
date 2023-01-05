@@ -6,7 +6,6 @@ namespace ImageBank
     public static class AppVars
     {
         public static Progress<string> Progress { get; set; }
-        public static ManualResetEvent SuspendEvent { get; set; }
 
         private static readonly RandomMersenne _random;
         public static int IRandom(int min, int max)

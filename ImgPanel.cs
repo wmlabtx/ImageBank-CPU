@@ -7,7 +7,7 @@ namespace ImageBank
     {
         public Img Img { get; }
         public long Size { get; }
-        public Bitmap Bitmap { get; }
+        public Bitmap Bitmap { get; private set; }
         public string Format { get; }
         public DateTime DateTaken { get; }
 
@@ -18,6 +18,12 @@ namespace ImageBank
             Bitmap = bitmap;
             Format = format;
             DateTaken = datetaken;
+        }
+
+        public void SetBitmap(Bitmap bmp)
+        {
+            Bitmap.Dispose();
+            Bitmap = bmp;
         }
     }
 }

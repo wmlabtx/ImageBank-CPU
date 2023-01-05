@@ -2,7 +2,7 @@
 {
     public static class AppConsts
     {
-        public const string PathRoot = @"M:";
+        public const string PathRoot = @"D:\Users\Murad\Spacer";
         public const string FolderDb = @"Db";
         public const string FileVgg = PathRoot + @"\" + FolderDb +@"\" + @"resnet152-v2-7.onnx";
         public const string FileDatabase = PathRoot + @"\" + FolderDb + @"\" + "images.mdf";
@@ -12,6 +12,7 @@
         public const string PathHp = PathRoot + @"\" + FolderHp;
         public const string FolderGb = @"Gb";
         public const string PathGb = PathRoot + @"\" + FolderGb;
+        public const char CharLe = '-';
 
         public const string PngExtension = ".png";
         public const string MzxExtension = ".mzx";
@@ -28,11 +29,7 @@
         public const string TableImages = "Images";
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
-        public const string AttributeCounter = "Counter";
         public const string AttributeLastView = "LastView";
-        public const string AttributeLastCheck = "LastCheck";
-        public const string AttributeBestHash = "BestHash";
-        public const string AttributeDistance = "Distance";
         public const string AttributeVector = "Vector";
         public const string AttributeOrientation = "Orientation";
     }

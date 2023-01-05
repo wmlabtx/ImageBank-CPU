@@ -177,9 +177,19 @@ namespace ImageBank
             Marshal.Copy(yd.Scan0, ya, 0, ya.Length);
             yb.UnlockBits(yd);
 
+            //byte maxval = 0;
             for (var i = 0; i < xa.Length; i++) {
-                xa[i] = (byte)(xa[i] ^ ya[i]);
+                xa[i] = (byte)Math.Abs(xa[i] - ya[i]);
+                //maxval = Math.Max(maxval, xa[i]);
             }
+
+            /*
+            if (maxval > 0) {
+                for (var i = 0; i < xa.Length; i++) {
+                    xa[i] = (byte)Math.Min(255, xa[i] * 255.0 / maxval);
+                }
+            }
+            */
 
             Bitmap zb = new Bitmap(xb);
             BitmapData zd = zb.LockBits(new Rectangle(0, 0, zb.Width, zb.Height), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);

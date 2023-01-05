@@ -76,7 +76,8 @@ namespace ImageBank
                 magy += (double)y[n] * y[n] / (255.0 * 255.0);
             }
 
-            return 1f - (float)(dot / (Math.Sqrt(magx) * Math.Sqrt(magy)));
+            var distance = 1f - (float)(dot / (Math.Sqrt(magx) * Math.Sqrt(magy)));
+            return distance;
         }
     }
 }

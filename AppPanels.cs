@@ -1,5 +1,4 @@
-﻿using ImageMagick;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -12,6 +11,14 @@ namespace ImageBank
         public static ImgPanel GetImgPanel(int idpanel)
         {
             return _imgpanels[idpanel];
+        }
+
+        public static void ToggleXor()
+        {
+            if (_imgpanels[0].Bitmap.Width == _imgpanels[1].Bitmap.Width && _imgpanels[0].Bitmap.Height == _imgpanels[1].Bitmap.Height) {
+                var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, _imgpanels[1].Bitmap);
+                _imgpanels[1].SetBitmap(bitmapxor);
+            }
         }
 
         public static bool SetImgPanel(int idpanel, string hash)
@@ -43,16 +50,6 @@ namespace ImageBank
                 var datetaken = BitmapHelper.GetDateTaken(magickImage, lastmodified);
                 var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, img.Orientation);
                 if (bitmap != null) {
-                    /*
-                    if (idpanel== 1) { 
-                        if (_imgpanels[0].Bitmap.Width == bitmap.Width && _imgpanels[0].Bitmap.Height == bitmap.Height) {
-                            var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, bitmap);
-                            bitmap.Dispose();
-                            bitmap = bitmapxor;
-                        }
-                    }
-                    */
-
                     var imgpanel = new ImgPanel(
                         img: img,
                         size: imagedata.LongLength,
@@ -74,6 +71,16 @@ namespace ImageBank
         {
             _similars = similars;
             SetFirstPosition(progress);
+        }
+
+        public static string GetRightName()
+        {
+            var hash = _similars[_position].Item1;
+            if (!AppImgs.TryGetValue(hash, out Img img)) {
+                return null;
+            }
+
+            return img.Name;
         }
 
         public static void SetFirstPosition(IProgress<string> progress)
@@ -116,6 +123,26 @@ namespace ImageBank
                     UpdateStatus(progress);
                     break;
                 }
+            }
+        }
+
+        public static void MoveNextPosition(IProgress<string> progress)
+        {
+            var folderX = FileHelper.NameToFolder(_imgpanels[0].Img.Name);
+            if (folderX[0].Equals(AppConsts.CharLe)) {
+                return;
+            }
+
+            _position = 0;
+            while (_position < _similars.Count - 1) {
+                if (_similars[_position].Item2 > 1f) {
+                    if (SetImgPanel(1, _similars[_position].Item1)) {
+                        UpdateStatus(progress);
+                        break;
+                    }
+                }
+
+                _position++;
             }
         }
 

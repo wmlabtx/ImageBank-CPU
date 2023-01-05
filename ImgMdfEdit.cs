@@ -34,8 +34,6 @@ namespace ImageBank
                     img.SetOrientation(rft);
                     var rvector = VggHelper.CalculateVector(bitmap);
                     img.SetVector(rvector);
-                    var lastcheck = AppImgs.GetMinLastCheck();
-                    img.SetLastCheck(lastcheck);
                 }
             }
         }

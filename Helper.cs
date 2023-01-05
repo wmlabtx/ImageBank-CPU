@@ -195,6 +195,8 @@ namespace ImageBank
                     return 1;
                 case RotateFlipType.Rotate270FlipNone:
                     return 2;
+                case RotateFlipType.Rotate180FlipNone:
+                    return 3;
                 default:
                     return 0;
             }
@@ -209,6 +211,8 @@ namespace ImageBank
                     return RotateFlipType.Rotate90FlipNone;
                 case 2:
                     return RotateFlipType.Rotate270FlipNone;
+                case 3:
+                    return RotateFlipType.Rotate180FlipNone;
                 default:
                     return RotateFlipType.RotateNoneFlipNone;
             }

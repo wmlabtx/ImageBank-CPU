@@ -1,9 +1,8 @@
-﻿using OpenCvSharp.Flann;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Windows.Controls;
+using System.Windows.Forms;
 
 namespace ImageBank
 {
@@ -108,17 +107,27 @@ namespace ImageBank
             return result;
         }
 
-        public static void Delete(Img img)
+        public static void SetName(Img img, string name)
         {
-            var minlastcheck = GetMinLastCheck();
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
-                    foreach (var e in _imgList.Values) {
-                        if (e.BestHash.Equals(img.Hash)) {
-                            e.SetLastCheck(minlastcheck);
-                        }
-                    }
+                    _nameList.Remove(img.Name);
+                    img.SetName(name);
+                    _nameList.Add(img.Name, img);
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+        }
 
+        public static void Delete(Img img)
+        {
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
                     _nameList.Remove(img.Name);
                     _imgList.Remove(img.Hash);
                 }
@@ -136,25 +145,7 @@ namespace ImageBank
             DateTime lv;
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
-                    lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastView).AddSeconds(1) : DateTime.Now;
-                }
-                finally {
-                    Monitor.Exit(_imglock);
-                }
-            }
-            else {
-                throw new Exception();
-            }
-
-            return lv;
-        }
-
-        public static DateTime GetMinLastCheck()
-        {
-            DateTime lv;
-            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
-                try {
-                    lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastCheck).AddSeconds(1) : DateTime.Now;
+                    lv = _imgList.Count > 0 ? _imgList.Min(e => e.Value.LastView).AddSeconds(-1) : DateTime.Now;
                 }
                 finally {
                     Monitor.Exit(_imglock);
@@ -169,6 +160,15 @@ namespace ImageBank
 
         public static Img GetNextView()
         {
+            var prevfolder = string.Empty;
+            var panel = AppPanels.GetImgPanel(0);
+            if (panel != null) {
+                var imgprev = panel.Img;
+                if (imgprev != null) {
+                    prevfolder = FileHelper.NameToFolder(imgprev.Name);
+                }
+            }
+
             Img imgX;
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
@@ -176,51 +176,9 @@ namespace ImageBank
                         imgX = null;
                     }
                     else {
-                        var scope = _imgList.Values.Where(e => !e.Hash.Equals(e.BestHash) && _imgList.ContainsKey(e.BestHash));
-                        if (scope.Count() < 2) {
-                            imgX = null;
-                        }
-                        else {
-                            //var mincounter = scope.Min(e => e.Counter);
-                            imgX = scope.OrderBy(e => e.LastView).FirstOrDefault();
-                        }
-                    }
-                }
-                finally {
-                    Monitor.Exit(_imglock);
-                }
-            }
-            else {
-                throw new Exception();
-            }
-
-            return imgX;
-        }
-
-        public static Img GetNextCheck()
-        {
-            Img imgX;
-            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
-                try {
-                    if (_imgList.Count < 2) {
-                        imgX = null;
-                    }
-                    else {
-                        imgX = _imgList.Values.OrderBy(e => e.LastCheck).First();
-                        /*
-                        var scope = _imgList.Values.OrderBy(e => e.LastView);
-                        imgX = null;
-                        foreach (var img in scope) {
-                            if (img.Hash.Equals(img.BestHash) || !_imgList.ContainsKey(img.BestHash)) {
-                                imgX = img;
-                                break;
-                            }
-                        }
-
-                        if (imgX == null) {
-                            imgX = scope.OrderBy(e => e.LastCheck).First();
-                        }
-                        */
+                        var scope = _imgList.Where(e => !FileHelper.NameToFolder(e.Value.Name).Equals(prevfolder));
+                        var minlv = scope.Min(e => e.Value.LastView);
+                        imgX = scope.FirstOrDefault(e => e.Value.LastView.Equals(minlv)).Value;
                     }
                 }
                 finally {
@@ -275,58 +233,65 @@ namespace ImageBank
 
         public static List<Tuple<string, float>> GetSimilars(Img imgX)
         {
+            var folderX = FileHelper.NameToFolder(imgX.Name);
             var shadow = GetShadow();
             var similars = new List<Tuple<string, float>>();
-            foreach (var e in shadow) {
-                if (imgX.Hash.Equals(e.Item1)) {
-                    continue;
-                }
-
-                var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
-                similars.Add(Tuple.Create(e.Item1, distance));
-            }
-
-            similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-            return similars;
-        }
-
-        public static void GetSimilar(Img imgX, out string besthash, out float distance)
-        {
-            var shadow = GetShadow();
-            besthash = string.Empty;
-            distance = 1f;
-            var folderX = FileHelper.NameToFolder(imgX.Name);
-            foreach (var e in shadow) {
-                if (imgX.Hash.Equals(e.Item1)) {
-                    continue;
-                }
-
-                if (!char.IsDigit(folderX[0])) {
-                    if (!folderX.Equals(e.Item2)) {
-                        continue;
-                    }
-                }
-
-                var d = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
-                if (d < distance) {
-                    besthash = e.Item1;
-                    distance = d;
-                }
-            }
-
-            if (string.IsNullOrEmpty(besthash)) {
+            if (folderX[0].Equals(AppConsts.CharLe)) {
+                var bf = new SortedList<string, string>();
+                var df = new SortedList<string, float>();
                 foreach (var e in shadow) {
                     if (imgX.Hash.Equals(e.Item1)) {
                         continue;
                     }
 
-                    var d = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
-                    if (d < distance) {
-                        besthash = e.Item1;
-                        distance = d;
+                    var family = e.Item2[0].Equals(AppConsts.CharLe) ? "-" : e.Item2;
+                    var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
+                    if (bf.ContainsKey(family)) {
+                        if (distance < df[family]) {
+                            bf[family] = e.Item1;
+                            df[family] = distance;
+                        }
+                    }
+                    else {
+                        bf.Add(family, e.Item1);
+                        df.Add(family, distance);
                     }
                 }
+
+                foreach (var f in bf.Keys) {
+                    similars.Add(Tuple.Create(bf[f], df[f]));
+                }
+
+                similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
             }
+            else {
+                var bestd = 1f;
+                var besth = string.Empty;
+                var df = new SortedList<string, float>();
+                foreach (var e in shadow) {
+                    if (imgX.Hash.Equals(e.Item1)) {
+                        continue;
+                    }
+
+                    var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
+                    if (folderX.Equals(e.Item2)) {
+                        if (distance < bestd) {
+                            bestd = distance;
+                            besth = e.Item1;
+                        }
+                    }
+                    else {
+                        similars.Add(Tuple.Create(e.Item1, distance));
+                    }
+                }
+
+                similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+                if (!string.IsNullOrEmpty(besth)) {
+                    similars.Insert(0, Tuple.Create(besth, bestd));
+                }
+            }
+
+            return similars;
         }
     }
 }

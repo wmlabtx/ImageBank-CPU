@@ -4,10 +4,6 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        static ImgMdf()
-        {
-        }
-
         public static void LoadImages(IProgress<string> progress)
         {
             AppImgs.Clear();

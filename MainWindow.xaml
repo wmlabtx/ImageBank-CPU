@@ -15,16 +15,24 @@
             <MenuItem Header="Edit">
                 <MenuItem Header="Refresh" Click="RefreshClick" />
                 <Separator />
+                <MenuItem Header="Toggle Xor (V)" Click="ToggleXorClick" />
+                <Separator />
                 <MenuItem Header="RotateNoneFlipNone" Tag="0" Click="RotateClick" />
                 <MenuItem Header="Rotate90FlipNone" Tag="1" Click="RotateClick" />
                 <MenuItem Header="Rotate270FlipNone" Tag="2" Click="RotateClick" />
+                <MenuItem Header="Rotate180FlipNone" Tag="3" Click="RotateClick" />
             </MenuItem>
             <MenuItem Header="Navigation">
                 <MenuItem Header="Right (E)" Click="RightMoveClick" />
                 <MenuItem Header="Left (Q)" Click="LeftMoveClick" />
+                <MenuItem Header="Swap" Click="SwapMoveClick" />
                 <Separator />
                 <MenuItem Header="First" Click="FirstMoveClick" />
+                <MenuItem Header="Next" Click="NextMoveClick" />
                 <MenuItem Header="Last" Click="LastMoveClick" />
+            </MenuItem>
+            <MenuItem Header="Family">
+                <MenuItem Header="Combine (C)" Click="CombineClick" />
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

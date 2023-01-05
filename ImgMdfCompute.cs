@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -38,6 +37,8 @@ namespace ImageBank
                 return;
             }
 
+            var lastview = new DateTime(1990, 1, 1);
+
             progress.Report($"importing {name} (a:{_added})/f:{_found}/m:{_moved}/b:{_bad}){AppConsts.CharEllipsis}");
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
@@ -66,44 +67,45 @@ namespace ImageBank
             var hash = HashHelper.Compute(imagedata);
             var found = AppImgs.TryGetValue(hash, out var imgfound);
             if (found) {
+                // we have a record with the same hash...
+                lastview = imgfound.LastView;
                 var filenamefound = FileHelper.NameToFileName(imgfound.Name);
                 if (File.Exists(filenamefound)) {
+                    // we have a file
                     var foundimagedata = FileHelper.ReadFile(filenamefound);
-                    if (foundimagedata != null) {
-                        var foundhash = HashHelper.Compute(foundimagedata);
-                        if (imgfound.Hash.Equals(foundhash)) {
-                            var foundlastmodified = File.GetLastWriteTime(orgfilename);
-                            if (foundlastmodified > lastmodified) {
-                                File.SetLastWriteTime(filenamefound, lastmodified);
-                            }
-
-                            if (path.Equals(AppConsts.PathRw)) {
-                                FileHelper.DeleteToRecycleBin(orgfilename);
-                                _found++;
-                                return;
-                            }
-
-                            Delete(imgfound.Hash, progress);
+                    var foundhash = HashHelper.Compute(foundimagedata);
+                    if (imgfound.Hash.Equals(foundhash)) {
+                        // and file is okay
+                        var foundlastmodified = File.GetLastWriteTime(orgfilename);
+                        if (foundlastmodified > lastmodified) {
+                            File.SetLastWriteTime(filenamefound, lastmodified);
                         }
+
+                        if (path.Equals(AppConsts.PathRw) || name[0].Equals(AppConsts.CharLe)) {
+                            // the org file is in RW or in a pool
+                            FileHelper.DeleteToRecycleBin(orgfilename);
+                            _found++;
+                            return;
+                        }
+
+                        // the org file is in named folder
+                        Delete(imgfound.Hash, progress);
                     }
-                }
-                else {
-                    if (path.Equals(AppConsts.PathRw)) {
+                    else {
+                        // but found file was changed or corrupted
                         FileHelper.WriteFile(filenamefound, imagedata);
                         File.SetLastWriteTime(filenamefound, lastmodified);
                         FileHelper.DeleteToRecycleBin(orgfilename);
-                        _moved++;
-                        return;
-                    }
-                    else {
-                        var movedname = orgfilename.Substring(AppConsts.PathHp.Length + 1);
-                        imgfound.SetName(movedname);
-                        _moved++;
+                        _found++;
                         return;
                     }
                 }
-
-                Delete(imgfound.Hash, progress);
+                else {
+                    // ...but file is missing
+                    AppImgs.SetName(imgfound, name);
+                    _moved++;
+                    return;
+                }
             }
 
             byte[] vector;
@@ -130,37 +132,32 @@ namespace ImageBank
 
             string newname;
             string newfilename;
-            if (path.Equals(AppConsts.PathRw)) {
-                var iteration = 7;
-                do {
-                    iteration++;
-                    newname = $"{hash.Substring(0, 1)}\\{hash.Substring(1, 1)}\\{hash.Substring(2, iteration - 2)}.{extention}";
-                    newfilename = $"{AppConsts.PathHp}\\{newname}";
-                } while (File.Exists(newfilename));
-            }
-            else {
-                newfilename = orgfilename;
-                newname = orgfilename.Substring(AppConsts.PathHp.Length + 1);
+            string newpath = path.Equals(AppConsts.PathRw) ?
+                $"{AppConsts.CharLe}\\{hash.Substring(0, 1)}\\{hash.Substring(1, 1)}" :
+                fpath;
+
+            var iteration = 7;
+            do {
+                iteration++;
+                newname = $"{newpath}\\{hash.Substring(0, iteration)}.{extention}";
+                newfilename = $"{AppConsts.PathHp}\\{newname}";
+            } while (File.Exists(newfilename));
+
+            if (lastview.Year == 1990) {
+                lastview = AppImgs.GetMinLastView();
             }
 
-            var lastview = AppImgs.GetMinLastView();
-            var lastcheck = AppImgs.GetMinLastCheck();
             var nimg = new Img(
                 name: newname,
                 hash: hash,
                 orientation: RotateFlipType.RotateNoneFlipNone,
-                counter: 0,
                 lastview: lastview,
-                besthash: string.Empty,
-                distance: 1f,
-                lastcheck: lastcheck,
                 vector: vector);
 
-            if (path.Equals(AppConsts.PathRw)) {
+            if (!orgfilename.Equals(newfilename)) {
                 FileHelper.WriteFile(newfilename, imagedata);
+                File.SetLastWriteTime(newfilename, lastmodified);
             }
-
-            File.SetLastWriteTime(newfilename, lastmodified);
 
             var vimagedata = FileHelper.ReadFile(newfilename);
             if (vimagedata == null) {
@@ -174,7 +171,7 @@ namespace ImageBank
                 return;
             }
 
-            if (path.Equals(AppConsts.PathRw)) {
+            if (!orgfilename.Equals(newfilename)) {
                 FileHelper.DeleteToRecycleBin(orgfilename);
             }
 
@@ -204,45 +201,53 @@ namespace ImageBank
             _added = 0;
             _found = 0;
             _bad = 0;
+            _moved = 0;
             ImportFiles(AppConsts.PathHp, progress);
             ImportFiles(AppConsts.PathRw, progress);
             progress.Report($"Import done (a:{_added}/f:{_found}/m:{_moved}/b:{_bad})");
         }
 
-        private static void Compute(BackgroundWorker backgroundworker)
+        public static void Combine(IProgress<string> progress)
         {
-            var imgX = AppImgs.GetNextCheck();
-            if (imgX == null) {
+            var imgX = AppPanels.GetImgPanel(0).Img;
+            var imgY = AppPanels.GetImgPanel(1).Img;
+            var folderX = FileHelper.NameToFolder(imgX.Name);
+            var folderY = FileHelper.NameToFolder(imgY.Name);
+            if (folderX.Equals(folderY)) {
                 return;
             }
 
-            AppImgs.GetSimilar(imgX, out string besthash, out float distance);
-            if (!besthash.Equals(imgX.BestHash)) {
-                var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck));
-                backgroundworker.ReportProgress(0, $"[{age} ago] {imgX.Name}: {imgX.Distance:F2} {AppConsts.CharRightArrow} {distance:F2}");
-                imgX.SetBestHash(besthash);
-                imgX.SetCounter(0);
+            if (folderX[0] == AppConsts.CharLe && folderY[0] != AppConsts.CharLe) {
+                var filenameY = FileHelper.NameToFileName(imgY.Name);
+                var pathY = Path.GetDirectoryName(filenameY);
+                var filenameX = FileHelper.NameToFileName(imgX.Name);
+                var nameX = Path.GetFileName(filenameX);
+                var newfilenameX = Path.Combine(pathY, nameX);
+                var newdirX = Path.GetDirectoryName(newfilenameX);
+                var newpathX = newdirX.Substring(AppConsts.PathHp.Length + 1);
+                var newnameX = $"{newpathX}\\{nameX}";
+                File.Move(filenameX, newfilenameX);
+                progress.Report($"{imgX.Name} {AppConsts.CharRightArrow} {newnameX}");
+                AppImgs.SetName(imgX, newnameX);
+                var similars = GetSimilars(imgX, progress);
+                AppPanels.SetSimilars(similars, progress);
             }
-
-            if (Math.Abs(distance - imgX.Distance) > 0.01f) {
-                imgX.SetDistance(distance);
-            }
-
-            imgX.SetLastCheck(DateTime.Now);
-
-            if (AppImgs.TryGetValue(besthash, out Img imgY)) {
-                if (imgY.Distance > distance) {
-                    var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgY.LastView));
-                    backgroundworker.ReportProgress(0, $"[{age} ago] {imgY.Name}: {imgY.Distance:F2} {AppConsts.CharRightArrow} {distance:F2}");
-                    imgY.SetBestHash(besthash);
-                    imgY.SetCounter(0);
+            else {
+                if (folderY[0] == AppConsts.CharLe && folderX[0] != AppConsts.CharLe) {
+                    var filenameX = FileHelper.NameToFileName(imgX.Name);
+                    var pathX = Path.GetDirectoryName(filenameX);
+                    var filenameY = FileHelper.NameToFileName(imgY.Name);
+                    var nameY = Path.GetFileName(filenameY);
+                    var newfilenameY = Path.Combine(pathX, nameY);
+                    var newdirY = Path.GetDirectoryName(newfilenameY);
+                    var newpathY = newdirY.Substring(AppConsts.PathHp.Length + 1);
+                    var newnameY = $"{newpathY}\\{nameY}";
+                    File.Move(filenameY, newfilenameY);
+                    progress.Report($"{imgY.Name} {AppConsts.CharRightArrow} {newnameY}");
+                    AppImgs.SetName(imgY, newnameY);
                 }
-            }
-        }
 
-        public static void BackgroundWorker(BackgroundWorker backgroundworker)
-        {
-            Compute(backgroundworker);
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using System;
-using System.ComponentModel;
+﻿using OpenCvSharp.ImgHash;
+using System;
 using System.Drawing;
+using System.Security.Policy;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,7 +19,6 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
-        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -57,13 +56,6 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
-
-            AppVars.SuspendEvent = new ManualResetEvent(true);
-
-            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
-            _backgroundWorker.DoWork += DoCompute;
-            _backgroundWorker.ProgressChanged += DoComputeProgress;
-            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -108,6 +100,14 @@ namespace ImageBank
             EnableElements();
         }
 
+        private void ToggleXorClick()
+        {
+            DisableElements();
+            AppPanels.ToggleXor();
+            DrawCanvas();
+            EnableElements();
+        }
+
         private void DisableElements()
         {
             ElementsEnable(false);
@@ -147,10 +147,6 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append($"{panels[index].Img.Name} ({panels[index].Format.ToLowerInvariant()})");
-                if (panels[index].Img.Counter != 0) {
-                    sb.Append($" [{panels[index].Img.Counter}]");
-                }
-
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -162,15 +158,22 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
-                var folder = FileHelper.NameToFolder(panels[index].Img.Name);
-                if (!Char.IsDigit(folder[0])) {
-                    if (folder.Equals(FileHelper.NameToFolder(panels[1 - index].Img.Name))) {
-                        scb = System.Windows.Media.Brushes.LightGreen;
+                var folderX = FileHelper.NameToFolder(panels[index].Img.Name);
+                if (!folderX[0].Equals(AppConsts.CharLe)) {
+                    var folderY = FileHelper.NameToFolder(panels[1 - index].Img.Name);
+                    if (folderY[0].Equals(AppConsts.CharLe)) {
+                        scb = System.Windows.Media.Brushes.Yellow;
+                    }
+                    else {
+                        if (folderX.Equals(folderY)) {
+                            scb = System.Windows.Media.Brushes.LightGreen;
+                        }
                     }
                 }
-
-                if (panels[index].DateTaken > panels[1 - index].DateTaken) {
-                    scb = System.Windows.Media.Brushes.Pink;
+                else {
+                    if (panels[index].DateTaken > panels[1 - index].DateTaken) {
+                        scb = System.Windows.Media.Brushes.Pink;
+                    }
                 }
 
                 pLabels[index].Background = scb;
@@ -245,7 +248,6 @@ namespace ImageBank
         private void ClassDispose()
         {
             _notifyIcon?.Dispose();
-            _backgroundWorker?.Dispose();
         }
 
         private void RefreshClick()
@@ -254,7 +256,7 @@ namespace ImageBank
             DrawCanvas();
             EnableElements();
         }
-
+ 
         private void LeftMoveClick()
         {
             DisableElements();
@@ -279,10 +281,35 @@ namespace ImageBank
             EnableElements();
         }
 
+        private async void SwapMoveClick()
+        {
+            DisableElements();
+            var hashY = AppPanels.GetImgPanel(1).Img.Hash;
+            await Task.Run(() => { ImgMdf.Find(hashY, AppVars.Progress); }).ConfigureAwait(true);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private void NextMoveClick()
+        {
+            DisableElements();
+            AppPanels.MoveNextPosition(AppVars.Progress);
+            DrawCanvas();
+            EnableElements();
+        }
+
         private void LastMoveClick()
         {
             DisableElements();
             AppPanels.SetLastPosition(AppVars.Progress);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void CombineClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.Combine(AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
@@ -296,23 +323,13 @@ namespace ImageBank
                 case Key.Q:
                     LeftMoveClick();
                     break;
+                case Key.V:
+                    ToggleXorClick();
+                    break;
+                case Key.C:
+                    CombineClick();
+                    break;
             }
-        }
-
-        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
-        {
-            BackgroundStatus.Text = (string)e.UserState;
-        }
-
-        private void DoCompute(object s, DoWorkEventArgs args)
-        {
-            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-            while (!_backgroundWorker.CancellationPending) {
-                ImgMdf.BackgroundWorker(_backgroundWorker);
-                Thread.Sleep(100);
-            }
-
-            args.Cancel = true;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace ImageBank
 {
@@ -33,21 +32,8 @@ namespace ImageBank
                 }
 
                 imgX = AppPanels.GetImgPanel(0).Img;
-
-                if (!AppPanels.SetImgPanel(1, imgX.BestHash)) {
-                    Delete(imgX.BestHash, progress);
-                    progress?.Report($"{imgX.BestHash} deleted");
-                    hashX = null;
-                    continue;
-                }
-
-                var similar = new List<Tuple<string, float>> {
-                    Tuple.Create(imgX.BestHash, imgX.Distance)
-                };
-
-                AppPanels.SetSimilars(similar, progress);
-                //var similars = GetSimilars(imgX, progress);
-                //AppPanels.SetSimilars(similars, progress);
+                var similars = GetSimilars(imgX, progress);
+                AppPanels.SetSimilars(similars, progress);
                 break;
             }
             while (true);

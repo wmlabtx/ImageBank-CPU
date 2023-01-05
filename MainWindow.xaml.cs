@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -94,6 +93,16 @@ namespace ImageBank
             FirstMoveClick();
         }
 
+        private void SwapMoveClick(object sender, RoutedEventArgs e)
+        {
+            SwapMoveClick();
+        }
+
+        private void NextMoveClick(object sender, RoutedEventArgs e)
+        {
+            NextMoveClick();
+        }
+
         private void LastMoveClick(object sender, RoutedEventArgs e)
         {
             LastMoveClick();
@@ -102,6 +111,16 @@ namespace ImageBank
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             OnKeyDown(e.Key);
+        }
+
+        private void ToggleXorClick(object sender, RoutedEventArgs e)
+        {
+            ToggleXorClick();
+        }
+
+        private void CombineClick(object sender, RoutedEventArgs e)
+        {
+            CombineClick();
         }
     }
 }
