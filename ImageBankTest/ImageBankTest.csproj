@@ -100,6 +100,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitmapHelperTests.cs" />
+    <Compile Include="ColorHelperTests.cs" />
     <Compile Include="EncryptionHelperTests.cs" />
     <Compile Include="FileHelperTests.cs" />
     <Compile Include="MD5HashHelperTests.cs" />

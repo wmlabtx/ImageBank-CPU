@@ -125,6 +125,8 @@
     <Compile Include="AppPanels.cs" />
     <Compile Include="BitmapHelper.cs" />
     <Compile Include="AppDatabase.cs" />
+    <Compile Include="ColorHelper.cs" />
+    <Compile Include="ColorLAB.cs" />
     <Compile Include="EncryptionHelper.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="GlobalSuppressions.cs" />

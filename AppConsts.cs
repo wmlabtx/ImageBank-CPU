@@ -6,6 +6,7 @@
         public const string FolderDb = @"Db";
         public const string FileVgg = PathRoot + @"\" + FolderDb +@"\" + @"resnet152-v2-7.onnx";
         public const string FileDatabase = PathRoot + @"\" + FolderDb + @"\" + "images.mdf";
+        public const string FilePalette = PathRoot + @"\" + FolderDb + @"\" + "palette.png";
         public const string FolderRw = @"Rw";
         public const string PathRw = PathRoot + @"\" + FolderRw;
         public const string FolderHp = @"Hp";
@@ -30,7 +31,11 @@
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
         public const string AttributeLastView = "LastView";
+        public const string AttributeHistogram = "Histogram";
         public const string AttributeVector = "Vector";
         public const string AttributeOrientation = "Orientation";
+        public const string AttributeNextHash = "NextHash";
+        public const string TableVars = "Vars";
+        public const string AttributePalette = "Palette";
     }
 }

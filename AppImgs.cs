@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Threading;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace ImageBank
 {
@@ -210,15 +213,12 @@ namespace ImageBank
             return result;
         }
 
-        private static List<Tuple<string, string, byte[]>> GetShadow()
+        private static SortedList<string, Img> GetShadow()
         {
-            var shadow = new List<Tuple<string, string, byte[]>>();
+            var shadow = new SortedList<string, Img>();
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
-                    foreach (var img in _imgList.Values) {
-                        var folder = FileHelper.NameToFolder(img.Name);
-                        shadow.Add(Tuple.Create(img.Hash, folder, img.GetVector()));
-                    }
+                    shadow = new SortedList<string, Img>(_imgList);
                 }
                 finally {
                     Monitor.Exit(_imglock);
@@ -231,63 +231,66 @@ namespace ImageBank
             return shadow;
         }
 
-        public static List<Tuple<string, float>> GetSimilars(Img imgX)
+        public static List<string> GetSimilars(Img imgX, bool findfamilies)
         {
-            var folderX = FileHelper.NameToFolder(imgX.Name);
+            var similars = new List<string>();
             var shadow = GetShadow();
-            var similars = new List<Tuple<string, float>>();
-            if (folderX[0].Equals(AppConsts.CharLe)) {
-                var bf = new SortedList<string, string>();
-                var df = new SortedList<string, float>();
-                foreach (var e in shadow) {
-                    if (imgX.Hash.Equals(e.Item1)) {
-                        continue;
-                    }
+            shadow.Remove(imgX.Hash);
+            var nexthash = imgX.NextHash;
+            while (shadow.ContainsKey(nexthash)) {
+                similars.Add(nexthash);
+                var imgY = shadow[nexthash];
+                shadow.Remove(nexthash);
+                nexthash = imgY.NextHash;
+            }
 
-                    var family = e.Item2[0].Equals(AppConsts.CharLe) ? "-" : e.Item2;
-                    var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
-                    if (bf.ContainsKey(family)) {
-                        if (distance < df[family]) {
-                            bf[family] = e.Item1;
-                            df[family] = distance;
+            if (findfamilies) {
+                var df = new SortedList<string, Tuple<string, float>>();
+                foreach (var e in shadow) {
+                    var family = e.Value.Name[0].Equals(AppConsts.CharLe) ? "-" : Path.GetDirectoryName(e.Value.Name);
+                    var distance = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
+                    if (df.ContainsKey(family)) {
+                        if (distance < df[family].Item2) {
+                            df[family] = Tuple.Create(e.Key, distance);
                         }
                     }
                     else {
-                        bf.Add(family, e.Item1);
-                        df.Add(family, distance);
+                        df.Add(family, Tuple.Create(e.Key, distance));
                     }
                 }
 
-                foreach (var f in bf.Keys) {
-                    similars.Add(Tuple.Create(bf[f], df[f]));
-                }
-
-                similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+                var representatives = df.Values.OrderBy(e => e.Item2).Select(e => e.Item1).ToList();
+                similars.AddRange(representatives);
             }
             else {
-                var bestd = 1f;
-                var besth = string.Empty;
-                var df = new SortedList<string, float>();
+                var clist = new List<Tuple<string, float>>();
+                var vlist = new List<Tuple<string, float>>();
                 foreach (var e in shadow) {
-                    if (imgX.Hash.Equals(e.Item1)) {
-                        continue;
-                    }
-
-                    var distance = VggHelper.GetDistance(imgX.GetVector(), e.Item3);
-                    if (folderX.Equals(e.Item2)) {
-                        if (distance < bestd) {
-                            bestd = distance;
-                            besth = e.Item1;
-                        }
-                    }
-                    else {
-                        similars.Add(Tuple.Create(e.Item1, distance));
-                    }
+                    var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
+                    clist.Add(Tuple.Create(e.Key, cd));
+                    var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
+                    vlist.Add(Tuple.Create(e.Key, vd));
                 }
 
-                similars.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-                if (!string.IsNullOrEmpty(besth)) {
-                    similars.Insert(0, Tuple.Create(besth, bestd));
+                clist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+                vlist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+
+                var ci = 0;
+                var vi = 0;
+                while (similars.Count < 100) {
+                    var vhash = vlist[vi].Item1;
+                    vi++;
+                    if (shadow.ContainsKey(vhash)) {
+                        similars.Add(vhash);
+                        shadow.Remove(vhash);
+                    }
+
+                    var chash = clist[ci].Item1;
+                    ci++;
+                    if (shadow.ContainsKey(chash)) {
+                        similars.Add(chash);
+                        shadow.Remove(chash);
+                    }
                 }
             }
 

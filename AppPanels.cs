@@ -65,9 +65,9 @@ namespace ImageBank
         }
 
         private static int _position;
-        private static List<Tuple<string, float>> _similars;
+        private static List<string> _similars;
 
-        public static void SetSimilars(List<Tuple<string, float>> similars, IProgress<string> progress)
+        public static void SetSimilars(List<string> similars, IProgress<string> progress)
         {
             _similars = similars;
             SetFirstPosition(progress);
@@ -75,7 +75,7 @@ namespace ImageBank
 
         public static string GetRightName()
         {
-            var hash = _similars[_position].Item1;
+            var hash = _similars[_position];
             if (!AppImgs.TryGetValue(hash, out Img img)) {
                 return null;
             }
@@ -86,7 +86,7 @@ namespace ImageBank
         public static void SetFirstPosition(IProgress<string> progress)
         {
             _position = 0;
-            while (!SetImgPanel(1, _similars[_position].Item1)) {
+            while (!SetImgPanel(1, _similars[_position])) {
                 _similars.RemoveAt(0);
             }
 
@@ -96,7 +96,7 @@ namespace ImageBank
         public static void SetLastPosition(IProgress<string> progress)
         {
             _position = _similars.Count - 1;
-            while (!SetImgPanel(1, _similars[_position].Item1)) {
+            while (!SetImgPanel(1, _similars[_position])) {
                 _similars.RemoveAt(_position);
                 _position--;
             }
@@ -108,7 +108,7 @@ namespace ImageBank
         {
             while (_position < _similars.Count - 1) {
                 _position++;
-                if (SetImgPanel(1, _similars[_position].Item1)) {
+                if (SetImgPanel(1, _similars[_position])) {
                     UpdateStatus(progress);
                     break;
                 }
@@ -119,30 +119,10 @@ namespace ImageBank
         {
             while (_position > 0) {
                 _position--;
-                if (SetImgPanel(1, _similars[_position].Item1)) {
+                if (SetImgPanel(1, _similars[_position])) {
                     UpdateStatus(progress);
                     break;
                 }
-            }
-        }
-
-        public static void MoveNextPosition(IProgress<string> progress)
-        {
-            var folderX = FileHelper.NameToFolder(_imgpanels[0].Img.Name);
-            if (folderX[0].Equals(AppConsts.CharLe)) {
-                return;
-            }
-
-            _position = 0;
-            while (_position < _similars.Count - 1) {
-                if (_similars[_position].Item2 > 1f) {
-                    if (SetImgPanel(1, _similars[_position].Item1)) {
-                        UpdateStatus(progress);
-                        break;
-                    }
-                }
-
-                _position++;
             }
         }
 
@@ -152,8 +132,7 @@ namespace ImageBank
             var imgX = _imgpanels[0].Img;
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastView));
             var similarsfound = _similars.Count;
-            var distance = _similars[_position].Item2;
-            progress?.Report($"{totalcount}: {imgX.Name} [{age} ago] = ({_position}/{similarsfound}) {distance:F2}");
+            progress?.Report($"{totalcount}: {imgX.Name} [{age} ago] = ({_position}/{similarsfound})");
         }
     }
 }

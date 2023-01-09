@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Windows.Input;
 
 namespace ImageBank
 {
@@ -13,7 +16,7 @@ namespace ImageBank
         private static int _found;
         private static int _moved;
 
-        public static List<Tuple<string, float>> GetSimilars(Img imgX, IProgress<string> progress)
+        public static List<string> GetSimilars(Img imgX, bool findfamilies, IProgress<string> progress)
         {
             var name = imgX.Name;
             var filename = FileHelper.NameToFileName(name);
@@ -23,7 +26,19 @@ namespace ImageBank
                 return null;
             }
 
-            var similars = AppImgs.GetSimilars(imgX);
+            if (!ColorHelper.IsHistogram(imgX.GetHistogram())) {
+                var imagedata = File.ReadAllBytes(filename);
+                using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                    if (magickImage != null) {
+                        using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
+                            var histogram = ColorHelper.CalculateHistogram(bitmap);
+                            imgX.SetHistogram(histogram);
+                        }
+                    }
+                }
+            }
+
+            var similars = AppImgs.GetSimilars(imgX, findfamilies);
             return similars;
         }
 
@@ -108,6 +123,7 @@ namespace ImageBank
                 }
             }
 
+            float[] histogram;
             byte[] vector;
             string extention;
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
@@ -125,6 +141,7 @@ namespace ImageBank
                 }
 
                 using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
+                    histogram = ColorHelper.CalculateHistogram(bitmap);
                     vector = VggHelper.CalculateVector(bitmap);
                     extention = magickImage.Format.ToString().ToLowerInvariant();
                 }
@@ -152,7 +169,9 @@ namespace ImageBank
                 hash: hash,
                 orientation: RotateFlipType.RotateNoneFlipNone,
                 lastview: lastview,
-                vector: vector);
+                histogram: histogram,
+                vector: vector,
+                nexthash: hash);
 
             if (!orgfilename.Equals(newfilename)) {
                 FileHelper.WriteFile(newfilename, imagedata);
@@ -229,8 +248,6 @@ namespace ImageBank
                 File.Move(filenameX, newfilenameX);
                 progress.Report($"{imgX.Name} {AppConsts.CharRightArrow} {newnameX}");
                 AppImgs.SetName(imgX, newnameX);
-                var similars = GetSimilars(imgX, progress);
-                AppPanels.SetSimilars(similars, progress);
             }
             else {
                 if (folderY[0] == AppConsts.CharLe && folderX[0] != AppConsts.CharLe) {
@@ -246,7 +263,6 @@ namespace ImageBank
                     progress.Report($"{imgY.Name} {AppConsts.CharRightArrow} {newnameY}");
                     AppImgs.SetName(imgY, newnameY);
                 }
-
             }
         }
     }

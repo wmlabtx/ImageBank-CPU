@@ -8,3 +8,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.LoadImages(System.IProgress{System.String})")]
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.AddImage(ImageBank.Img)")]
 [assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.ImageUpdateProperty(System.String,System.String,System.Object)")]
+[assembly: SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>", Scope = "member", Target = "~M:ImageBank.AppDatabase.VarsUpdateProperty(System.String,System.Object)")]

@@ -4,7 +4,7 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Find(string hashX, IProgress<string> progress)
+        public static void Find(string hashX, bool findfamilies, IProgress<string> progress)
         {
             Img imgX;
             int totalcount;
@@ -32,7 +32,7 @@ namespace ImageBank
                 }
 
                 imgX = AppPanels.GetImgPanel(0).Img;
-                var similars = GetSimilars(imgX, progress);
+                var similars = GetSimilars(imgX, findfamilies, progress);
                 AppPanels.SetSimilars(similars, progress);
                 break;
             }
