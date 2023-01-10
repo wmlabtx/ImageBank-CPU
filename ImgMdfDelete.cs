@@ -9,7 +9,7 @@ namespace ImageBank
             if (AppImgs.TryGetValue(hash, out var img)) {
                 progress.Report($"Delete {img.Name}");
                 AppImgs.Delete(img);
-                var filename = FileHelper.NameToFileName(img.Name);
+                var filename = FileHelper.NameToFileName(hash:img.Hash, name:img.Name);
                 FileHelper.DeleteToRecycleBin(filename);
             }
 

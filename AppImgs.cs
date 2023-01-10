@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security.Policy;
 using System.Threading;
-using System.Windows.Forms;
-using System.Xml.Linq;
 
 namespace ImageBank
 {
@@ -110,23 +106,6 @@ namespace ImageBank
             return result;
         }
 
-        public static void SetName(Img img, string name)
-        {
-            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
-                try {
-                    _nameList.Remove(img.Name);
-                    img.SetName(name);
-                    _nameList.Add(img.Name, img);
-                }
-                finally {
-                    Monitor.Exit(_imglock);
-                }
-            }
-            else {
-                throw new Exception();
-            }
-        }
-
         public static void Delete(Img img)
         {
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
@@ -163,15 +142,6 @@ namespace ImageBank
 
         public static Img GetNextView()
         {
-            var prevfolder = string.Empty;
-            var panel = AppPanels.GetImgPanel(0);
-            if (panel != null) {
-                var imgprev = panel.Img;
-                if (imgprev != null) {
-                    prevfolder = FileHelper.NameToFolder(imgprev.Name);
-                }
-            }
-
             Img imgX;
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
@@ -179,9 +149,8 @@ namespace ImageBank
                         imgX = null;
                     }
                     else {
-                        var scope = _imgList.Where(e => !FileHelper.NameToFolder(e.Value.Name).Equals(prevfolder));
-                        var minlv = scope.Min(e => e.Value.LastView);
-                        imgX = scope.FirstOrDefault(e => e.Value.LastView.Equals(minlv)).Value;
+                        var minlv = _imgList.Min(e => e.Value.LastView);
+                        imgX = _imgList.First(e => e.Value.LastView.Equals(minlv)).Value;
                     }
                 }
                 finally {
@@ -231,7 +200,7 @@ namespace ImageBank
             return shadow;
         }
 
-        public static List<string> GetSimilars(Img imgX, bool findfamilies)
+        public static List<string> GetSimilars(Img imgX)
         {
             var similars = new List<string>();
             var shadow = GetShadow();
@@ -244,54 +213,33 @@ namespace ImageBank
                 nexthash = imgY.NextHash;
             }
 
-            if (findfamilies) {
-                var df = new SortedList<string, Tuple<string, float>>();
-                foreach (var e in shadow) {
-                    var family = e.Value.Name[0].Equals(AppConsts.CharLe) ? "-" : Path.GetDirectoryName(e.Value.Name);
-                    var distance = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
-                    if (df.ContainsKey(family)) {
-                        if (distance < df[family].Item2) {
-                            df[family] = Tuple.Create(e.Key, distance);
-                        }
-                    }
-                    else {
-                        df.Add(family, Tuple.Create(e.Key, distance));
-                    }
-                }
-
-                var representatives = df.Values.OrderBy(e => e.Item2).Select(e => e.Item1).ToList();
-                similars.AddRange(representatives);
+            var clist = new List<Tuple<string, float>>();
+            var vlist = new List<Tuple<string, float>>();
+            foreach (var e in shadow) {
+                var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
+                clist.Add(Tuple.Create(e.Key, cd));
+                var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
+                vlist.Add(Tuple.Create(e.Key, vd));
             }
-            else {
-                var clist = new List<Tuple<string, float>>();
-                var vlist = new List<Tuple<string, float>>();
-                foreach (var e in shadow) {
-                    var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
-                    clist.Add(Tuple.Create(e.Key, cd));
-                    var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
-                    vlist.Add(Tuple.Create(e.Key, vd));
+
+            clist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+            vlist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+
+            var i = 0;
+            while (i < clist.Count && i < vlist.Count && similars.Count < 100) {
+                var chash = clist[i].Item1;
+                if (shadow.ContainsKey(chash)) {
+                    similars.Add(chash);
+                    shadow.Remove(chash);
                 }
 
-                clist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-                vlist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-
-                var ci = 0;
-                var vi = 0;
-                while (similars.Count < 100) {
-                    var vhash = vlist[vi].Item1;
-                    vi++;
-                    if (shadow.ContainsKey(vhash)) {
-                        similars.Add(vhash);
-                        shadow.Remove(vhash);
-                    }
-
-                    var chash = clist[ci].Item1;
-                    ci++;
-                    if (shadow.ContainsKey(chash)) {
-                        similars.Add(chash);
-                        shadow.Remove(chash);
-                    }
+                var vhash = vlist[i].Item1;
+                if (shadow.ContainsKey(vhash)) {
+                    similars.Add(vhash);
+                    shadow.Remove(vhash);
                 }
+
+                i++;
             }
 
             return similars;

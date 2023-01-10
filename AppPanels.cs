@@ -13,23 +13,15 @@ namespace ImageBank
             return _imgpanels[idpanel];
         }
 
-        public static void ToggleXor()
-        {
-            if (_imgpanels[0].Bitmap.Width == _imgpanels[1].Bitmap.Width && _imgpanels[0].Bitmap.Height == _imgpanels[1].Bitmap.Height) {
-                var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, _imgpanels[1].Bitmap);
-                _imgpanels[1].SetBitmap(bitmapxor);
-            }
-        }
-
         public static bool SetImgPanel(int idpanel, string hash)
         {
             if (!AppImgs.TryGetValue(hash, out Img img)) {
                 return false;
             }
 
-            var filename = FileHelper.NameToFileName(img.Name);
+            var filename = FileHelper.NameToFileName(hash: img.Hash, name: img.Name);
             var lastmodified = File.GetLastWriteTime(filename);
-            var imagedata = FileHelper.ReadFile(filename);
+            var imagedata = FileHelper.ReadEncryptedFile(filename);
             if (imagedata == null) {
                 return false;
             }
@@ -50,6 +42,12 @@ namespace ImageBank
                 var datetaken = BitmapHelper.GetDateTaken(magickImage, lastmodified);
                 var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, img.Orientation);
                 if (bitmap != null) {
+                    if (AppVars.ShowXOR && idpanel == 1 && _imgpanels[0].Bitmap.Width == bitmap.Width && _imgpanels[0].Bitmap.Height == bitmap.Height) {
+                        var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, bitmap);
+                        bitmap.Dispose();
+                        bitmap = bitmapxor;
+                    }
+
                     var imgpanel = new ImgPanel(
                         img: img,
                         size: imagedata.LongLength,
@@ -88,17 +86,6 @@ namespace ImageBank
             _position = 0;
             while (!SetImgPanel(1, _similars[_position])) {
                 _similars.RemoveAt(0);
-            }
-
-            UpdateStatus(progress);
-        }
-
-        public static void SetLastPosition(IProgress<string> progress)
-        {
-            _position = _similars.Count - 1;
-            while (!SetImgPanel(1, _similars[_position])) {
-                _similars.RemoveAt(_position);
-                _position--;
             }
 
             UpdateStatus(progress);

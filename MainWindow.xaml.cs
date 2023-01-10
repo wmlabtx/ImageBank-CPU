@@ -98,11 +98,6 @@ namespace ImageBank
             SwapMoveClick();
         }
 
-        private void LastMoveClick(object sender, RoutedEventArgs e)
-        {
-            LastMoveClick();
-        }
-
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             OnKeyDown(e.Key);
@@ -116,16 +111,6 @@ namespace ImageBank
         private void CombineClick(object sender, RoutedEventArgs e)
         {
             CombineClick();
-        }
-
-        private void FindNextClick(object sender, RoutedEventArgs e)
-        {
-            FindNextClick();
-        }
-
-        private void FindFamilyClick(object sender, RoutedEventArgs e)
-        {
-            FindFamilyClick();
         }
     }
 }

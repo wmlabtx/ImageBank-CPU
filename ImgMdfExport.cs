@@ -8,7 +8,7 @@ namespace ImageBank
         public static void Export(int idpanel, IProgress<string> progress)
         {
             var img = AppPanels.GetImgPanel(idpanel).Img;
-            var filename = FileHelper.NameToFileName(img.Name);
+            var filename = FileHelper.NameToFileName(hash:img.Hash, name:img.Name);
             var imagedata = FileHelper.ReadFile(filename);
             if (imagedata == null) {
                 return;

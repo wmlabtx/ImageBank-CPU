@@ -12,8 +12,8 @@ namespace ImageBank
                 return;
             }
 
-            var filename = FileHelper.NameToFileName(img.Name);
-            var imagedata = FileHelper.ReadFile(filename);
+            var filename = FileHelper.NameToFileName(hash:img.Hash, name:img.Name);
+            var imagedata = FileHelper.ReadEncryptedFile(filename);
             if (imagedata == null) {
                 progress.Report($"Cannot read {img.Name}");
                 return;

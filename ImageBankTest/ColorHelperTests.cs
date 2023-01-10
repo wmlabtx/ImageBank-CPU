@@ -73,7 +73,7 @@ namespace ImageBankTest
                     continue;
                 }
 
-                var filename = FileHelper.NameToFileName(imgX.Name);
+                var filename = FileHelper.NameToFileName(hash:imgX.Hash, name:imgX.Name);
                 var imagedata = File.ReadAllBytes(filename);
                 using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                     if (magickImage != null) {

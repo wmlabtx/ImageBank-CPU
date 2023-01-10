@@ -1,23 +1,32 @@
 ﻿using Microsoft.VisualBasic.FileIO;
 using System;
 using System.IO;
+using System.Text;
 
 namespace ImageBank
 {
     public static class FileHelper
     {
-        public static string NameToFileName(string name)
+        const string AllowedChars = "0123456789abcdefghijkmnprstuvxyz"; // 36-4=32 lowq
+
+        public static string NameToFileName(string hash, string name)
         {
-            return $"{AppConsts.PathHp}\\{name}";
+            return $"{AppConsts.PathHp}\\{hash[0]}\\{hash[1]}\\{name}{AppConsts.MzxExtension}";
         }
 
-        public static string NameToFolder(string name)
+        public static string HashToName(string hash, int length)
         {
-            var folder = Path.GetDirectoryName(name);
-            return folder;
+            var sb = new StringBuilder();
+            for (var i = 1; i <= length; i++) {
+                var hex = hash.Substring(i * 2, 2);
+                var val = int.Parse(hex, System.Globalization.NumberStyles.HexNumber); 
+                var c = AllowedChars[val % AllowedChars.Length];
+                sb.Append(c);
+            }
+
+            return sb.ToString();
         }
 
-        /*
         public static byte[] ReadEncryptedFile(string filename)
         {
             if (!File.Exists(filename)) {
@@ -29,7 +38,6 @@ namespace ImageBank
             var imgdata = EncryptionHelper.Decrypt(earray, password);
             return imgdata;
         }
-        */
 
         public static byte[] ReadFile(string filename)
         {
@@ -51,7 +59,6 @@ namespace ImageBank
             File.WriteAllBytes(filename, imgdata);
         }
 
-        /*
         public static void WriteEncryptedFile(string filename, byte[] imgdata)
         {
             var directory = Path.GetDirectoryName(filename);
@@ -63,7 +70,6 @@ namespace ImageBank
             var earray = EncryptionHelper.Encrypt(imgdata, password);
             File.WriteAllBytes(filename, earray);
         }
-        */
 
         public static void DeleteToRecycleBin(string filename)
         {

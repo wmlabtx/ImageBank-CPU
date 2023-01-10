@@ -6,13 +6,7 @@ namespace ImageBank
     public class Img
     {
         public string Hash { get; }
-
-        public string Name { get; private set; }
-        public void SetName(string name)
-        {
-            Name = name;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeName, Name);
-        }
+        public string Name { get; }
 
         public DateTime LastView { get; private set; }
         public void SetLastView(DateTime lastview)

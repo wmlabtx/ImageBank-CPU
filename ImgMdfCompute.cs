@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Windows.Input;
 
 namespace ImageBank
 {
@@ -14,47 +11,30 @@ namespace ImageBank
         private static int _added;
         private static int _bad;
         private static int _found;
-        private static int _moved;
 
-        public static List<string> GetSimilars(Img imgX, bool findfamilies, IProgress<string> progress)
+        public static List<string> GetSimilars(Img imgX, IProgress<string> progress)
         {
-            var name = imgX.Name;
-            var filename = FileHelper.NameToFileName(name);
+            var filename = FileHelper.NameToFileName(hash:imgX.Hash, name:imgX.Name);
             if (!File.Exists(filename)) {
-                progress?.Report($"({name}) removed");
+                progress?.Report($"({imgX.Name}) removed");
                 Delete(imgX.Hash, progress);
                 return null;
             }
 
-            if (!ColorHelper.IsHistogram(imgX.GetHistogram())) {
-                var imagedata = File.ReadAllBytes(filename);
-                using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
-                    if (magickImage != null) {
-                        using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
-                            var histogram = ColorHelper.CalculateHistogram(bitmap);
-                            imgX.SetHistogram(histogram);
-                        }
-                    }
-                }
-            }
-
-            var similars = AppImgs.GetSimilars(imgX, findfamilies);
+            var similars = AppImgs.GetSimilars(imgX);
             return similars;
         }
 
         private static void ImportFile(string path, string orgfilename, IProgress<string> progress)
         {
-            var fdir = Path.GetDirectoryName(orgfilename);
-            var fpath = fdir.Length == path.Length ? string.Empty : fdir.Substring(path.Length + 1);
-            var fname = Path.GetFileName(orgfilename);
-            var name = $"{fpath}\\{fname}";
+            var name = Path.GetFileNameWithoutExtension(orgfilename);
             if (AppImgs.ContainsName(name)) {
                 return;
             }
 
             var lastview = new DateTime(1990, 1, 1);
 
-            progress.Report($"importing {name} (a:{_added})/f:{_found}/m:{_moved}/b:{_bad}){AppConsts.CharEllipsis}");
+            progress.Report($"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
             if (lastmodified > DateTime.Now) {
@@ -84,7 +64,7 @@ namespace ImageBank
             if (found) {
                 // we have a record with the same hash...
                 lastview = imgfound.LastView;
-                var filenamefound = FileHelper.NameToFileName(imgfound.Name);
+                var filenamefound = FileHelper.NameToFileName(hash: imgfound.Hash, name: imgfound.Name);
                 if (File.Exists(filenamefound)) {
                     // we have a file
                     var foundimagedata = FileHelper.ReadFile(filenamefound);
@@ -95,31 +75,20 @@ namespace ImageBank
                         if (foundlastmodified > lastmodified) {
                             File.SetLastWriteTime(filenamefound, lastmodified);
                         }
-
-                        if (path.Equals(AppConsts.PathRw) || name[0].Equals(AppConsts.CharLe)) {
-                            // the org file is in RW or in a pool
-                            FileHelper.DeleteToRecycleBin(orgfilename);
-                            _found++;
-                            return;
-                        }
-
-                        // the org file is in named folder
-                        Delete(imgfound.Hash, progress);
                     }
                     else {
                         // but found file was changed or corrupted
-                        FileHelper.WriteFile(filenamefound, imagedata);
+                        FileHelper.WriteEncryptedFile(filenamefound, imagedata);
                         File.SetLastWriteTime(filenamefound, lastmodified);
-                        FileHelper.DeleteToRecycleBin(orgfilename);
-                        _found++;
-                        return;
                     }
+
+                    FileHelper.DeleteToRecycleBin(orgfilename);
+                    _found++;
+                    return;
                 }
                 else {
                     // ...but file is missing
-                    AppImgs.SetName(imgfound, name);
-                    _moved++;
-                    return;
+                    Delete(imgfound.Hash, progress);
                 }
             }
 
@@ -140,6 +109,11 @@ namespace ImageBank
                     return;
                 }
 
+                var datetaken = BitmapHelper.GetDateTaken(magickImage, DateTime.Now);
+                if (datetaken < lastmodified) {
+                    lastmodified = datetaken;
+                }
+
                 using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
                     histogram = ColorHelper.CalculateHistogram(bitmap);
                     vector = VggHelper.CalculateVector(bitmap);
@@ -149,15 +123,11 @@ namespace ImageBank
 
             string newname;
             string newfilename;
-            string newpath = path.Equals(AppConsts.PathRw) ?
-                $"{AppConsts.CharLe}\\{hash.Substring(0, 1)}\\{hash.Substring(1, 1)}" :
-                fpath;
-
             var iteration = 7;
             do {
                 iteration++;
-                newname = $"{newpath}\\{hash.Substring(0, iteration)}.{extention}";
-                newfilename = $"{AppConsts.PathHp}\\{newname}";
+                newname = FileHelper.HashToName(hash, iteration);
+                newfilename = $"{AppConsts.PathHp}\\{hash[0]}\\{hash[1]}\\{newname}{AppConsts.MzxExtension}";
             } while (File.Exists(newfilename));
 
             if (lastview.Year == 1990) {
@@ -174,11 +144,11 @@ namespace ImageBank
                 nexthash: hash);
 
             if (!orgfilename.Equals(newfilename)) {
-                FileHelper.WriteFile(newfilename, imagedata);
+                FileHelper.WriteEncryptedFile(newfilename, imagedata);
                 File.SetLastWriteTime(newfilename, lastmodified);
             }
 
-            var vimagedata = FileHelper.ReadFile(newfilename);
+            var vimagedata = FileHelper.ReadEncryptedFile(newfilename);
             if (vimagedata == null) {
                 FileHelper.DeleteToRecycleBin(newfilename);
                 return;
@@ -204,10 +174,15 @@ namespace ImageBank
             progress.Report($"importing {path}{AppConsts.CharEllipsis}");
             var directoryInfo = new DirectoryInfo(path);
             var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
+            var count = 0;
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
                     ImportFile(path, orgfilename, progress);
+                    count++;
+                    if (count == AppConsts.MaxImport) {
+                        break;
+                    }
                 }
             }
 
@@ -220,50 +195,9 @@ namespace ImageBank
             _added = 0;
             _found = 0;
             _bad = 0;
-            _moved = 0;
             ImportFiles(AppConsts.PathHp, progress);
             ImportFiles(AppConsts.PathRw, progress);
-            progress.Report($"Import done (a:{_added}/f:{_found}/m:{_moved}/b:{_bad})");
-        }
-
-        public static void Combine(IProgress<string> progress)
-        {
-            var imgX = AppPanels.GetImgPanel(0).Img;
-            var imgY = AppPanels.GetImgPanel(1).Img;
-            var folderX = FileHelper.NameToFolder(imgX.Name);
-            var folderY = FileHelper.NameToFolder(imgY.Name);
-            if (folderX.Equals(folderY)) {
-                return;
-            }
-
-            if (folderX[0] == AppConsts.CharLe && folderY[0] != AppConsts.CharLe) {
-                var filenameY = FileHelper.NameToFileName(imgY.Name);
-                var pathY = Path.GetDirectoryName(filenameY);
-                var filenameX = FileHelper.NameToFileName(imgX.Name);
-                var nameX = Path.GetFileName(filenameX);
-                var newfilenameX = Path.Combine(pathY, nameX);
-                var newdirX = Path.GetDirectoryName(newfilenameX);
-                var newpathX = newdirX.Substring(AppConsts.PathHp.Length + 1);
-                var newnameX = $"{newpathX}\\{nameX}";
-                File.Move(filenameX, newfilenameX);
-                progress.Report($"{imgX.Name} {AppConsts.CharRightArrow} {newnameX}");
-                AppImgs.SetName(imgX, newnameX);
-            }
-            else {
-                if (folderY[0] == AppConsts.CharLe && folderX[0] != AppConsts.CharLe) {
-                    var filenameX = FileHelper.NameToFileName(imgX.Name);
-                    var pathX = Path.GetDirectoryName(filenameX);
-                    var filenameY = FileHelper.NameToFileName(imgY.Name);
-                    var nameY = Path.GetFileName(filenameY);
-                    var newfilenameY = Path.Combine(pathX, nameY);
-                    var newdirY = Path.GetDirectoryName(newfilenameY);
-                    var newpathY = newdirY.Substring(AppConsts.PathHp.Length + 1);
-                    var newnameY = $"{newpathY}\\{nameY}";
-                    File.Move(filenameY, newfilenameY);
-                    progress.Report($"{imgY.Name} {AppConsts.CharRightArrow} {newnameY}");
-                    AppImgs.SetName(imgY, newnameY);
-                }
-            }
+            progress.Report($"Import done (a:{_added}/f:{_found}/b:{_bad})");
         }
     }
 }

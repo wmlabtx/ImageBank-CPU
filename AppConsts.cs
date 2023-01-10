@@ -13,9 +13,9 @@
         public const string PathHp = PathRoot + @"\" + FolderHp;
         public const string FolderGb = @"Gb";
         public const string PathGb = PathRoot + @"\" + FolderGb;
-        public const char CharLe = '-';
 
-        public const string PngExtension = ".png";
+        public const int MaxImport = 50;
+
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
         public const string CorruptedExtension = ".corrupted";

@@ -6,6 +6,7 @@ namespace ImageBank
     public static class AppVars
     {
         public static Progress<string> Progress { get; set; }
+        public static bool ShowXOR { get; set; }
 
         private static readonly RandomMersenne _random;
         public static int IRandom(int min, int max)
@@ -30,6 +31,7 @@ namespace ImageBank
         {
             var seed = Guid.NewGuid().GetHashCode();
             _random = new RandomMersenne((uint)seed);
+            ShowXOR = false;
         }
     }
 }

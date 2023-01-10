@@ -27,9 +27,6 @@
                 <MenuItem Header="Left (Q)" Click="LeftMoveClick" />
                 <MenuItem Header="First (F)" Click="FirstMoveClick" />
                 <MenuItem Header="Swap (S)" Click="SwapMoveClick" />
-                <Separator />
-                <MenuItem Header="Find Next" Click="FindNextClick" />
-                <MenuItem Header="Find Family" Click="FindFamilyClick" />
             </MenuItem>
             <MenuItem Header="Family">
                 <MenuItem Header="Combine (C)" Click="CombineClick" />
