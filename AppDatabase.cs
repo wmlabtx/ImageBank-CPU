@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data.SqlClient;
-using System.Security.Policy;
 using System.Text;
 using System.Threading;
 
@@ -97,28 +96,31 @@ namespace ImageBank
                         sb.Append($"INSERT INTO {AppConsts.TableImages} (");
                         sb.Append($"{AppConsts.AttributeName}, ");
                         sb.Append($"{AppConsts.AttributeHash}, ");
+                        sb.Append($"{AppConsts.AttributeDateTaken}, ");
                         sb.Append($"{AppConsts.AttributeLastView}, ");
                         sb.Append($"{AppConsts.AttributeOrientation}, ");
                         sb.Append($"{AppConsts.AttributeHistogram}, ");
                         sb.Append($"{AppConsts.AttributeVector}, ");
-                        sb.Append($"{AppConsts.AttributeNextHash}");
+                        sb.Append($"{AppConsts.AttributeFamily}");
                         sb.Append(") VALUES (");
                         sb.Append($"@{AppConsts.AttributeName}, ");
                         sb.Append($"@{AppConsts.AttributeHash}, ");
+                        sb.Append($"@{AppConsts.AttributeDateTaken}, ");
                         sb.Append($"@{AppConsts.AttributeLastView}, ");
                         sb.Append($"@{AppConsts.AttributeOrientation}, ");
                         sb.Append($"@{AppConsts.AttributeHistogram}, ");
                         sb.Append($"@{AppConsts.AttributeVector}, ");
-                        sb.Append($"@{AppConsts.AttributeNextHash}");
+                        sb.Append($"@{AppConsts.AttributeFamily}");
                         sb.Append(')');
                         sqlCommand.CommandText = sb.ToString();
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDateTaken}", img.DateTaken);
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeOrientation}", Helper.RotateFlipTypeToByte(img.Orientation));
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHistogram}", Helper.ArrayFromFloat(img.GetHistogram()));
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", img.GetVector());
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeNextHash}", img.NextHash);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFamily}", img.Family);
                         sqlCommand.ExecuteNonQuery();
                     }
                 }
@@ -144,7 +146,8 @@ namespace ImageBank
             sb.Append($"{AppConsts.AttributeOrientation}, "); // 3
             sb.Append($"{AppConsts.AttributeHistogram}, "); // 4
             sb.Append($"{AppConsts.AttributeVector}, "); // 5
-            sb.Append($"{AppConsts.AttributeNextHash} "); // 6
+            sb.Append($"{AppConsts.AttributeFamily}, "); // 6
+            sb.Append($"{AppConsts.AttributeDateTaken} "); // 7
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -159,15 +162,17 @@ namespace ImageBank
                         var orientation = Helper.ByteToRotateFlipType(reader.GetByte(3));
                         var histogram = Helper.ArrayToFloat((byte[])reader[4]);
                         var vector = (byte[])reader[5];
-                        var nexthash = reader.GetString(6);
+                        var family = reader.GetString(6);
+                        var datetaken = reader.GetDateTime(7);
                         var img = new Img(
                             name: name,
                             hash: hash,
+                            datetaken: datetaken,
                             lastview: lastview,
                             orientation: orientation,
                             histogram: histogram,
                             vector: vector,
-                            nexthash: nexthash
+                            family: family
                             );
 
                         AppImgs.Add(img);
@@ -197,6 +202,8 @@ namespace ImageBank
                     }
                 }
             }
+
+            //AppImgs.Populate();
 
             progress?.Report("Database loaded");
         }

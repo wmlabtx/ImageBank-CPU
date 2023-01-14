@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -26,6 +27,24 @@ namespace ImageBank
                 }
                 finally { 
                     Monitor.Exit(_imglock); 
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
+            return count;
+        }
+
+        public static int Count(string family)
+        {
+            int count;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    count = _imgList.Count(e => e.Value.Family.Equals(family, StringComparison.OrdinalIgnoreCase));
+                }
+                finally {
+                    Monitor.Exit(_imglock);
                 }
             }
             else {
@@ -149,8 +168,22 @@ namespace ImageBank
                         imgX = null;
                     }
                     else {
-                        var minlv = _imgList.Min(e => e.Value.LastView);
-                        imgX = _imgList.First(e => e.Value.LastView.Equals(minlv)).Value;
+                        var shadow = GetShadow();
+                        var vlist = new SortedList<string, Tuple<string, DateTime>>();
+                        foreach (var e in shadow) {
+                            if (vlist.ContainsKey(e.Value.Family)) {
+                                if (vlist[e.Value.Family].Item2 < e.Value.LastView) {
+                                    vlist[e.Value.Family] = Tuple.Create(e.Key, e.Value.LastView);
+                                }
+                            }
+                            else {
+                                vlist.Add(e.Value.Family, Tuple.Create(e.Key, e.Value.LastView));
+                            }
+                        }
+
+                        var minlv = vlist.Min(e => e.Value.Item2);
+                        var minhash = vlist.First(e => e.Value.Item2 == minlv).Value.Item1;
+                        imgX = _imgList[minhash];
                     }
                 }
                 finally {
@@ -205,44 +238,131 @@ namespace ImageBank
             var similars = new List<string>();
             var shadow = GetShadow();
             shadow.Remove(imgX.Hash);
-            var nexthash = imgX.NextHash;
-            while (shadow.ContainsKey(nexthash)) {
-                similars.Add(nexthash);
-                var imgY = shadow[nexthash];
-                shadow.Remove(nexthash);
-                nexthash = imgY.NextHash;
-            }
-
-            var clist = new List<Tuple<string, float>>();
-            var vlist = new List<Tuple<string, float>>();
+            var clist = new SortedList<string, Tuple<string, float>>();
+            var vlist = new SortedList<string, Tuple<string, float>>();
+            var dlist = new SortedList<string, Tuple<string, float>>();
             foreach (var e in shadow) {
-                var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
-                clist.Add(Tuple.Create(e.Key, cd));
-                var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
-                vlist.Add(Tuple.Create(e.Key, vd));
-            }
-
-            clist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-            vlist.Sort((x, y) => x.Item2.CompareTo(y.Item2));
-
-            var i = 0;
-            while (i < clist.Count && i < vlist.Count && similars.Count < 100) {
-                var chash = clist[i].Item1;
-                if (shadow.ContainsKey(chash)) {
-                    similars.Add(chash);
-                    shadow.Remove(chash);
+                if (imgX.Family.Equals(e.Value.Family, StringComparison.OrdinalIgnoreCase)) {
+                    similars.Add(e.Key);
+                    continue;
                 }
 
-                var vhash = vlist[i].Item1;
-                if (shadow.ContainsKey(vhash)) {
-                    similars.Add(vhash);
-                    shadow.Remove(vhash);
+                var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
+                if (clist.ContainsKey(e.Value.Family)) {
+                    if (cd < clist[e.Value.Family].Item2) {
+                        clist[e.Value.Family] = Tuple.Create(e.Key, cd);
+                    }
+                }
+                else {
+                    clist.Add(e.Value.Family, Tuple.Create(e.Key, cd));
+                }
+
+                var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
+                if (vlist.ContainsKey(e.Value.Family)) {
+                    if (vd < vlist[e.Value.Family].Item2) {
+                        vlist[e.Value.Family] = Tuple.Create(e.Key, vd);
+                    }
+                }
+                else {
+                    vlist.Add(e.Value.Family, Tuple.Create(e.Key, vd));
+                }
+
+                var dd = (float)Math.Abs(imgX.DateTaken.Subtract(e.Value.DateTaken).TotalDays);
+                if (dlist.ContainsKey(e.Value.Family)) {
+                    if (dd < dlist[e.Value.Family].Item2) {
+                        dlist[e.Value.Family] = Tuple.Create(e.Key, dd);
+                    }
+                }
+                else {
+                    dlist.Add(e.Value.Family, Tuple.Create(e.Key, dd));
+                }
+            }
+
+            var cl = clist.OrderBy(e => e.Value.Item2).ToArray();
+            var vl = vlist.OrderBy(e => e.Value.Item2).ToArray();
+            var dl = dlist.OrderBy(e => e.Value.Item2).ToArray();
+
+            var i = 0;
+            var xlist = new List<Tuple<string, string>>();
+            while (i < cl.Length && xlist.Count < 100) {
+                var cf = cl[i].Key;
+                if (!xlist.Any(e => e.Item1 == cf)) {
+                    var ch = cl[i].Value.Item1;
+                    xlist.Add(Tuple.Create(cf, cl[i].Value.Item1));
+                }
+
+                var vf = vl[i].Key;
+                if (!xlist.Any(e => e.Item1 == vf)) {
+                    var vh = vl[i].Value.Item1;
+                    xlist.Add(Tuple.Create(vf, vl[i].Value.Item1));
+                }
+
+                var df = dl[i].Key;
+                if (!xlist.Any(e => e.Item1 == df)) {
+                    var dh = dl[i].Value.Item1;
+                    xlist.Add(Tuple.Create(df, dl[i].Value.Item1));
                 }
 
                 i++;
             }
 
+            similars.AddRange(xlist.Select(e => e.Item2).ToList());
             return similars;
         }
+
+        /*
+        public static void RenameFamily(string of, string nf)
+        {
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    var scope = _imgList.Values.Where(e => e.Family.Equals(of, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    foreach (var img in scope) {
+                        img.SetFamily(nf);
+                    }
+
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+        }
+        */
+
+        /*
+        public static void Populate()
+        {
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    var shadow = GetShadow();
+                    foreach (var e in shadow) {
+                        var filename = FileHelper.NameToFileName(hash:e.Key, name:e.Value.Name);
+                        var lastmodified = File.GetLastWriteTime(filename);
+                        if (lastmodified > DateTime.Now) {
+                            lastmodified = DateTime.Now;
+                        }
+
+                        var imagedata = FileHelper.ReadEncryptedFile(filename);
+                        using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
+                            var datetaken = BitmapHelper.GetDateTaken(magickImage, DateTime.Now);
+                            if (datetaken < lastmodified) {
+                                lastmodified = datetaken;
+                            }
+                        }
+
+                        e.Value.SetDateTaken(lastmodified);
+                    }
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+        }
+        */
     }
 }

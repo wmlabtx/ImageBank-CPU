@@ -15,6 +15,13 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeLastView, LastView);
         }
 
+        public DateTime DateTaken { get; private set; }
+        public void SetDateTaken(DateTime datetaken)
+        {
+            DateTaken = datetaken;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeDateTaken, DateTaken);
+        }
+
         public float[] _histogram;
         public float[] GetHistogram()
         {
@@ -45,30 +52,32 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeOrientation, Helper.RotateFlipTypeToByte(Orientation));
         }
 
-        public string NextHash { get; private set; }
-        public void SetNextHash(string nexthash)
+        public string Family { get; private set; }
+        public void SetFamily(string family)
         {
-            NextHash = nexthash;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeNextHash, NextHash);
+            Family = family;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeFamily, Family);
         }
 
         public Img(
             string name,
             string hash,
+            DateTime datetaken,
             float[] histogram,
             byte[] vector,
             RotateFlipType orientation,
-            string nexthash,
+            string family,
             DateTime lastview
             )
         {
             Name = name;
             Hash = hash;
+            DateTaken = datetaken;
             _histogram = histogram;
             _vector = vector;
             Orientation = orientation;
             LastView = lastview;
-            NextHash = nexthash;
+            Family = family;
         }
     }
 }

@@ -30,11 +30,12 @@
         public const string TableImages = "Images";
         public const string AttributeName = "Name";
         public const string AttributeHash = "Hash";
+        public const string AttributeDateTaken = "DateTaken";
         public const string AttributeLastView = "LastView";
         public const string AttributeHistogram = "Histogram";
         public const string AttributeVector = "Vector";
         public const string AttributeOrientation = "Orientation";
-        public const string AttributeNextHash = "NextHash";
+        public const string AttributeFamily = "Family";
         public const string TableVars = "Vars";
         public const string AttributePalette = "Palette";
     }

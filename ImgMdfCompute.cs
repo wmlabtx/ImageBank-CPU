@@ -67,19 +67,21 @@ namespace ImageBank
                 var filenamefound = FileHelper.NameToFileName(hash: imgfound.Hash, name: imgfound.Name);
                 if (File.Exists(filenamefound)) {
                     // we have a file
-                    var foundimagedata = FileHelper.ReadFile(filenamefound);
+                    var foundimagedata = FileHelper.ReadEncryptedFile(filenamefound);
                     var foundhash = HashHelper.Compute(foundimagedata);
                     if (imgfound.Hash.Equals(foundhash)) {
                         // and file is okay
                         var foundlastmodified = File.GetLastWriteTime(orgfilename);
                         if (foundlastmodified > lastmodified) {
                             File.SetLastWriteTime(filenamefound, lastmodified);
+                            imgfound.SetDateTaken(lastmodified);
                         }
                     }
                     else {
                         // but found file was changed or corrupted
                         FileHelper.WriteEncryptedFile(filenamefound, imagedata);
                         File.SetLastWriteTime(filenamefound, lastmodified);
+                        imgfound.SetDateTaken(lastmodified);
                     }
 
                     FileHelper.DeleteToRecycleBin(orgfilename);
@@ -137,11 +139,12 @@ namespace ImageBank
             var nimg = new Img(
                 name: newname,
                 hash: hash,
+                datetaken: lastmodified,
                 orientation: RotateFlipType.RotateNoneFlipNone,
                 lastview: lastview,
                 histogram: histogram,
                 vector: vector,
-                nexthash: hash);
+                family: newname);
 
             if (!orgfilename.Equals(newfilename)) {
                 FileHelper.WriteEncryptedFile(newfilename, imagedata);

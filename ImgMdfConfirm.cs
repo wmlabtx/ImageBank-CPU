@@ -14,13 +14,29 @@ namespace ImageBank
         {
             var imgX = AppPanels.GetImgPanel(0).Img;
             var imgY = AppPanels.GetImgPanel(1).Img;
-            if (imgX.NextHash.Equals(imgY.Hash)) {
-                imgX.SetNextHash(imgX.Hash);
+            var compare = string.Compare(imgX.Family, imgY.Family, StringComparison.OrdinalIgnoreCase);
+            if (compare == 0) {
+                imgX.SetFamily(imgX.Name);
+                imgY.SetFamily(imgY.Name);
             }
             else {
-                imgX.SetNextHash(imgY.Hash);
-                if (imgY.Hash.Equals(imgY.NextHash) || !AppImgs.ContainsHash(imgY.NextHash)) {
-                    imgY.SetNextHash(imgX.Hash);
+                var sizeX = AppImgs.Count(imgX.Family);
+                var sizeY = AppImgs.Count(imgY.Family);
+                if (sizeX == sizeY) {
+                    if (compare < 0) {
+                        imgY.SetFamily(imgX.Family);
+                    }
+                    else {
+                        imgX.SetFamily(imgY.Family);
+                    }
+                }
+                else {
+                    if (sizeX > sizeY) {
+                        imgY.SetFamily(imgX.Family);
+                    }
+                    else {
+                        imgX.SetFamily(imgY.Family);
+                    }
                 }
             }
         }

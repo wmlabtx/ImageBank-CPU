@@ -1,7 +1,5 @@
-﻿using OpenCvSharp.ImgHash;
-using System;
+﻿using System;
 using System.Drawing;
-using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -139,6 +137,11 @@ namespace ImageBank
 
                 var sb = new StringBuilder();
                 sb.Append($"{panels[index].Img.Hash.Substring(0, 2)}\\{panels[index].Img.Name} ({panels[index].Format.ToLowerInvariant()})");
+                var count = AppImgs.Count(panels[index].Img.Family);
+                if (count > 1) {
+                    sb.Append($" {panels[index].Img.Family}:{count}");
+                }
+
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -150,7 +153,7 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
-                if (panels[0].Img.NextHash.Equals(panels[1].Img.Hash)) {
+                if (panels[0].Img.Family.Equals(panels[1].Img.Family, StringComparison.OrdinalIgnoreCase)) {
                     scb = System.Windows.Media.Brushes.LightGreen;
                 }
                 else {

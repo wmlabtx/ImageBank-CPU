@@ -8,7 +8,7 @@ namespace ImageBank
         public static Progress<string> Progress { get; set; }
         public static bool ShowXOR { get; set; }
 
-        private static readonly RandomMersenne _random;
+        private static readonly RandomMersenne _random = new RandomMersenne((uint)Guid.NewGuid().GetHashCode());
         public static int IRandom(int min, int max)
         {
             int result;
@@ -25,13 +25,6 @@ namespace ImageBank
             }
 
             return result;
-        }
-
-        static AppVars()
-        {
-            var seed = Guid.NewGuid().GetHashCode();
-            _random = new RandomMersenne((uint)seed);
-            ShowXOR = false;
         }
     }
 }
