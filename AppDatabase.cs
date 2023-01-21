@@ -94,33 +94,33 @@ namespace ImageBank
                         sqlCommand.Connection = _sqlConnection;
                         var sb = new StringBuilder();
                         sb.Append($"INSERT INTO {AppConsts.TableImages} (");
-                        sb.Append($"{AppConsts.AttributeName}, ");
                         sb.Append($"{AppConsts.AttributeHash}, ");
+                        sb.Append($"{AppConsts.AttributeFolder}, ");
                         sb.Append($"{AppConsts.AttributeDateTaken}, ");
-                        sb.Append($"{AppConsts.AttributeLastView}, ");
-                        sb.Append($"{AppConsts.AttributeOrientation}, ");
                         sb.Append($"{AppConsts.AttributeHistogram}, ");
                         sb.Append($"{AppConsts.AttributeVector}, ");
-                        sb.Append($"{AppConsts.AttributeFamily}");
+                        sb.Append($"{AppConsts.AttributeLastView}, ");
+                        sb.Append($"{AppConsts.AttributeOrientation}, ");
+                        sb.Append($"{AppConsts.AttributeBestHash}");
                         sb.Append(") VALUES (");
-                        sb.Append($"@{AppConsts.AttributeName}, ");
                         sb.Append($"@{AppConsts.AttributeHash}, ");
+                        sb.Append($"@{AppConsts.AttributeFolder}, ");
                         sb.Append($"@{AppConsts.AttributeDateTaken}, ");
-                        sb.Append($"@{AppConsts.AttributeLastView}, ");
-                        sb.Append($"@{AppConsts.AttributeOrientation}, ");
                         sb.Append($"@{AppConsts.AttributeHistogram}, ");
                         sb.Append($"@{AppConsts.AttributeVector}, ");
-                        sb.Append($"@{AppConsts.AttributeFamily}");
+                        sb.Append($"@{AppConsts.AttributeLastView}, ");
+                        sb.Append($"@{AppConsts.AttributeOrientation}, ");
+                        sb.Append($"@{AppConsts.AttributeBestHash}");
                         sb.Append(')');
                         sqlCommand.CommandText = sb.ToString();
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeName}", img.Name);
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHash}", img.Hash);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFolder}", img.Folder);
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeDateTaken}", img.DateTaken);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeOrientation}", Helper.RotateFlipTypeToByte(img.Orientation));
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeHistogram}", Helper.ArrayFromFloat(img.GetHistogram()));
                         sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeVector}", img.GetVector());
-                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeFamily}", img.Family);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeLastView}", img.LastView);
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeOrientation}", Helper.RotateFlipTypeToByte(img.Orientation));
+                        sqlCommand.Parameters.AddWithValue($"@{AppConsts.AttributeBestHash}", img.BestHash);
                         sqlCommand.ExecuteNonQuery();
                     }
                 }
@@ -140,14 +140,14 @@ namespace ImageBank
         {
             var sb = new StringBuilder();
             sb.Append("SELECT ");
-            sb.Append($"{AppConsts.AttributeName}, "); // 0
-            sb.Append($"{AppConsts.AttributeHash}, "); // 1
-            sb.Append($"{AppConsts.AttributeLastView}, "); // 2
-            sb.Append($"{AppConsts.AttributeOrientation}, "); // 3
-            sb.Append($"{AppConsts.AttributeHistogram}, "); // 4
-            sb.Append($"{AppConsts.AttributeVector}, "); // 5
-            sb.Append($"{AppConsts.AttributeFamily}, "); // 6
-            sb.Append($"{AppConsts.AttributeDateTaken} "); // 7
+            sb.Append($"{AppConsts.AttributeHash}, "); // 0
+            sb.Append($"{AppConsts.AttributeFolder}, "); // 1
+            sb.Append($"{AppConsts.AttributeDateTaken}, "); // 2
+            sb.Append($"{AppConsts.AttributeHistogram}, "); // 3
+            sb.Append($"{AppConsts.AttributeVector}, "); // 4
+            sb.Append($"{AppConsts.AttributeLastView}, "); // 5
+            sb.Append($"{AppConsts.AttributeOrientation}, "); // 6
+            sb.Append($"{AppConsts.AttributeBestHash} "); // 7
             sb.Append($"FROM {AppConsts.TableImages}");
             var sqltext = sb.ToString();
             using (var sqlCommand = _sqlConnection.CreateCommand()) {
@@ -156,23 +156,23 @@ namespace ImageBank
                 using (var reader = sqlCommand.ExecuteReader()) {
                     var dtn = DateTime.Now;
                     while (reader.Read()) {
-                        var name = reader.GetString(0);
-                        var hash = reader.GetString(1);
-                        var lastview = reader.GetDateTime(2);
-                        var orientation = Helper.ByteToRotateFlipType(reader.GetByte(3));
-                        var histogram = Helper.ArrayToFloat((byte[])reader[4]);
-                        var vector = (byte[])reader[5];
-                        var family = reader.GetString(6);
-                        var datetaken = reader.GetDateTime(7);
+                        var hash = reader.GetString(0);
+                        var folder = reader.GetString(1);
+                        var datetaken = reader.GetDateTime(2);
+                        var histogram = Helper.ArrayToFloat((byte[])reader[3]);
+                        var vector = (byte[])reader[4];
+                        var lastview = reader.GetDateTime(5);
+                        var orientation = Helper.ByteToRotateFlipType(reader.GetByte(6));
+                        var besthash = reader.GetString(7);
                         var img = new Img(
-                            name: name,
                             hash: hash,
+                            folder: folder,
                             datetaken: datetaken,
-                            lastview: lastview,
-                            orientation: orientation,
                             histogram: histogram,
                             vector: vector,
-                            family: family
+                            lastview: lastview,
+                            orientation: orientation,
+                            besthash: besthash
                             );
 
                         AppImgs.Add(img);
@@ -203,7 +203,7 @@ namespace ImageBank
                 }
             }
 
-            //AppImgs.Populate();
+            // AppImgs.Populate(AppVars.Progress);
 
             progress?.Report("Database loaded");
         }

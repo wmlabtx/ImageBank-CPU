@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualBasic.FileIO;
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ImageBank
@@ -9,19 +10,15 @@ namespace ImageBank
     {
         const string AllowedChars = "0123456789abcdefghijkmnprstuvxyz"; // 36-4=32 lowq
 
-        public static string NameToFileName(string hash, string name)
-        {
-            return $"{AppConsts.PathHp}\\{hash[0]}\\{hash[1]}\\{name}{AppConsts.MzxExtension}";
-        }
-
-        public static string HashToName(string hash, int length)
+        public static string GetHash(byte[] imagedata)
         {
             var sb = new StringBuilder();
-            for (var i = 1; i <= length; i++) {
-                var hex = hash.Substring(i * 2, 2);
-                var val = int.Parse(hex, System.Globalization.NumberStyles.HexNumber); 
-                var c = AllowedChars[val % AllowedChars.Length];
-                sb.Append(c);
+            using (var sha256 = SHA256.Create()) {
+                var raw = sha256.ComputeHash(imagedata);
+                for (var i = 1; i <= AppConsts.HashLength; i++) {
+                    var c = AllowedChars[raw[i] & 0x1f];
+                    sb.Append(c);
+                }
             }
 
             return sb.ToString();

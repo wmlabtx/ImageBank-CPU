@@ -103,7 +103,6 @@
     <Compile Include="ColorHelperTests.cs" />
     <Compile Include="EncryptionHelperTests.cs" />
     <Compile Include="FileHelperTests.cs" />
-    <Compile Include="MD5HashHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VggTests.cs" />
   </ItemGroup>

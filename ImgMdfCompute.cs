@@ -14,9 +14,10 @@ namespace ImageBank
 
         public static List<string> GetSimilars(Img imgX, IProgress<string> progress)
         {
-            var filename = FileHelper.NameToFileName(hash:imgX.Hash, name:imgX.Name);
+            var filename = imgX.GetFileName();
             if (!File.Exists(filename)) {
-                progress?.Report($"({imgX.Name}) removed");
+                var shortname = Path.GetFileName(filename);
+                progress?.Report($"({shortname}) removed");
                 Delete(imgX.Hash, progress);
                 return null;
             }
@@ -25,10 +26,10 @@ namespace ImageBank
             return similars;
         }
 
-        private static void ImportFile(string path, string orgfilename, IProgress<string> progress)
+        private static void ImportFile(string orgfilename, IProgress<string> progress)
         {
             var name = Path.GetFileNameWithoutExtension(orgfilename);
-            if (AppImgs.ContainsName(name)) {
+            if (AppImgs.ContainsHash(name)) {
                 return;
             }
 
@@ -45,11 +46,10 @@ namespace ImageBank
             var orgextension = Path.GetExtension(orgfilename);
             if (orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ||
                 orgextension.Equals(AppConsts.MzxExtension, StringComparison.OrdinalIgnoreCase)) {
-                var password = Path.GetFileNameWithoutExtension(orgfilename);
                 imagedata = File.ReadAllBytes(orgfilename);
                 var decrypteddata = orgextension.Equals(AppConsts.DatExtension, StringComparison.OrdinalIgnoreCase) ?
-                    EncryptionHelper.DecryptDat(imagedata, password) :
-                    EncryptionHelper.Decrypt(imagedata, password);
+                    EncryptionHelper.DecryptDat(imagedata, name) :
+                    EncryptionHelper.Decrypt(imagedata, name);
 
                 if (decrypteddata != null) {
                      imagedata = decrypteddata;
@@ -59,16 +59,17 @@ namespace ImageBank
                 imagedata = File.ReadAllBytes(orgfilename);
             }
 
-            var hash = HashHelper.Compute(imagedata);
+            var hash = FileHelper.GetHash(imagedata);
+            var folder = AppImgs.GetFolder();
             var found = AppImgs.TryGetValue(hash, out var imgfound);
             if (found) {
                 // we have a record with the same hash...
                 lastview = imgfound.LastView;
-                var filenamefound = FileHelper.NameToFileName(hash: imgfound.Hash, name: imgfound.Name);
+                var filenamefound = imgfound.GetFileName();
                 if (File.Exists(filenamefound)) {
                     // we have a file
                     var foundimagedata = FileHelper.ReadEncryptedFile(filenamefound);
-                    var foundhash = HashHelper.Compute(foundimagedata);
+                    var foundhash = FileHelper.GetHash(foundimagedata);
                     if (imgfound.Hash.Equals(foundhash)) {
                         // and file is okay
                         var foundlastmodified = File.GetLastWriteTime(orgfilename);
@@ -123,29 +124,21 @@ namespace ImageBank
                 }
             }
 
-            string newname;
-            string newfilename;
-            var iteration = 7;
-            do {
-                iteration++;
-                newname = FileHelper.HashToName(hash, iteration);
-                newfilename = $"{AppConsts.PathHp}\\{hash[0]}\\{hash[1]}\\{newname}{AppConsts.MzxExtension}";
-            } while (File.Exists(newfilename));
-
             if (lastview.Year == 1990) {
                 lastview = AppImgs.GetMinLastView();
             }
 
             var nimg = new Img(
-                name: newname,
                 hash: hash,
+                folder: folder,
                 datetaken: lastmodified,
-                orientation: RotateFlipType.RotateNoneFlipNone,
-                lastview: lastview,
                 histogram: histogram,
                 vector: vector,
-                family: newname);
+                lastview: lastview,
+                orientation: RotateFlipType.RotateNoneFlipNone,
+                besthash: hash);
 
+            var newfilename = nimg.GetFileName();
             if (!orgfilename.Equals(newfilename)) {
                 FileHelper.WriteEncryptedFile(newfilename, imagedata);
                 File.SetLastWriteTime(newfilename, lastmodified);
@@ -157,7 +150,7 @@ namespace ImageBank
                 return;
             }
 
-            var vhash = HashHelper.Compute(vimagedata);
+            var vhash = FileHelper.GetHash(vimagedata);
             if (!hash.Equals(vhash)) {
                 FileHelper.DeleteToRecycleBin(newfilename);
                 return;
@@ -169,6 +162,7 @@ namespace ImageBank
 
             Add(nimg);
             AppDatabase.AddImage(nimg);
+
             _added++;
         }
 
@@ -181,9 +175,9 @@ namespace ImageBank
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
-                    ImportFile(path, orgfilename, progress);
+                    ImportFile(orgfilename, progress);
                     count++;
-                    if (count == AppConsts.MaxImport) {
+                    if (count == AppConsts.MaxImportFiles) {
                         break;
                     }
                 }

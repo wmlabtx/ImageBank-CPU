@@ -7,9 +7,10 @@ namespace ImageBank
         public static void Delete(string hash, IProgress<string> progress)
         {
             if (AppImgs.TryGetValue(hash, out var img)) {
-                progress.Report($"Delete {img.Name}");
+                var shortfilename = img.GetShortFileName();
+                progress.Report($"Delete {shortfilename}");
                 AppImgs.Delete(img);
-                var filename = FileHelper.NameToFileName(hash:img.Hash, name:img.Name);
+                var filename = img.GetFileName();
                 FileHelper.DeleteToRecycleBin(filename);
             }
 

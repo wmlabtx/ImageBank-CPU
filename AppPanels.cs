@@ -19,7 +19,7 @@ namespace ImageBank
                 return false;
             }
 
-            var filename = FileHelper.NameToFileName(hash: img.Hash, name: img.Name);
+            var filename = img.GetFileName();
             var lastmodified = File.GetLastWriteTime(filename);
             var imagedata = FileHelper.ReadEncryptedFile(filename);
             if (imagedata == null) {
@@ -74,11 +74,7 @@ namespace ImageBank
         public static string GetRightName()
         {
             var hash = _similars[_position];
-            if (!AppImgs.TryGetValue(hash, out Img img)) {
-                return null;
-            }
-
-            return img.Name;
+            return hash;
         }
 
         public static void SetFirstPosition(IProgress<string> progress)
@@ -115,11 +111,12 @@ namespace ImageBank
 
         private static void UpdateStatus(IProgress<string> progress)
         {
-            var totalcount = AppImgs.Count();
             var imgX = _imgpanels[0].Img;
             var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastView));
             var similarsfound = _similars.Count;
-            progress?.Report($"{totalcount}: {imgX.Name} [{age} ago] = ({_position}/{similarsfound})");
+            var shortfilename = imgX.GetShortFileName();
+            var counters = AppImgs.GetCounters();
+            progress?.Report($"{counters}: {shortfilename} [{age} ago] = ({_position}/{similarsfound})");
         }
     }
 }

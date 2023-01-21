@@ -135,7 +135,6 @@
     <Compile Include="AppImgs.cs" />
     <Compile Include="ImgMdfCompute.cs" />
     <Compile Include="ImgMdfExport.cs" />
-    <Compile Include="HashHelper.cs" />
     <Compile Include="RandomMersenne.cs" />
     <Compile Include="VggHelper.cs" />
     <Page Include="MainWindow.xaml">

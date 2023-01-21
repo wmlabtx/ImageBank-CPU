@@ -6,14 +6,7 @@ namespace ImageBank
     public class Img
     {
         public string Hash { get; }
-        public string Name { get; }
-
-        public DateTime LastView { get; private set; }
-        public void SetLastView(DateTime lastview)
-        {
-            LastView = lastview;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeLastView, LastView);
-        }
+        public string Folder { get; }
 
         public DateTime DateTaken { get; private set; }
         public void SetDateTaken(DateTime datetaken)
@@ -35,14 +28,22 @@ namespace ImageBank
         }
 
         public byte[] _vector;
-        public byte[] GetVector() {
+        public byte[] GetVector()
+        {
             return _vector;
         }
 
         public void SetVector(byte[] vector)
         {
-           _vector = vector;
+            _vector = vector;
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeVector, _vector);
+        }
+
+        public DateTime LastView { get; private set; }
+        public void SetLastView(DateTime lastview)
+        {
+            LastView = lastview;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeLastView, LastView);
         }
 
         public RotateFlipType Orientation { get; private set; }
@@ -52,32 +53,42 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeOrientation, Helper.RotateFlipTypeToByte(Orientation));
         }
 
-        public string Family { get; private set; }
-        public void SetFamily(string family)
+        public string BestHash { get; private set; }
+        public void SetBestHash(string besthash)
         {
-            Family = family;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeFamily, Family);
+            BestHash = besthash;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeBestHash, BestHash);
+        }
+
+        public string GetFileName()
+        {
+            return $"{AppConsts.PathHp}\\{Folder[0]}\\{Folder[1]}\\{Hash}{AppConsts.MzxExtension}";
+        }
+
+        public string GetShortFileName()
+        {
+            return $"{Folder}\\{Hash.Substring(0, 4)}.{Hash.Substring(4, 4)}.{Hash.Substring(8, 4)}";
         }
 
         public Img(
-            string name,
-            string hash,
+        string hash,
+            string folder,
             DateTime datetaken,
             float[] histogram,
             byte[] vector,
+            DateTime lastview,
             RotateFlipType orientation,
-            string family,
-            DateTime lastview
+            string besthash
             )
         {
-            Name = name;
             Hash = hash;
+            Folder = folder;
             DateTaken = datetaken;
             _histogram = histogram;
             _vector = vector;
             Orientation = orientation;
             LastView = lastview;
-            Family = family;
+            BestHash = besthash;
         }
     }
 }

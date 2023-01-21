@@ -8,7 +8,7 @@ namespace ImageBank
         public static void Export(int idpanel, IProgress<string> progress)
         {
             var img = AppPanels.GetImgPanel(idpanel).Img;
-            var filename = FileHelper.NameToFileName(hash:img.Hash, name:img.Name);
+            var filename = img.GetFileName();
             var imagedata = FileHelper.ReadFile(filename);
             if (imagedata == null) {
                 return;
@@ -17,13 +17,14 @@ namespace ImageBank
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage != null) {
                     var ext = magickImage.Format.ToString().ToLower();
-                    var name = Path.GetFileNameWithoutExtension(img.Name);
+                    var name = Path.GetFileNameWithoutExtension(filename);
                     var exportfilename = $"{AppConsts.PathRw}\\{name}.{ext}";
                     File.WriteAllBytes(exportfilename, imagedata);
                     progress?.Report($"Exported {exportfilename}");
                 }
                 else {
-                    progress?.Report($"Bad {img.Name}");
+                    var shortfilename = img.GetShortFileName();
+                    progress?.Report($"Bad {shortfilename}");
                 }
             }
         }

@@ -136,12 +136,8 @@ namespace ImageBank
                 pBoxes[index].Source = BitmapHelper.ImageSourceFromBitmap(panels[index].Bitmap);
 
                 var sb = new StringBuilder();
-                sb.Append($"{panels[index].Img.Hash.Substring(0, 2)}\\{panels[index].Img.Name} ({panels[index].Format.ToLowerInvariant()})");
-                var count = AppImgs.Count(panels[index].Img.Family);
-                if (count > 1) {
-                    sb.Append($" {panels[index].Img.Family}:{count}");
-                }
-
+                var shortfilename = panels[index].Img.GetShortFileName();
+                sb.Append($"{shortfilename}.{panels[index].Format.ToLowerInvariant()}");
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -153,12 +149,17 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
-                if (panels[0].Img.Family.Equals(panels[1].Img.Family, StringComparison.OrdinalIgnoreCase)) {
+                if (panels[0].Img.BestHash.Equals(panels[1].Img.Hash, StringComparison.Ordinal)) {
                     scb = System.Windows.Media.Brushes.LightGreen;
                 }
                 else {
-                    if (panels[index].DateTaken > panels[1 - index].DateTaken) {
-                        scb = System.Windows.Media.Brushes.Pink;
+                    if (AppImgs.ValidBestHash(panels[index].Img)) {
+                        scb = System.Windows.Media.Brushes.Yellow;
+                    }
+                    else {
+                        if (panels[index].DateTaken > panels[1 - index].DateTaken) {
+                            scb = System.Windows.Media.Brushes.Pink;
+                        }
                     }
                 }
 
@@ -276,20 +277,20 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void CombineClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.Combine(); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
         private void ToggleXorClick()
         {
             DisableElements();
             AppVars.ShowXOR = !AppVars.ShowXOR;
             var hashY = AppPanels.GetImgPanel(1).Img.Hash;
             AppPanels.SetImgPanel(1, hashY);
+            DrawCanvas();
+            EnableElements();
+        }
+
+        private async void CombineClick()
+        {
+            DisableElements();
+            await Task.Run(() => { ImgMdf.Combine(); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();
         }
