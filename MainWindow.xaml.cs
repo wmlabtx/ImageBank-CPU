@@ -107,10 +107,5 @@ namespace ImageBank
         {
             ToggleXorClick();
         }
-
-        private void CombineClick(object sender, RoutedEventArgs e)
-        {
-            CombineClick();
-        }
     }
 }

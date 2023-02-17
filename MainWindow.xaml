@@ -28,9 +28,6 @@
                 <MenuItem Header="First (F)" Click="FirstMoveClick" />
                 <MenuItem Header="Swap (S)" Click="SwapMoveClick" />
             </MenuItem>
-            <MenuItem Header="Family">
-                <MenuItem Header="Combine (C)" Click="CombineClick" />
-            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBar.ItemsPanel>

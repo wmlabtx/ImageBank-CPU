@@ -15,18 +15,6 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeDateTaken, DateTaken);
         }
 
-        public float[] _histogram;
-        public float[] GetHistogram()
-        {
-            return _histogram;
-        }
-
-        public void SetHistogram(float[] histogram)
-        {
-            _histogram = histogram;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeHistogram, Helper.ArrayFromFloat(_histogram));
-        }
-
         public byte[] _vector;
         public byte[] GetVector()
         {
@@ -53,11 +41,32 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeOrientation, Helper.RotateFlipTypeToByte(Orientation));
         }
 
-        public string BestHash { get; private set; }
-        public void SetBestHash(string besthash)
+        public float Distance { get; private set; }
+        public void SetDistance(float distance)
         {
-            BestHash = besthash;
-            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeBestHash, BestHash);
+            Distance = distance;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeDistance, Distance);
+        }
+
+        public DateTime LastCheck { get; private set; }
+        public void SetLastCheck(DateTime lastcheck)
+        {
+            LastCheck = lastcheck;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeLastCheck, LastCheck);
+        }
+
+        public short Review { get; private set; }
+        public void SetReview(short review)
+        {
+            Review = review;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeReview, review);
+        }
+
+        public string Next { get; private set; }
+        public void SetNext(string next)
+        {
+            Next = next;
+            AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeNext, next);
         }
 
         public string GetFileName()
@@ -74,21 +83,25 @@ namespace ImageBank
         string hash,
             string folder,
             DateTime datetaken,
-            float[] histogram,
             byte[] vector,
             DateTime lastview,
             RotateFlipType orientation,
-            string besthash
+            float distance,
+            DateTime lastcheck,
+            short review,
+            string next
             )
         {
             Hash = hash;
             Folder = folder;
             DateTaken = datetaken;
-            _histogram = histogram;
             _vector = vector;
             Orientation = orientation;
             LastView = lastview;
-            BestHash = besthash;
+            Distance = distance;
+            LastCheck = lastcheck;
+            Review = review;
+            Next = next;
         }
     }
 }

@@ -6,7 +6,9 @@ namespace ImageBank
     public static class AppVars
     {
         public static Progress<string> Progress { get; set; }
+        public static ManualResetEvent SuspendEvent { get; set; }
         public static bool ShowXOR { get; set; }
+        public static bool ImportRequested { get; set; }
 
         private static readonly RandomMersenne _random = new RandomMersenne((uint)Guid.NewGuid().GetHashCode());
         public static int IRandom(int min, int max)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace ImageBank
             return similars;
         }
 
-        private static void ImportFile(string orgfilename, IProgress<string> progress)
+        private static void ImportFile(string orgfilename, BackgroundWorker backgroundworker)
         {
             var name = Path.GetFileNameWithoutExtension(orgfilename);
             if (AppImgs.ContainsHash(name)) {
@@ -35,7 +36,7 @@ namespace ImageBank
 
             var lastview = new DateTime(1990, 1, 1);
 
-            progress.Report($"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
+            backgroundworker.ReportProgress(0, $"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
 
             var lastmodified = File.GetLastWriteTime(orgfilename);
             if (lastmodified > DateTime.Now) {
@@ -60,7 +61,6 @@ namespace ImageBank
             }
 
             var hash = FileHelper.GetHash(imagedata);
-            var folder = AppImgs.GetFolder();
             var found = AppImgs.TryGetValue(hash, out var imgfound);
             if (found) {
                 // we have a record with the same hash...
@@ -91,11 +91,10 @@ namespace ImageBank
                 }
                 else {
                     // ...but file is missing
-                    Delete(imgfound.Hash, progress);
+                    Delete(imgfound.Hash, null);
                 }
             }
 
-            float[] histogram;
             byte[] vector;
             string extention;
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
@@ -118,25 +117,29 @@ namespace ImageBank
                 }
 
                 using (var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, RotateFlipType.RotateNoneFlipNone)) {
-                    histogram = ColorHelper.CalculateHistogram(bitmap);
                     vector = VggHelper.CalculateVector(bitmap);
                     extention = magickImage.Format.ToString().ToLowerInvariant();
                 }
             }
 
+            /*
             if (lastview.Year == 1990) {
                 lastview = AppImgs.GetMinLastView();
             }
+            */
 
+            var folder = AppImgs.GetFolder();
             var nimg = new Img(
                 hash: hash,
                 folder: folder,
                 datetaken: lastmodified,
-                histogram: histogram,
                 vector: vector,
                 lastview: lastview,
                 orientation: RotateFlipType.RotateNoneFlipNone,
-                besthash: hash);
+                distance: 1f,
+                lastcheck: lastview,
+                review: 0,
+                next: hash);
 
             var newfilename = nimg.GetFileName();
             if (!orgfilename.Equals(newfilename)) {
@@ -166,16 +169,15 @@ namespace ImageBank
             _added++;
         }
 
-        public static void ImportFiles(string path, IProgress<string> progress)
+        public static void ImportFiles(string path, BackgroundWorker backgroundworker)
         {
-            progress.Report($"importing {path}{AppConsts.CharEllipsis}");
             var directoryInfo = new DirectoryInfo(path);
             var fs = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).ToArray();
             var count = 0;
             foreach (var e in fs) {
                 var orgfilename = e.FullName;
                 if (!Path.GetExtension(orgfilename).Equals(AppConsts.CorruptedExtension, StringComparison.OrdinalIgnoreCase)) {
-                    ImportFile(orgfilename, progress);
+                    ImportFile(orgfilename, backgroundworker);
                     count++;
                     if (count == AppConsts.MaxImportFiles) {
                         break;
@@ -183,18 +185,66 @@ namespace ImageBank
                 }
             }
 
-            progress.Report($"clean-up {path}{AppConsts.CharEllipsis}");
+            backgroundworker.ReportProgress(0, $"clean-up {path}{AppConsts.CharEllipsis}");
             Helper.CleanupDirectories(path, AppVars.Progress);
         }
 
-        public static void Import(IProgress<string> progress)
+        public static void BackgroundWorker(BackgroundWorker backgroundworker)
         {
-            _added = 0;
-            _found = 0;
-            _bad = 0;
-            ImportFiles(AppConsts.PathHp, progress);
-            ImportFiles(AppConsts.PathRw, progress);
-            progress.Report($"Import done (a:{_added}/f:{_found}/b:{_bad})");
+            Compute(backgroundworker);
+        }
+
+        private static void Compute(BackgroundWorker backgroundworker)
+        {
+            if (AppVars.ImportRequested) {
+                _added = 0;
+                _found = 0;
+                _bad = 0;
+                ImportFiles(AppConsts.PathHp, backgroundworker);
+                ImportFiles(AppConsts.PathRw, backgroundworker);
+                AppVars.ImportRequested = false;
+            }
+
+            var imgX = AppImgs.GetNextCheck();
+            if (imgX != null) {
+                var shadow = AppImgs.GetShadow();
+                shadow.Remove(imgX.Hash);
+
+                var mindistance = 1f;
+                var minnext = string.Empty;
+                foreach (var img in shadow.Values) {
+                    var distance = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
+                    if (distance < mindistance) {
+                        mindistance = distance;
+                        minnext = img.Hash;
+                    }
+                        
+                }
+
+                if (mindistance < imgX.Distance || !minnext.Equals(imgX.Next)) {
+                    var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck));
+                    var shortfilename = imgX.GetShortFileName();
+                    backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgX.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
+                    imgX.SetDistance(mindistance);
+                    imgX.SetNext(minnext);
+                    imgX.SetReview(0);
+                }
+
+                imgX.SetLastCheck(DateTime.Now);
+
+                var imgY = shadow[imgX.Next];
+                if (imgY != null) {
+                    if (imgY.Hash.Equals(imgY.Next) || !shadow.ContainsKey(imgY.Next) || mindistance < imgY.Distance) {
+                        var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgY.LastCheck));
+                        var shortfilename = imgY.GetShortFileName();
+                        backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgY.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
+                        imgY.SetDistance(mindistance);
+                        imgY.SetNext(imgX.Hash);
+                        imgY.SetReview(0);
+                        imgY.SetLastCheck(DateTime.Now);
+                    }
+                }
+            }
         }
     }
 }

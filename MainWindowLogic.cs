@@ -1,6 +1,8 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +19,7 @@ namespace ImageBank
         private double _labelMaxHeight;
 
         private readonly NotifyIcon _notifyIcon = new NotifyIcon();
+        private BackgroundWorker _backgroundWorker;
 
         private async void WindowLoaded()
         {
@@ -54,6 +57,13 @@ namespace ImageBank
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
+
+            AppVars.SuspendEvent = new ManualResetEvent(true);
+
+            _backgroundWorker = new BackgroundWorker { WorkerSupportsCancellation = true, WorkerReportsProgress = true };
+            _backgroundWorker.DoWork += DoCompute;
+            _backgroundWorker.ProgressChanged += DoComputeProgress;
+            _backgroundWorker.RunWorkerAsync();
         }
 
         private void OnStateChanged()
@@ -64,11 +74,9 @@ namespace ImageBank
             }
         }
 
-        private async void ImportClick()
+        private static void ImportClick()
         {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.Import(AppVars.Progress); }).ConfigureAwait(true);
-            EnableElements();
+            AppVars.ImportRequested = true;
         }
 
         private async void ExportClick()
@@ -138,6 +146,9 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 var shortfilename = panels[index].Img.GetShortFileName();
                 sb.Append($"{shortfilename}.{panels[index].Format.ToLowerInvariant()}");
+
+                var blur = BitmapHelper.GetBlur(panels[index].Bitmap);
+                sb.Append($" b={blur:F1}");
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -149,18 +160,8 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
-                if (panels[0].Img.BestHash.Equals(panels[1].Img.Hash, StringComparison.Ordinal)) {
-                    scb = System.Windows.Media.Brushes.LightGreen;
-                }
-                else {
-                    if (AppImgs.ValidBestHash(panels[index].Img)) {
-                        scb = System.Windows.Media.Brushes.Yellow;
-                    }
-                    else {
-                        if (panels[index].DateTaken > panels[1 - index].DateTaken) {
-                            scb = System.Windows.Media.Brushes.Pink;
-                        }
-                    }
+                if (panels[index].DateTaken > panels[1 - index].DateTaken || (panels[index].DateTaken == panels[1 - index].DateTaken && panels[index].Size < panels[1 - index].Size)) {
+                    scb = System.Windows.Media.Brushes.Pink;
                 }
 
                 pLabels[index].Background = scb;
@@ -235,6 +236,8 @@ namespace ImageBank
         private void ClassDispose()
         {
             _notifyIcon?.Dispose();
+            _backgroundWorker?.CancelAsync();
+            _backgroundWorker?.Dispose();
         }
 
         private void RefreshClick()
@@ -287,14 +290,6 @@ namespace ImageBank
             EnableElements();
         }
 
-        private async void CombineClick()
-        {
-            DisableElements();
-            await Task.Run(() => { ImgMdf.Combine(); }).ConfigureAwait(true);
-            DrawCanvas();
-            EnableElements();
-        }
-
         private void OnKeyDown(Key key)
         {
             switch (key) {
@@ -313,10 +308,23 @@ namespace ImageBank
                 case Key.V:
                     ToggleXorClick();
                     break;
-                case Key.C:
-                    CombineClick();
-                    break;
             }
+        }
+
+        private void DoComputeProgress(object sender, ProgressChangedEventArgs e)
+        {
+            BackgroundStatus.Text = (string)e.UserState;
+        }
+
+        private void DoCompute(object s, DoWorkEventArgs args)
+        {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+            while (!_backgroundWorker.CancellationPending) {
+                ImgMdf.BackgroundWorker(_backgroundWorker);
+                Thread.Sleep(10);
+            }
+
+            args.Cancel = true;
         }
     }
 }

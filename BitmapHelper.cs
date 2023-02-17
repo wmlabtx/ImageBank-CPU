@@ -1,4 +1,6 @@
 ﻿using ImageMagick;
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -7,7 +9,9 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ImageBank
 {
@@ -177,26 +181,41 @@ namespace ImageBank
             Marshal.Copy(yd.Scan0, ya, 0, ya.Length);
             yb.UnlockBits(yd);
 
-            //byte maxval = 0;
-            for (var i = 0; i < xa.Length; i++) {
-                xa[i] = (byte)Math.Abs(xa[i] - ya[i]);
-                //maxval = Math.Max(maxval, xa[i]);
-            }
-
-            /*
-            if (maxval > 0) {
-                for (var i = 0; i < xa.Length; i++) {
-                    xa[i] = (byte)Math.Min(255, xa[i] * 255.0 / maxval);
+            for (var i = 0; i < xa.Length - 2; i += 3) {
+                ya[i] = (byte)Math.Min(255, Math.Abs(xa[i] - ya[i]) << 3);
+                ya[i + 1] = (byte)Math.Min(255, Math.Abs(xa[i + 1] - ya[i + 1]) << 3);
+                ya[i + 2] = (byte)Math.Min(255, Math.Abs(xa[i + 2] - ya[i + 2]) << 3);
+                if (ya[i] == 255 && ya[i + 1] == 255 && ya[i + 2] == 255) {
+                    Bitmap cb = new Bitmap(yb);
+                    return cb;
                 }
             }
-            */
 
-            Bitmap zb = new Bitmap(xb);
+            Bitmap zb = new Bitmap(yb);
             BitmapData zd = zb.LockBits(new Rectangle(0, 0, zb.Width, zb.Height), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
-            Marshal.Copy(xa, 0, zd.Scan0, xa.Length);
+            Marshal.Copy(ya, 0, zd.Scan0, ya.Length);
             zb.UnlockBits(zd);
 
             return zb;
+        }
+
+        public static double GetBlur(Bitmap x)
+        {
+            double result = 0.0;
+            using (var bitmap = ScaleAndCut(x, 512, 16))
+            using (var cvcolor = BitmapConverter.ToMat(bitmap))
+            using (var cvgray = new Mat())
+            using (var lap = new Mat())
+            using (var mu = new Mat())
+            using (var sigma = new Mat()) {
+                Cv2.CvtColor(BitmapConverter.ToMat(x), cvgray, ColorConversionCodes.BGR2GRAY);
+                Cv2.Laplacian(cvgray, lap, MatType.CV_64F);
+                Cv2.MeanStdDev(cvgray, mu, sigma);
+                sigma.GetArray(out double[] array);
+                result = array[0] * array[0];
+            }
+
+            return result;
         }
     }
 }

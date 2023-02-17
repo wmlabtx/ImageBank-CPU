@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace ImageBank
@@ -90,6 +91,10 @@ namespace ImageBank
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
                     _imgList.Remove(img.Hash);
+                    var lc = _imgList.Min(e => e.Value.LastCheck);
+                    foreach (var e in _imgList.Where(e => e.Value.Next.Equals(img.Hash))) { 
+                        e.Value.SetLastCheck(lc);
+                    }
                 }
                 finally {
                     Monitor.Exit(_imglock);
@@ -120,15 +125,61 @@ namespace ImageBank
 
         public static Img GetNextView()
         {
-            Img imgX;
+            Img imgX = null;
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
                     if (_imgList.Count < 2) {
                         imgX = null;
                     }
                     else {
-                        var minlastview = _imgList.Min(e => e.Value.LastView);
-                        imgX = _imgList.First(e => e.Value.LastView == minlastview).Value;
+                        foreach (var img in _imgList.Values) {
+                            if (img.Hash.Equals(img.Next) || !_imgList.ContainsKey(img.Next)) {
+                                continue;
+                            }
+
+                            if (img.LastView.Year == 1990) {
+                                imgX = img;
+                                break;
+                            }
+
+                            if (imgX == null || img.Review < imgX.Review || (img.Review == imgX.Review && img.Distance < imgX.Distance)) {
+                                imgX = img;
+                            }
+                        }
+                    }
+                }
+                finally {
+                    Monitor.Exit(_imglock);
+                }
+            }
+            else {
+                throw new Exception();
+            }
+
+            return imgX;
+        }
+
+        public static Img GetNextCheck()
+        {
+            Img imgX = null;
+            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
+                try {
+                    foreach (var img in _imgList.Values.OrderBy(e => e.LastView)) {
+                        /*
+                        if (img.LastView.Year == 1990) {
+                             imgX = img;
+                            break;
+                        }
+                        */
+
+                        if (img.Hash.Equals(img.Next) || !_imgList.ContainsKey(img.Next)) { 
+                            imgX = img;
+                            break;
+                        }
+
+                        if (imgX == null || img.LastCheck < imgX.LastCheck) {
+                            imgX = img;
+                        }
                     }
                 }
                 finally {
@@ -160,25 +211,7 @@ namespace ImageBank
             return result;
         }
 
-        public static bool ValidBestHash(Img img)
-        {
-            bool result;
-            if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
-                try {
-                    result = _imgList.ContainsKey(img.BestHash) && !img.Hash.Equals(img.BestHash);
-                }
-                finally {
-                    Monitor.Exit(_imglock);
-                }
-            }
-            else {
-                throw new Exception();
-            }
-
-            return result;
-        }
-
-        private static SortedList<string, Img> GetShadow()
+        public static SortedList<string, Img> GetShadow()
         {
             var shadow = new SortedList<string, Img>();
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
@@ -198,6 +231,8 @@ namespace ImageBank
 
         public static string GetFolder()
         {
+            var ifolder = AppVars.IRandom(0, 255);
+            /*
             var folders = new int[256];
             var shadow = GetShadow();
             foreach (var e in shadow) {
@@ -218,61 +253,36 @@ namespace ImageBank
                     minval = folders[i];
                 }
             }
+            */
 
-            var folder = $"{index:x2}";
+            var folder = $"{ifolder:x2}";
             return folder;
-        }
-
-        public static float GetDistance(Img imgX) 
-        {
-            var shadow = GetShadow();
-            shadow.Remove(imgX.Hash);
-            var distance = 1f;
-            foreach (var e in shadow) {
-                var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
-                distance = Math.Min(distance, cd);
-                var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
-                distance = Math.Min(distance, vd);
-            }
-
-            return distance;
         }
 
         public static List<string> GetSimilars(Img imgX)
         {
             var similars = new List<string>();
-            if (ValidBestHash(imgX)) {
-                similars.Add(imgX.BestHash);
-            }
-            
+            similars.Add(imgX.Next);
+
+            /*
             var shadow = GetShadow();
             shadow.Remove(imgX.Hash);
-            var clist = new List<Tuple<string, float>>();
             var vlist = new List<Tuple<string, float>>();
             var dlist = new List<Tuple<string, float>>();
             foreach (var e in shadow) {
-                var cd = ColorHelper.GetDistance(imgX.GetHistogram(), e.Value.GetHistogram());
-                clist.Add(Tuple.Create(e.Key, cd));
-
                 var vd = VggHelper.GetDistance(imgX.GetVector(), e.Value.GetVector());
                 vlist.Add(Tuple.Create(e.Key, vd));
-
                 var dd = (float)Math.Abs(imgX.DateTaken.Subtract(e.Value.DateTaken).TotalDays);
                 dlist.Add(Tuple.Create(e.Key, dd));
             }
 
-            var cl = clist.OrderBy(e => e.Item2).ToArray();
             var vl = vlist.OrderBy(e => e.Item2).ToArray();
             var dl = dlist.OrderBy(e => e.Item2).ToArray();
 
             var i = 0;
-            while (i < cl.Length && similars.Count < 100) {
+            while (i < vl.Length && similars.Count < 100) {
                 if (!similars.Any(e => e == vl[i].Item1)) {
                     similars.Add(vl[i].Item1);
-                }
-
-                if (!similars.Any(e => e == cl[i].Item1)) {
-                    similars.Add(cl[i].Item1);
                 }
 
                 if (!similars.Any(e => e == dl[i].Item1)) {
@@ -281,6 +291,7 @@ namespace ImageBank
 
                 i++;
             }
+            */
 
             return similars;
         }
@@ -304,18 +315,29 @@ namespace ImageBank
 
         public static string GetCounters()
         {
-            var counters = new int[2];
+            var counters = new SortedList<int, int>();
             var shadow = GetShadow();
-            foreach (var e in shadow) {
-                if (shadow.ContainsKey(e.Value.BestHash) && !e.Key.Equals(e.Value.BestHash)) {
-                    counters[0]++;
+            foreach (var e in shadow.Values) {
+                if (counters.ContainsKey(e.Review)) {
+                    counters[e.Review]++;
                 }
                 else {
-                    counters[1]++;
+                    counters.Add(e.Review, 1);
                 }
             }
 
-            var result = $"{counters[0]}/{counters[1]}";
+            var sb = new StringBuilder();
+            var counterkeymax = counters.Keys[counters.Keys.Count - 1];
+            for (var i = 0; i <= counterkeymax; i++) {
+                var val = counters.ContainsKey(i) ? counters[i] : 0;
+                if (i > 0) {
+                    sb.Append('/');
+                }
+
+                sb.Append(val);
+            }
+
+            var result = sb.ToString();
             return result;
         }
     }

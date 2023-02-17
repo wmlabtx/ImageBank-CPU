@@ -15,8 +15,7 @@
         public const string PathGb = PathRoot + @"\" + FolderGb;
 
         public const int HashLength = 12;
-        public const int MaxHistoryLength = HashLength * 10;
-        public const int MaxImportFiles = 500000;
+        public const int MaxImportFiles = 10;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -33,12 +32,13 @@
         public const string AttributeHash = "Hash";
         public const string AttributeFolder = "Folder";
         public const string AttributeDateTaken = "DateTaken";
-        public const string AttributeHistogram = "Histogram";
         public const string AttributeLastView = "LastView";
         public const string AttributeVector = "Vector";
         public const string AttributeOrientation = "Orientation";
-        public const string AttributeBestHash = "BestHash";
+        public const string AttributeDistance = "Distance";
+        public const string AttributeLastCheck = "LastCheck";
+        public const string AttributeReview = "Review";
+        public const string AttributeNext = "Next";
         public const string TableVars = "Vars";
-        public const string AttributePalette = "Palette";
     }
 }
