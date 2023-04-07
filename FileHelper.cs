@@ -71,9 +71,37 @@ namespace ImageBank
         public static void DeleteToRecycleBin(string filename)
         {
             try {
+                /*
                 if (File.Exists(filename)) {
                     File.SetAttributes(filename, FileAttributes.Normal);
                     FileSystem.DeleteFile(filename, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                }
+                */
+
+                if (File.Exists(filename)) {
+                    var now = DateTime.Now;
+                    File.SetAttributes(filename, FileAttributes.Normal);
+                    var name = Path.GetFileNameWithoutExtension(filename);
+                    var extension = Path.GetExtension(filename);
+                    string deletedfilename;
+                    var counter = 0;
+                    do {
+                        if (counter == 0) {
+                            deletedfilename = $"{AppConsts.PathDeProtected}\\{now.Year}-{now.Month:D2}-{now.Day:D2}\\{name}{extension}";
+                        }
+                        else {
+                            deletedfilename = $"{AppConsts.PathDeProtected}\\\\{now.Year}-{now.Month:D2}-{now.Day:D2}\\{name}({counter}){extension}";
+                        }
+
+                        counter++;
+                    }
+                    while (File.Exists(deletedfilename));
+                    var directory = Path.GetDirectoryName(deletedfilename);
+                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    File.Move(filename, deletedfilename);
                 }
             }
             catch (UnauthorizedAccessException) {
@@ -85,7 +113,7 @@ namespace ImageBank
         public static void MoveCorruptedFile(string filename)
         {
             var badname = Path.GetFileName(filename);
-            var badfilename = $"{AppConsts.PathGb}\\{badname}";
+            var badfilename = $"{AppConsts.PathGbProtected}\\{badname}";
             if (!badfilename.Equals(filename, StringComparison.OrdinalIgnoreCase)) {
                 if (File.Exists(badfilename)) {
                     DeleteToRecycleBin(badfilename);

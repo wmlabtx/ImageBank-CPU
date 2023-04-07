@@ -217,5 +217,33 @@ namespace ImageBank
 
             return result;
         }
+
+        private static double EotfPq(double val)
+        {
+            const double m1 = 1305.0 / 8192.0;
+            const double m2 = 2523.0 / 32.0;
+            const double c1 = 107.0 / 128.0;
+            const double c2 = 2413.0 / 128.0;
+            const double c3 = 2392.0 / 128.0;
+            var ym1 = Math.Pow(val, m1);
+            var e = Math.Pow((c1 + c2 * ym1) / (1.0 + c3 * ym1), m2);
+            return e;
+        }
+
+        public static void RGB2ITP(int rb, int gb, int bb, out double id, out double td, out double pd)
+        {
+            var rd = rb / 255.0;
+            var gd = gb / 255.0;
+            var bd = bb / 255.0;
+            var ld = (1688.0 * rd + 2146.0 * gd + 262.0 * bd) / 4096.0;
+            var md = (683.0 * rd + 2951.0 * gd + 462.0 * bd) / 4096.0;
+            var sd = (99.0 * rd + 309.0 * gd + 3688.0 * bd) / 4096.0;
+            var ld1 = EotfPq(ld);
+            var md1 = EotfPq(md);
+            var sd1 = EotfPq(sd);
+            id = (2048.0 * ld1 + 2048.0 * md1) / 4096.0;
+            td  = 0.5 * (6610.0 * ld1 - 13613.0 * md1 + 7003.0 * sd1) / 4096.0 + 0.5;
+            pd = (17933.0 * ld1 - 17390.0 * md1 - 543.0 * sd1) / 4096.0 + 0.5;
+        }
     }
 }

@@ -1,14 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenCvSharp.Dnn;
-using OpenCvSharp;
 using System.Diagnostics;
 using ImageBank;
 using System.IO;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Web;
 
 namespace ImageBankTest
 {
@@ -73,7 +68,6 @@ namespace ImageBankTest
         [TestMethod]
         public void GetDistance()
         {
-            /*
             VggHelper.LoadNet(null);
             var images = new[] {
                 "gab_org", "gab_bw", "gab_scale", "gab_flip", "gab_r90", "gab_crop", "gab_toside",
@@ -82,14 +76,15 @@ namespace ImageBankTest
                 "gab_nosim1", "gab_nosim2", "gab_nosim3", "gab_nosim4", "gab_nosim5", "gab_nosim6"
             };
 
-            var vectors = new Tuple<string, float[]>[images.Length];
+            var vectors = new Tuple<string, byte[]>[images.Length];
             for (var i = 0; i < images.Length; i++) {
                 var name = $"{images[i]}.jpg";
                 var imagedata = File.ReadAllBytes(name);
-                using (var bitmap = BitmapHelper.ImageDataToBitmap(imagedata)) {
+                using (var mi = BitmapHelper.ImageDataToMagickImage(imagedata))
+                using (var bitmap = BitmapHelper.MagickImageToBitmap(mi, RotateFlipType.RotateNoneFlipNone)) {
                     var vector = VggHelper.CalculateVector(bitmap);
                     Assert.AreEqual(vector.Length, 2048);
-                    vectors[i] = new Tuple<string, float[]>(name, vector);
+                    vectors[i] = new Tuple<string, byte[]>(name, vector);
                 }
             }
 
@@ -97,9 +92,9 @@ namespace ImageBankTest
                 var distance = VggHelper.GetDistance(vectors[0].Item2, vectors[i].Item2);
                 Debug.WriteLine($"{images[i]} = {distance:F2}");
             }
-            */
         }
 
+        /*
         [TestMethod]
         public void GetStatistics()
         {
@@ -134,5 +129,6 @@ namespace ImageBankTest
                 Debug.WriteLine($"{k:F1} {v}");
             }
         }
+        */
     }
 }

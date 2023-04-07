@@ -3,19 +3,23 @@
     public static class AppConsts
     {
         public const string PathRoot = @"D:\Users\Murad\Spacer";
+        public const string PathRootProtected = @"M:\Spacer";
         public const string FolderDb = @"Db";
         public const string FileVgg = PathRoot + @"\" + FolderDb +@"\" + @"resnet152-v2-7.onnx";
         public const string FileDatabase = PathRoot + @"\" + FolderDb + @"\" + "images.mdf";
         public const string FilePalette = PathRoot + @"\" + FolderDb + @"\" + "palette.png";
         public const string FolderRw = @"Rw";
         public const string PathRw = PathRoot + @"\" + FolderRw;
+        public const string PathRwProtected = PathRootProtected + @"\" + FolderRw;
         public const string FolderHp = @"Hp";
         public const string PathHp = PathRoot + @"\" + FolderHp;
         public const string FolderGb = @"Gb";
-        public const string PathGb = PathRoot + @"\" + FolderGb;
+        public const string PathGbProtected = PathRootProtected + @"\" + FolderGb;
+        public const string FolderDe = @"De";
+        public const string PathDeProtected = PathRootProtected + @"\" + FolderDe;
 
         public const int HashLength = 12;
-        public const int MaxImportFiles = 10;
+        public const int MaxImportFiles = 100000;
 
         public const string MzxExtension = ".mzx";
         public const string DatExtension = ".dat";
@@ -40,5 +44,6 @@
         public const string AttributeReview = "Review";
         public const string AttributeNext = "Next";
         public const string TableVars = "Vars";
+        public const string AttributeDateTakenLast = "DateTakenLast";
     }
 }

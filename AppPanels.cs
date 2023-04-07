@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp.Flann;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -29,7 +30,7 @@ namespace ImageBank
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage == null) {
                     var badname = Path.GetFileName(filename);
-                    var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                    var badfilename = $"{AppConsts.PathGbProtected}\\{badname}{AppConsts.CorruptedExtension}";
                     if (File.Exists(badfilename)) {
                         FileHelper.DeleteToRecycleBin(badfilename);
                     }
@@ -42,6 +43,7 @@ namespace ImageBank
                 var datetaken = BitmapHelper.GetDateTaken(magickImage, lastmodified);
                 var bitmap = BitmapHelper.MagickImageToBitmap(magickImage, img.Orientation);
                 if (bitmap != null) {
+                    var blur = BitmapHelper.GetBlur(bitmap);
                     if (AppVars.ShowXOR && idpanel == 1 && _imgpanels[0].Bitmap.Width == bitmap.Width && _imgpanels[0].Bitmap.Height == bitmap.Height) {
                         var bitmapxor = BitmapHelper.BitmapXor(_imgpanels[0].Bitmap, bitmap);
                         bitmap.Dispose();
@@ -53,7 +55,8 @@ namespace ImageBank
                         size: imagedata.LongLength,
                         bitmap: bitmap,
                         format: format,
-                        datetaken: datetaken);
+                        datetaken: datetaken,
+                        blur: blur);
 
                     _imgpanels[idpanel] = imgpanel;
                 }

@@ -28,5 +28,7 @@ namespace ImageBank
 
             return result;
         }
+
+        public static DateTime DateTakenLast { get; set; }
     }
 }

@@ -4,6 +4,9 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System;
 using OpenCvSharp;
+using System.Windows.Documents;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ImageBank
 {
@@ -22,7 +25,7 @@ namespace ImageBank
             byte[] vector;
             using (var input = new Mat(new int[] { 1, 3, 224, 224 }, MatType.CV_32F))
             using (var b = BitmapHelper.ScaleAndCut(bitmap, 224, 224 / 16)) {
-                b.Save("bitmap.png", ImageFormat.Png);
+                //b.Save("bitmap.png", ImageFormat.Png);
                 var bitmapdata = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
                 var stride = bitmapdata.Stride;
                 var data = new byte[Math.Abs(bitmapdata.Stride * bitmapdata.Height)];
@@ -67,16 +70,18 @@ namespace ImageBank
                 return 1f;
             }
 
-            double dot = 0.0;
-            double magx = 0.0;
-            double magy = 0.0;
+            var ss = 0f;
+            var ws = 0f;
             for (int n = 0; n < x.Length; n++) {
-                dot += (double)x[n] * y[n] / (255.0 * 255.0);
-                magx += (double)x[n] * x[n] / (255.0 * 255.0);
-                magy += (double)y[n] * y[n] / (255.0 * 255.0);
+                var w = Math.Max(x[n], y[n]);
+                if (w > 0) {
+                    var s = (x[n] - y[n]) * (x[n] - y[n]);
+                    ss += (float)s * w;
+                    ws += w;
+                }
             }
 
-            var distance = 1f - (float)(dot / (Math.Sqrt(magx) * Math.Sqrt(magy)));
+            var distance = ss / ws;
             return distance;
         }
     }

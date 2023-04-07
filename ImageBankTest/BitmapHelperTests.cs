@@ -1,18 +1,43 @@
-﻿using System;
-using System.Diagnostics;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Xml.Linq;
-using ImageBank;
+﻿using ImageBank;
 using ImageMagick;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenCvSharp;
+using System;
+using System.Diagnostics;
 
 namespace ImageBankTest
 {
     [TestClass()]
     public class BitmapHelperTests
     {
+        [TestMethod()]
+        public void Color1Test() {
+            BitmapHelper.RGB2ITP(0, 0, 0, out double id1, out double td1, out double pd1);
+            BitmapHelper.RGB2ITP(255, 255, 255, out double id2, out double td2, out double pd2);
+            BitmapHelper.RGB2ITP(255, 0, 0, out double id3, out double td3, out double pd3);
+
+            var imin = double.MaxValue;
+            var imax = double.MinValue;
+            var tmin = double.MaxValue;
+            var tmax = double.MinValue;
+            var pmin = double.MaxValue;
+            var pmax = double.MinValue;
+            for (var r = 0; r < 256; r++) {
+                for (var g = 0; g < 256; g++) {
+                    for (var b = 0; b < 256; b++) {
+                        BitmapHelper.RGB2ITP(r, g, b, out double id, out double td, out double pd);
+                        imin = Math.Min(imin, id);
+                        imax = Math.Max(imax, id);
+                        tmin = Math.Min(tmin, td);
+                        tmax = Math.Max(tmax, td);
+                        pmin = Math.Min(pmin, pd);
+                        pmax = Math.Max(pmax, pd);
+                    }
+                }
+            }
+
+             Debug.WriteLine($"{imin:F2} {imax:F2} {tmin:F2} {tmax:F2} {pmin:F2} {pmax:F2}");
+        }
+
         private static void TestMagickImageParameters(string filename, MagickFormat format, int channelcount, int depth)
         {
             /*

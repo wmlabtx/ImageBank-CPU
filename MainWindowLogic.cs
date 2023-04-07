@@ -146,9 +146,7 @@ namespace ImageBank
                 var sb = new StringBuilder();
                 var shortfilename = panels[index].Img.GetShortFileName();
                 sb.Append($"{shortfilename}.{panels[index].Format.ToLowerInvariant()}");
-
-                var blur = BitmapHelper.GetBlur(panels[index].Bitmap);
-                sb.Append($" b={blur:F1}");
+                sb.Append($" ({panels[index].Img.Distance:F4})");
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -160,7 +158,7 @@ namespace ImageBank
 
                 pLabels[index].Text = sb.ToString();
                 SolidColorBrush scb = System.Windows.Media.Brushes.White;
-                if (panels[index].DateTaken > panels[1 - index].DateTaken || (panels[index].DateTaken == panels[1 - index].DateTaken && panels[index].Size < panels[1 - index].Size)) {
+                if (panels[index].Blur < panels[1 - index].Blur || (panels[index].Blur == panels[1 - index].Blur && panels[index].DateTaken < panels[1 - index].DateTaken)) {
                     scb = System.Windows.Media.Brushes.Pink;
                 }
 

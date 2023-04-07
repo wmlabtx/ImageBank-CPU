@@ -198,6 +198,23 @@ namespace ImageBank
                 }
             }
 
+            progress?.Report("Loading vars...");
+
+            sb.Length = 0;
+            sb.Append("SELECT ");
+            sb.Append($"{AppConsts.AttributeDateTakenLast} "); // 0
+            sb.Append($"FROM {AppConsts.TableVars}");
+            sqltext = sb.ToString();
+            using (var sqlCommand = new SqlCommand(sqltext, _sqlConnection)) {
+                using (var reader = sqlCommand.ExecuteReader()) {
+                    while (reader.Read()) {
+                        var datetakenlast = reader.GetDateTime(0);
+                        AppVars.DateTakenLast = datetakenlast;
+                        break;
+                    }
+                }
+            }
+
             progress?.Report("Database loaded");
         }
     }

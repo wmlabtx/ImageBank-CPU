@@ -34,7 +34,7 @@ namespace ImageBank
                 return;
             }
 
-            var lastview = new DateTime(1990, 1, 1);
+            var lastview = AppImgs.GetMinLastView();
 
             backgroundworker.ReportProgress(0, $"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
 
@@ -100,7 +100,7 @@ namespace ImageBank
             using (var magickImage = BitmapHelper.ImageDataToMagickImage(imagedata)) {
                 if (magickImage == null) {
                     var badname = Path.GetFileName(orgfilename);
-                    var badfilename = $"{AppConsts.PathGb}\\{badname}{AppConsts.CorruptedExtension}";
+                    var badfilename = $"{AppConsts.PathGbProtected}\\{badname}{AppConsts.CorruptedExtension}";
                     if (File.Exists(badfilename)) {
                         FileHelper.DeleteToRecycleBin(badfilename);
                     }
@@ -202,6 +202,7 @@ namespace ImageBank
                 _bad = 0;
                 ImportFiles(AppConsts.PathHp, backgroundworker);
                 ImportFiles(AppConsts.PathRw, backgroundworker);
+                ImportFiles(AppConsts.PathRwProtected, backgroundworker);
                 AppVars.ImportRequested = false;
             }
 
@@ -210,7 +211,7 @@ namespace ImageBank
                 var shadow = AppImgs.GetShadow();
                 shadow.Remove(imgX.Hash);
 
-                var mindistance = 1f;
+                var mindistance = float.MaxValue;
                 var minnext = string.Empty;
                 foreach (var img in shadow.Values) {
                     var distance = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
@@ -218,7 +219,6 @@ namespace ImageBank
                         mindistance = distance;
                         minnext = img.Hash;
                     }
-                        
                 }
 
                 if (mindistance < imgX.Distance || !minnext.Equals(imgX.Next)) {
@@ -227,7 +227,6 @@ namespace ImageBank
                     backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgX.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
                     imgX.SetDistance(mindistance);
                     imgX.SetNext(minnext);
-                    imgX.SetReview(0);
                 }
 
                 imgX.SetLastCheck(DateTime.Now);
@@ -240,7 +239,6 @@ namespace ImageBank
                         backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgY.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
                         imgY.SetDistance(mindistance);
                         imgY.SetNext(imgX.Hash);
-                        imgY.SetReview(0);
                         imgY.SetLastCheck(DateTime.Now);
                     }
                 }

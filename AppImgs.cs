@@ -132,19 +132,43 @@ namespace ImageBank
                         imgX = null;
                     }
                     else {
+                        var minrev = int.MaxValue;
+                        var mindistance = float.MaxValue;
                         foreach (var img in _imgList.Values) {
-                            if (img.Hash.Equals(img.Next) || !_imgList.ContainsKey(img.Next)) {
+                            if (img.Hash.Equals(img.Next)) {
                                 continue;
                             }
 
-                            if (img.LastView.Year == 1990) {
-                                imgX = img;
-                                break;
+                            if (!_imgList.TryGetValue(img.Next, out var imgn)) {
+                                continue;
                             }
 
-                            if (imgX == null || img.Review < imgX.Review || (img.Review == imgX.Review && img.Distance < imgX.Distance)) {
+                            var rev = Math.Min(img.Review, imgn.Review);
+                            var lv = img.LastView;
+                            if (imgn.LastView > lv) {
+                                lv = imgn.LastView;
+                            }
+
+                            var distance = img.Distance;
+                            if (rev < minrev) {
+                                minrev = rev;
+                                mindistance = distance;
                                 imgX = img;
                             }
+                            else {
+                                if (rev == minrev && distance < mindistance) {
+                                    mindistance = distance;
+                                    imgX = img;
+                                }
+                            }
+                        }
+
+                        if (!_imgList.TryGetValue(imgX.Next, out var imgY)) {
+                            imgX = null;
+                        }
+                        else {
+                            imgX.SetReview((short)(imgX.Review + 1));
+                            imgY.SetReview((short)(imgY.Review + 1));
                         }
                     }
                 }
@@ -165,19 +189,12 @@ namespace ImageBank
             if (Monitor.TryEnter(_imglock, AppConsts.LockTimeout)) {
                 try {
                     foreach (var img in _imgList.Values.OrderBy(e => e.LastView)) {
-                        /*
-                        if (img.LastView.Year == 1990) {
-                             imgX = img;
-                            break;
-                        }
-                        */
-
                         if (img.Hash.Equals(img.Next) || !_imgList.ContainsKey(img.Next)) { 
                             imgX = img;
                             break;
                         }
 
-                        if (imgX == null || img.LastCheck < imgX.LastCheck) {
+                        if (imgX == null || (imgX != null && img.LastCheck < imgX.LastCheck)) {
                             imgX = img;
                         }
                     }
