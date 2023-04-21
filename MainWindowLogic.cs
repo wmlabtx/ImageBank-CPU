@@ -54,6 +54,7 @@ namespace ImageBank
             AppVars.Progress = new Progress<string>(message => Status.Text = message);
 
             await Task.Run(() => { ImgMdf.LoadImages(AppVars.Progress); }).ConfigureAwait(true);
+            //await Task.Run(() => { AppImgs.Populate(AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
 
             DrawCanvas();
@@ -147,6 +148,7 @@ namespace ImageBank
                 var shortfilename = panels[index].Img.GetShortFileName();
                 sb.Append($"{shortfilename}.{panels[index].Format.ToLowerInvariant()}");
                 sb.Append($" ({panels[index].Img.Distance:F4})");
+                sb.Append($" R{panels[index].Img.Review}");
                 sb.AppendLine();
 
                 sb.Append($"{Helper.SizeToString(panels[index].Size)} ");
@@ -203,8 +205,7 @@ namespace ImageBank
         private async void ImgPanelDelete(int idpanel)
         {
             DisableElements();
-            var hash = AppPanels.GetImgPanel(idpanel).Img.Hash;
-            await Task.Run(() => { ImgMdf.Delete(hash, AppVars.Progress); }).ConfigureAwait(true);
+            await Task.Run(() => { ImgMdf.Delete(idpanel, AppVars.Progress); }).ConfigureAwait(true);
             await Task.Run(() => { ImgMdf.Find(null, AppVars.Progress); }).ConfigureAwait(true);
             DrawCanvas();
             EnableElements();

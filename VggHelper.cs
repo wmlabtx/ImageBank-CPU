@@ -4,9 +4,6 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System;
 using OpenCvSharp;
-using System.Windows.Documents;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace ImageBank
 {
@@ -70,19 +67,18 @@ namespace ImageBank
                 return 1f;
             }
 
-            var ss = 0f;
-            var ws = 0f;
+            double dot = 0.0;
+            double magx = 0.0;
+            double magy = 0.0;
             for (int n = 0; n < x.Length; n++) {
-                var w = Math.Max(x[n], y[n]);
-                if (w > 0) {
-                    var s = (x[n] - y[n]) * (x[n] - y[n]);
-                    ss += (float)s * w;
-                    ws += w;
+                if (x[n] > 0 || y[n] > 0) {
+                    dot += (double)x[n] * y[n] / (255.0 * 255.0);
+                    magx += (double)x[n] * x[n] / (255.0 * 255.0);
+                    magy += (double)y[n] * y[n] / (255.0 * 255.0);
                 }
             }
 
-            var distance = ss / ws;
-            return distance;
+            return 1f - (float)(dot / (Math.Sqrt(magx) * Math.Sqrt(magy)));
         }
     }
 }

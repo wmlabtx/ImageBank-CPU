@@ -28,7 +28,7 @@ namespace ImageBank
                 }
 
                 if (!AppPanels.SetImgPanel(0, hashX)) {
-                    Delete(hashX, progress);
+                    Delete(imgX, progress);
                     progress?.Report($"{hashX} deleted");
                     hashX = null;
                     continue;

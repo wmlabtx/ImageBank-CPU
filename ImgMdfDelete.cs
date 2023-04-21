@@ -4,17 +4,19 @@ namespace ImageBank
 {
     public static partial class ImgMdf
     {
-        public static void Delete(string hash, IProgress<string> progress)
+        public static void Delete(Img imgD, IProgress<string> progress)
         {
-            if (AppImgs.TryGetValue(hash, out var img)) {
-                var shortfilename = img.GetShortFileName();
-                progress.Report($"Delete {shortfilename}");
-                AppImgs.Delete(img);
-                var filename = img.GetFileName();
-                FileHelper.DeleteToRecycleBin(filename);
-            }
+            progress.Report($"Delete {imgD.GetShortFileName()}");
+            AppImgs.Delete(imgD);
+            var filename = imgD.GetFileName();
+            FileHelper.DeleteToRecycleBin(filename);
+            AppDatabase.DeleteImage(imgD.Hash);
+        }
 
-            AppDatabase.DeleteImage(hash);
+        public static void Delete(int idpanel, IProgress<string> progress)
+        {
+            var imgD = AppPanels.GetImgPanel(idpanel).Img;
+            Delete(imgD, progress);
         }
     }
 } 

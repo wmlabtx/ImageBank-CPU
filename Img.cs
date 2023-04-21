@@ -62,6 +62,11 @@ namespace ImageBank
             AppDatabase.ImageUpdateProperty(Hash, AppConsts.AttributeReview, review);
         }
 
+        public void IncrementReview()
+        {
+            SetReview((short)(Review + 1));
+        }
+
         public string Next { get; private set; }
         public void SetNext(string next)
         {

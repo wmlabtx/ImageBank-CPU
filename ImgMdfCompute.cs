@@ -19,7 +19,7 @@ namespace ImageBank
             if (!File.Exists(filename)) {
                 var shortname = Path.GetFileName(filename);
                 progress?.Report($"({shortname}) removed");
-                Delete(imgX.Hash, progress);
+                Delete(imgX, progress);
                 return null;
             }
 
@@ -34,7 +34,7 @@ namespace ImageBank
                 return;
             }
 
-            var lastview = AppImgs.GetMinLastView();
+            var lastview = new DateTime(2020, 1, 1);
 
             backgroundworker.ReportProgress(0, $"importing {name} (a:{_added})/f:{_found}/b:{_bad}){AppConsts.CharEllipsis}");
 
@@ -91,7 +91,7 @@ namespace ImageBank
                 }
                 else {
                     // ...but file is missing
-                    Delete(imgfound.Hash, null);
+                    Delete(imgfound, null);
                 }
             }
 
@@ -121,12 +121,6 @@ namespace ImageBank
                     extention = magickImage.Format.ToString().ToLowerInvariant();
                 }
             }
-
-            /*
-            if (lastview.Year == 1990) {
-                lastview = AppImgs.GetMinLastView();
-            }
-            */
 
             var folder = AppImgs.GetFolder();
             var nimg = new Img(
@@ -210,38 +204,25 @@ namespace ImageBank
             if (imgX != null) {
                 var shadow = AppImgs.GetShadow();
                 shadow.Remove(imgX.Hash);
-
                 var mindistance = float.MaxValue;
-                var minnext = string.Empty;
+                Img imgY = null;
                 foreach (var img in shadow.Values) {
                     var distance = VggHelper.GetDistance(imgX.GetVector(), img.GetVector());
                     if (distance < mindistance) {
                         mindistance = distance;
-                        minnext = img.Hash;
+                        imgY = img;
                     }
                 }
 
-                if (mindistance < imgX.Distance || !minnext.Equals(imgX.Next)) {
+                if (!imgX.Next.Equals(imgY.Hash) || Math.Abs(imgX.Distance - mindistance) >= 0.0001f) {
                     var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgX.LastCheck));
                     var shortfilename = imgX.GetShortFileName();
-                    backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgX.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
+                    backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: [{imgX.Review}] {imgX.Distance:F4} {AppConsts.CharRightArrow} [{imgY.Review}] {mindistance:F4}");
                     imgX.SetDistance(mindistance);
-                    imgX.SetNext(minnext);
+                    imgX.SetNext(imgY.Hash);
                 }
 
                 imgX.SetLastCheck(DateTime.Now);
-
-                var imgY = shadow[imgX.Next];
-                if (imgY != null) {
-                    if (imgY.Hash.Equals(imgY.Next) || !shadow.ContainsKey(imgY.Next) || mindistance < imgY.Distance) {
-                        var age = Helper.TimeIntervalToString(DateTime.Now.Subtract(imgY.LastCheck));
-                        var shortfilename = imgY.GetShortFileName();
-                        backgroundworker.ReportProgress(0, $"[{age} ago] {shortfilename}: {imgY.Distance:F4} {AppConsts.CharRightArrow} {mindistance:F4}");
-                        imgY.SetDistance(mindistance);
-                        imgY.SetNext(imgX.Hash);
-                        imgY.SetLastCheck(DateTime.Now);
-                    }
-                }
             }
         }
     }
